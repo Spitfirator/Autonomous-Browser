@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sentinel — one-time setup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+	/* FUZER "Control Room" language (see /DESIGN.md): light, flat, hairline
+	   borders, amber as the one signal. Sora falls back to system-ui offline. */
+	:root {
+		color-scheme: light;
+		--background: oklch(1 0 0);
+		--foreground: oklch(0.145 0 0);
+		--muted: oklch(0.97 0 0);
+		--muted-foreground: oklch(0.556 0 0);
+		--secondary-foreground: oklch(0.21 0.006 285.885);
+		--border: oklch(0.922 0 0);
+		--primary: oklch(0.852 0.199 91.936);
+		--primary-foreground: oklch(0.421 0.095 57.708);
+		--success: oklch(0.792 0.209 151.711);
+		--success-deep: oklch(0.527 0.154 150.069);
+		--sans: 'Sora', system-ui, -apple-system, 'Segoe UI', sans-serif;
+		--mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+	}
+	* { box-sizing: border-box; }
+	body {
+		margin: 0; min-height: 100vh; display: grid; place-items: center;
+		background: var(--muted); color: var(--foreground);
+		font: 400 0.875rem/1.6 var(--sans);
+		-webkit-font-smoothing: antialiased;
+		padding: 24px;
+	}
+	.card {
+		width: min(640px, 100%); background: var(--background);
+		border: 1px solid var(--border); border-radius: 18px;
+		padding: 36px 40px;
+	}
+	.brand { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+	.mark {
+		width: 22px; height: 22px; border-radius: 6px; background: var(--primary);
+		display: inline-grid; place-items: center; flex: none;
+	}
+	.mark::after { content: ''; width: 5px; height: 11px; border-radius: 2px; background: var(--primary-foreground); }
+	h1 { font: 600 1.25rem/1.25 var(--sans); letter-spacing: -0.01em; margin: 0; text-wrap: balance; }
+	p.sub { margin: 0 0 28px; color: var(--muted-foreground); font-size: 0.875rem; max-width: 52ch; }
+	ol { margin: 0; padding-left: 22px; display: grid; gap: 14px; }
+	li::marker { font-weight: 600; color: var(--muted-foreground); font-variant-numeric: tabular-nums; }
+	li strong { font-weight: 600; }
+	code, .path {
+		background: var(--muted); border: 1px solid var(--border); border-radius: 6px;
+		padding: 2px 7px; font: 0.75rem/1.5 var(--mono); color: var(--secondary-foreground);
+	}
+	.pathrow { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
+	.path { flex: 1; padding: 8px 10px; word-break: break-all; user-select: all; }
+	button {
+		background: var(--background); color: var(--foreground);
+		border: 1px solid var(--border); border-radius: 10px;
+		height: 32px; padding: 0 12px; font: 500 0.8rem/1 var(--sans); cursor: pointer;
+		transition: background 0.15s;
+	}
+	button:hover { background: var(--muted); }
+	button:active { transform: translateY(1px); }
+	button:focus-visible { outline: none; border-color: oklch(0.708 0 0); box-shadow: 0 0 0 3px oklch(0.708 0 0 / 0.5); }
+	.status {
+		margin-top: 28px; padding: 12px 14px; border-radius: 10px; font-size: 0.8125rem; font-weight: 500;
+		display: flex; align-items: center; gap: 10px;
+		border: 1px solid color-mix(in oklch, var(--primary) 55%, var(--border));
+		background: oklch(0.852 0.199 91.936 / 0.12); color: var(--primary-foreground);
+	}
+	.pulse {
+		width: 9px; height: 9px; border-radius: 50%; background: var(--primary-foreground);
+		animation: pulse 1.4s ease-in-out infinite; flex: none;
+	}
+	@keyframes pulse { 50% { opacity: .25; } }
+	.status.ok {
+		border-color: oklch(0.792 0.209 151.711 / 0.5);
+		background: oklch(0.792 0.209 151.711 / 0.12); color: var(--success-deep);
+	}
+	.status.ok .pulse { background: var(--success-deep); animation: none; }
+	.hint { margin-top: 14px; color: var(--muted-foreground); font-size: 0.75rem; }
+	@media (prefers-reduced-motion: reduce) { .pulse { animation: none; } }
+	@media (max-width: 480px) { .card { padding: 28px 22px; } }
+</style>
+</head>
+<body>
+<div class="card">
+	<div class="brand"><span class="mark" aria-hidden="true"></span><h1>One-time extension install</h1></div>
+	<p class="sub">Chrome no longer lets us auto-install unpacked extensions, so this takes three clicks — once. It persists in this dedicated profile forever after.</p>
+	<ol>
+		<li>Open <code>chrome://extensions</code> in a new tab <em>in this window</em>.</li>
+		<li>Turn on <strong>Developer mode</strong> (toggle, top right).</li>
+		<li>Click <strong>Load unpacked</strong> and select this folder:
+			<div class="pathrow">
+				<span class="path" id="dist">{{DIST_PATH}}</span>
+				<button onclick="navigator.clipboard.writeText(document.getElementById('dist').textContent)">Copy</button>
+			</div>
+		</li>
+	</ol>
+	<div class="status" id="status"><span class="pulse"></span><span id="statusText">Waiting for the extension to connect&hellip;</span></div>
+	<div class="hint">Tip: pin Sentinel via the puzzle-piece icon, then click it to open the side panel.</div>
+</div>
+<script>
+	async function poll() {
+		try {
+			const r = await fetch('/api/status');
+			const s = await r.json();
+			if (s.extension_seen) {
+				const el = document.getElementById('status');
+				el.classList.add('ok');
+				document.getElementById('statusText').textContent =
+					'Extension connected — click the Sentinel icon in the toolbar to open the side panel.';
+				return;
+			}
+		} catch (e) {}
+		setTimeout(poll, 2000);
+	}
+	poll();
+</script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+data/
+extension/node_modules/
+extension/dist/
+__pycache__/
+*.pyc
+.DS_Store

@@ -1,0 +1,17 @@
+# Vendored/cloned dependency — has its own git history, not tracked here
+browser-use/
+
+# OS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Node
+node_modules/
+dist/
+
+# Env
+.env

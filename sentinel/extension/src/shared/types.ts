@@ -1,0 +1,237 @@
+// TypeScript mirror of server/events.py + REST DTOs. Keep in sync by hand.
+
+export type AgentStatus = 'idle' | 'running' | 'paused' | 'stopping';
+export type Verdict = 'allowed' | 'blocked' | 'approval_required' | 'denied_by_human' | 'denied_timeout';
+export type Provider = 'gemini' | 'groq' | 'openai' | 'anthropic' | 'openrouter';
+
+interface EventBase {
+  ts: number;
+  seq: number;
+  run_id: string | null;
+}
+
+export interface StatusChanged extends EventBase {
+  type: 'status_changed';
+  agent_status: AgentStatus;
+  browser_status: string;
+  extension_seen: boolean;
+  task: string | null;
+  model: string;
+}
+
+export interface TaskStarted extends EventBase {
+  type: 'task_started';
+  task: string;
+  max_steps: number;
+  model: string;
+  provider: string;
+}
+
+export interface StepEvent extends EventBase {
+  type: 'step';
+  step: number;
+  url: string;
+  title: string;
+  evaluation_previous_goal: string | null;
+  next_goal: string | null;
+  memory: string | null;
+  thinking: string | null;
+  actions: { name: string; params: Record<string, unknown> }[];
+  screenshot_b64: string | null;
+}
+
+export interface LLMCall extends EventBase {
+  type: 'llm_call';
+  model: string;
+  provider: string;
+  latency_ms: number;
+  prompt_tokens: number | null;
+  completion_tokens: number | null;
+  total_tokens: number | null;
+  calls_used: number;
+  calls_budget: number;
+  is_fallback: boolean;
+}
+
+export interface EnforcementDecision extends EventBase {
+  type: 'enforcement_decision';
+  action: string;
+  params_preview: string;
+  url: string | null;
+  verdict: Verdict;
+  rule: string;
+  reason: string;
+}
+
+export interface ApprovalRequest extends EventBase {
+  type: 'approval_request';
+  approval_id: string;
+  action: string;
+  params: Record<string, unknown>;
+  url: string | null;
+  expires_at: number;
+}
+
+export interface ApprovalResolved extends EventBase {
+  type: 'approval_resolved';
+  approval_id: string;
+  approved: boolean;
+  resolved_by: 'user' | 'timeout';
+}
+
+export interface OperatorMessage extends EventBase {
+  type: 'user_message';
+  text: string;
+  kind: 'task' | 'followup' | 'steer';
+}
+
+export interface ActionExecuting extends EventBase {
+  type: 'action_executing';
+  action: string;
+}
+
+export interface ActionDone extends EventBase {
+  type: 'action_done';
+  action: string;
+}
+
+export interface ControlRequest extends EventBase {
+  type: 'control_request';
+  handover_id: string;
+  reason: string;
+  url: string | null;
+  expires_at: number;
+}
+
+export interface ControlReturned extends EventBase {
+  type: 'control_returned';
+  handover_id: string;
+  note: string | null;
+  resolved_by: 'user' | 'timeout';
+}
+
+export interface TaskDone extends EventBase {
+  type: 'task_done';
+  success: boolean | null;
+  final_result: string | null;
+  steps: number;
+  duration_s: number;
+  usage: Record<string, unknown>;
+}
+
+export interface TaskError extends EventBase {
+  type: 'task_error';
+  error: string;
+  kind: 'exception' | 'budget_exceeded' | 'stopped';
+}
+
+export interface TokenUsage extends EventBase {
+  type: 'token_usage';
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
+  by_model: Record<string, number>;
+}
+
+export interface ConfigChanged extends EventBase {
+  type: 'config_changed';
+  config: SentinelConfig;
+}
+
+export type SentinelEvent =
+  | StatusChanged
+  | TaskStarted
+  | StepEvent
+  | LLMCall
+  | EnforcementDecision
+  | ApprovalRequest
+  | ApprovalResolved
+  | OperatorMessage
+  | ActionExecuting
+  | ActionDone
+  | ControlRequest
+  | ControlReturned
+  | TaskDone
+  | TaskError
+  | TokenUsage
+  | ConfigChanged;
+
+export interface Snapshot {
+  type: 'snapshot';
+  ts: number;
+  seq: number;
+  status: Status;
+  events: SentinelEvent[];
+  pending_approvals: ApprovalRequest[];
+  pending_handovers: ControlRequest[];
+  config: SentinelConfig;
+}
+
+// ── REST DTOs ────────────────────────────────────────────────────────────────
+export interface Status {
+  backend: string;
+  agent_status: AgentStatus;
+  browser_status: string;
+  extension_seen: boolean;
+  task: string | null;
+  run_id: string | null;
+  model: string;
+  provider: string;
+  calls_used: number;
+  calls_budget: number;
+  total_tokens: number;
+  ws_clients: number;
+}
+
+export interface ThrottleConfig {
+  min_interval_s: number;
+  backoff_s: number;
+  max_retries: number;
+}
+
+export interface ModelConfig {
+  provider: Provider;
+  model: string;
+  temperature: number | null;
+  throttle: ThrottleConfig | null;
+  fallback: ModelConfig | null;
+}
+
+export interface Budgets {
+  max_steps: number;
+  max_llm_calls: number;
+  approval_timeout_s: number;
+  handover_timeout_s: number;
+}
+
+export interface Policies {
+  domain_allowlist: string[] | null;
+  domain_blocklist: string[];
+  blocked_actions: string[];
+  approval_required_actions: string[];
+  budgets: Budgets;
+}
+
+export interface SentinelConfig {
+  model: ModelConfig;
+  policies: Policies;
+  use_judge: boolean;
+  pinned_extension_id: string | null;
+}
+
+export interface HistoryRecord {
+  run_id: string;
+  task: string;
+  started_at: number;
+  duration_s?: number;
+  status?: string;
+  success?: boolean;
+  steps?: number;
+  llm_calls?: number;
+  total_tokens?: number;
+  by_model?: Record<string, number>;
+  final_result?: string;
+  error?: string;
+  model?: string;
+  provider?: string;
+}

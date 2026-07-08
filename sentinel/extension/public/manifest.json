@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "Sentinel — browser-use control panel",
+  "version": "0.1.0",
+  "description": "Run, watch, and govern autonomous browser-use agents in this window.",
+  "minimum_chrome_version": "116",
+  "action": { "default_title": "Open Sentinel" },
+  "side_panel": { "default_path": "sidepanel.html" },
+  "options_page": "dashboard.html",
+  "background": { "service_worker": "background.js" },
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["content.js"],
+      "run_at": "document_start",
+      "all_frames": false
+    }
+  ],
+  "permissions": ["sidePanel", "storage", "alarms"],
+  "host_permissions": ["http://127.0.0.1:8765/*"],
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}
