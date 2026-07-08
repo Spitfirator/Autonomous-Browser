@@ -25,6 +25,7 @@ from aiohttp import web  # noqa: E402
 
 from server.api import build_app  # noqa: E402
 from server.browser import BrowserManager  # noqa: E402
+from server.browser_use_patches import install as install_browser_use_patches  # noqa: E402
 from server.events import EventHub  # noqa: E402
 from server.governance import ApprovalManager, HandoverManager, PolicyEngine  # noqa: E402
 from server.history import HistoryStore  # noqa: E402
@@ -36,6 +37,10 @@ logger = logging.getLogger('sentinel')
 
 async def main() -> None:
 	DATA_DIR.mkdir(parents=True, exist_ok=True)
+
+	# Patch the vendored browser-use before any Agent builds a DOM (hides
+	# Sentinel's own in-page control overlay from the agent). See the module.
+	install_browser_use_patches()
 
 	config_store = ConfigStore()
 	hub = EventHub()
@@ -56,6 +61,7 @@ async def main() -> None:
 
 	browser_task: asyncio.Task | None = None
 	if os.environ.get('SENTINEL_NO_BROWSER') != '1':
+
 		async def start_browser() -> None:
 			try:
 				await browser_manager.start()

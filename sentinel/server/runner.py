@@ -45,9 +45,13 @@ HANDOVER_GUIDANCE = (
 	'full names) — never guess or type placeholder values. Call the request_human_control action '
 	'with a clear one-sentence reason instead. A human will complete that step in the browser and '
 	'hand control back; then continue from the updated page state. '
-	'Also: the thin amber frame and the small "Working on task / Take over" control bar you may '
-	'see at the top of screenshots are YOUR OWN control UI (Sentinel), not part of the website — '
-	'ignore them completely and never click them.'
+	# Visual disambiguation only: the pill is already removed from the DOM the agent
+	# sees (browser_use_patches.py), so it can't be targeted — but it still shows in
+	# screenshot pixels, which we don't filter. This one line stops the model reading
+	# its own control chrome as page content; it is not what prevents interaction.
+	'Also: a thin amber frame around the page and a small "Working on task" bar at the very top '
+	'of screenshots are Sentinel\'s own control overlay, not part of the website — read the page '
+	'as if they were not there.'
 )
 
 
