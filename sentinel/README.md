@@ -43,27 +43,41 @@ for the extension build, Google Chrome. API keys live in `../browser-use/.env`
 | `server/main.py` | entrypoint: wiring + aiohttp on 127.0.0.1:8765 |
 | `server/runner.py` | one Agent at a time; pause/resume/stop; step callbacks → events |
 | `server/browser.py` | dedicated Chrome launch, reconnect, extension install ladder |
-| `server/governance/` | **the middleware**: `governed_llm` (every model call), `governed_tools` (every action), `policy` (decision point), `approvals` (human gate), `throttle` (free-tier pacing) |
+| `server/governance/` | **the middleware**: `governed_llm` (every model call), `governed_tools` (every action), `policy` (decision point), `approvals` (human gate), `handover` (human takeover), `throttle` (free-tier pacing) |
+| `server/traces.py` | per-run audit traces: `data/traces/<run_id>/` (events.jsonl + screenshots + meta) |
 | `server/config.py` | pydantic config + `data/config.json` store; paths |
 | `server/events.py` | WS event models + fan-out hub (mirrored in `extension/src/shared/types.ts`) |
 | `extension/` | MV3 extension, React + Vite + TS; `dist/` is the unpacked bundle |
-| `data/` | runtime state: config, history, the persistent Chrome profile |
+| `data/` | runtime state: config, history, traces, the persistent Chrome profile |
+| `POLICY.md` / `policies/` | the policy schema + a shareable reference policy |
+| `EVALS.md` / `evals/` | evaluation metric definitions + `aggregate.py` |
+| `demo/` | `run_scenarios.py`: scripted allowed/blocked/approval/handoff demo runs |
+| `share/` | generated share pack: traces, decision logs, screenshots |
 
-## The middleware (v0)
+## The middleware
 
 `PolicyEngine.evaluate(action, params, url)` is the single decision point — extend here.
+Schema + decision order: **[POLICY.md](POLICY.md)**. Metrics: **[EVALS.md](EVALS.md)**.
 
 - **Domain allow/blocklist** — glob patterns (`*.bank.com`); checked per action against
   the navigation target or current page, and mirrored into browser-use's SecurityWatchdog
   as a second net. Live: dashboard edits apply to the *next action*, even mid-run.
 - **Blocked actions** — removed from the LLM's toolbox at run start *and* refused at
   runtime; the agent gets an explanatory error and re-plans.
-- **Approval gate** — listed actions pause the agent inside the step; the side panel
-  shows an approval card with countdown; deny/timeout returns an error the agent adapts to.
+- **Approval gate** — by action type or by domain: the agent pauses inside the step; the
+  side panel shows an approval card with countdown; deny/timeout returns an error the
+  agent adapts to.
+- **Sensitive domains → forced handoff** — first touch of a listed domain freezes the run
+  and hands the browser to the human (same flow as `request_human_control`, but initiated
+  by policy). After the human hands back, the agent may act there for the rest of the run.
+- **Modes** — `enforce` (default), `shadow` (log would-be verdicts, allow everything —
+  for false-block evals), `off` (no evaluation — the overhead baseline).
 - **Budgets** — max steps, max LLM calls per task (graceful stop at the limit, hard
   backstop two calls later), approval + takeover timeouts.
-- **Full audit stream** — every decision is a WS `enforcement_decision` event; every model
-  call a `llm_call` event with latency + tokens.
+- **Full audit stream** — every decision is a WS `enforcement_decision` event (with
+  `decision_ms` policy latency); every model call a `llm_call` event with latency +
+  tokens; every run is persisted to `data/traces/<run_id>/` (events + step screenshots +
+  meta with per-run enforcement metrics).
 
 ## The chat
 

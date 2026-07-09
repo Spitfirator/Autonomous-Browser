@@ -1,8 +1,20 @@
 // TypeScript mirror of server/events.py + REST DTOs. Keep in sync by hand.
 
 export type AgentStatus = 'idle' | 'running' | 'paused' | 'stopping';
-export type Verdict = 'allowed' | 'blocked' | 'approval_required' | 'denied_by_human' | 'denied_timeout';
+export type Verdict =
+  | 'allowed'
+  | 'blocked'
+  | 'approval_required'
+  | 'denied_by_human'
+  | 'denied_timeout'
+  | 'handoff_required'
+  | 'handoff_returned'
+  | 'handoff_timeout'
+  | 'shadow_blocked'
+  | 'shadow_approval_required'
+  | 'shadow_handoff_required';
 export type Provider = 'gemini' | 'groq' | 'openai' | 'anthropic' | 'openrouter';
+export type PolicyMode = 'enforce' | 'shadow' | 'off';
 
 interface EventBase {
   ts: number;
@@ -61,6 +73,8 @@ export interface EnforcementDecision extends EventBase {
   verdict: Verdict;
   rule: string;
   reason: string;
+  mode: PolicyMode;
+  decision_ms: number;
 }
 
 export interface ApprovalRequest extends EventBase {
@@ -117,6 +131,7 @@ export interface TaskDone extends EventBase {
   steps: number;
   duration_s: number;
   usage: Record<string, unknown>;
+  enforcement: Record<string, unknown>;
 }
 
 export interface TaskError extends EventBase {
@@ -205,10 +220,13 @@ export interface Budgets {
 }
 
 export interface Policies {
+  mode: PolicyMode;
   domain_allowlist: string[] | null;
   domain_blocklist: string[];
   blocked_actions: string[];
   approval_required_actions: string[];
+  approval_required_domains: string[];
+  sensitive_domains: string[];
   budgets: Budgets;
 }
 

@@ -109,20 +109,26 @@ function renderEvent(e: SentinelEvent) {
     case 'enforcement_decision': {
       const ev = e as EnforcementDecision;
       if (ev.verdict === 'allowed') return null;
-      const verdict =
-        ev.verdict === 'approval_required'
-          ? 'Held'
-          : ev.verdict === 'denied_by_human'
-            ? 'Denied by you'
-            : ev.verdict === 'denied_timeout'
-              ? 'Denied — timed out'
-              : 'Blocked';
+      // label + which existing chip style to reuse
+      const style: Record<string, [string, string]> = {
+        blocked: ['Blocked', 'blocked'],
+        approval_required: ['Held for approval', 'approval_required'],
+        denied_by_human: ['Denied by you', 'blocked'],
+        denied_timeout: ['Denied — timed out', 'blocked'],
+        handoff_required: ['Handed to you', 'approval_required'],
+        handoff_returned: ['You finished the step', 'allowed'],
+        handoff_timeout: ['Handoff timed out', 'blocked'],
+        shadow_blocked: ['Would block (shadow)', 'info'],
+        shadow_approval_required: ['Would hold (shadow)', 'info'],
+        shadow_handoff_required: ['Would hand off (shadow)', 'info'],
+      };
+      const [label, cls] = style[ev.verdict] ?? [ev.verdict, 'info'];
       return (
         <SystemRow key={e.seq} title={ev.reason}>
-          <span className={`chip ${ev.verdict}`}>
-            {verdict} · <span className="mono">{ev.action}</span>
+          <span className={`chip ${cls}`}>
+            {label} · <span className="mono">{ev.action}</span>
           </span>
-          <span className="sys-rule">{ev.rule}</span>
+          <span className="sys-rule">{ev.reason}</span>
         </SystemRow>
       );
     }

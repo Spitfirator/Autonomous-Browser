@@ -17,7 +17,19 @@ from pydantic import BaseModel, Field
 logger = logging.getLogger('sentinel.events')
 
 AgentStatus = Literal['idle', 'running', 'paused', 'stopping']
-Verdict = Literal['allowed', 'blocked', 'approval_required', 'denied_by_human', 'denied_timeout']
+Verdict = Literal[
+	'allowed',
+	'blocked',
+	'approval_required',
+	'denied_by_human',
+	'denied_timeout',
+	'handoff_required',      # policy forced control to the human (sensitive domain)
+	'handoff_returned',      # human finished the sensitive step and handed back
+	'handoff_timeout',       # nobody responded to the forced handoff
+	'shadow_blocked',        # shadow mode: would have blocked, allowed through
+	'shadow_approval_required',
+	'shadow_handoff_required',
+]
 
 
 class SentinelEvent(BaseModel):
@@ -78,6 +90,8 @@ class EnforcementDecision(SentinelEvent):
 	verdict: Verdict
 	rule: str
 	reason: str
+	mode: str = 'enforce'
+	decision_ms: float = 0.0   # policy evaluation latency (excludes human wait)
 
 
 class ApprovalRequest(SentinelEvent):
@@ -139,6 +153,7 @@ class TaskDone(SentinelEvent):
 	steps: int
 	duration_s: float
 	usage: dict[str, Any] = Field(default_factory=dict)
+	enforcement: dict[str, Any] = Field(default_factory=dict)   # RunContext.enforcement_summary()
 
 
 class TaskError(SentinelEvent):
@@ -173,14 +188,25 @@ class EventHub:
 		self._replay: deque[SentinelEvent] = deque(maxlen=replay_size)
 		self._last_step_screenshot: tuple[int, str] | None = None   # (seq, b64)
 		self._seq = 0
+		# Synchronous observers of every event (e.g. the trace recorder).
+		self._listeners: list[Callable[[SentinelEvent], None]] = []
 		# Composed by main.py to include runner + browser + extension state.
 		self.status_provider: Callable[[], dict[str, Any]] | None = None
+
+	def add_listener(self, listener: Callable[[SentinelEvent], None]) -> None:
+		self._listeners.append(listener)
 
 	def emit(self, event: SentinelEvent) -> None:
 		self._seq += 1
 		event.seq = self._seq
 		if event.ts == 0:
 			event.ts = time.time()
+
+		for listener in self._listeners:
+			try:
+				listener(event)
+			except Exception:
+				logger.exception('Event listener failed')
 
 		if isinstance(event, StepEvent) and event.screenshot_b64:
 			self._last_step_screenshot = (event.seq, event.screenshot_b64)

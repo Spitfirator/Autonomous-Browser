@@ -211,6 +211,19 @@ label.field > span { font: 500 0.8rem/1.2 var(--sans); color: var(--foreground);
 .tag button:hover { color: var(--destructive); }
 .tag button:focus-visible { outline: none; color: var(--destructive); }
 
+/* Entry-kind badge: how a domain-list entry will be interpreted. Keyword is
+   the broad one, so it reads as a caution; the precise kinds stay quiet. */
+.tag-kind {
+  text-transform: uppercase; letter-spacing: 0.04em;
+  font: 600 0.5625rem/1 var(--sans); padding: 3px 5px; border-radius: var(--r-sm);
+  background: var(--muted); color: var(--muted-foreground);
+}
+.tag-kind.keyword { background: oklch(0.852 0.199 91.936 / 0.22); color: var(--accent-deep); }
+.tag-hint {
+  display: flex; align-items: center; gap: 6px; margin: 2px 0 0;
+  font: 400 0.71875rem/1.4 var(--sans); color: var(--muted-foreground);
+}
+
 /* ── Tables — quiet chrome, sentence-case headers ───────────────────────── */
 table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; }
 th {

@@ -42,6 +42,12 @@ KNOWN_API_KEYS = [
 
 Provider = Literal['gemini', 'groq', 'openai', 'anthropic', 'openrouter']
 
+# enforce: decisions are applied. shadow: everything is allowed but would-be
+# verdicts are still evaluated + logged (for measuring false blocks / missed
+# dangerous actions). off: policy evaluation is skipped entirely (baseline for
+# measuring enforcement overhead and completion-rate deltas).
+PolicyMode = Literal['enforce', 'shadow', 'off']
+
 # Action names registered by browser-use v0.13.2 Tools (for dashboard checklists).
 KNOWN_ACTIONS = [
 	'search', 'navigate', 'go_back', 'wait', 'click', 'input', 'upload_file',
@@ -96,10 +102,17 @@ class Budgets(BaseModel):
 class Policies(BaseModel):
 	model_config = ConfigDict(extra='forbid')
 
+	mode: PolicyMode = 'enforce'
 	domain_allowlist: list[str] | None = None   # None = allow all; glob syntax e.g. "*.google.com"
 	domain_blocklist: list[str] = Field(default_factory=list)
 	blocked_actions: list[str] = Field(default_factory=list)
 	approval_required_actions: list[str] = Field(default_factory=lambda: ['upload_file'])
+	# Any page action on a matching domain pauses for approval in the side panel.
+	approval_required_domains: list[str] = Field(default_factory=list)
+	# First touch of a matching domain forces a handoff to the human (login,
+	# payment, account pages). After the human hands control back once, the agent
+	# may act there for the rest of the run — the human vouched for the context.
+	sensitive_domains: list[str] = Field(default_factory=list)
 	budgets: Budgets = Field(default_factory=Budgets)
 
 

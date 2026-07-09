@@ -35,6 +35,37 @@ class RunContext:
 		self.tokens_by_model: dict[str, int] = {}
 		# Operator steering typed mid-run; drained into the next LLM call.
 		self.steering: list[str] = []
+		# ── Enforcement metrics (see EVALS.md) ─────────────────────────────
+		self.decisions_by_verdict: dict[str, int] = {}   # allowed/blocked/… -> count
+		self.decision_ms_total = 0.0                     # policy evaluation time only
+		self.decision_ms_max = 0.0
+		self.decision_count = 0
+		self.human_wait_s = 0.0                          # time spent awaiting approvals/handoffs
+		self.human_interventions = 0                     # approvals resolved by a human + handoffs completed
+		# Sensitive-domain patterns cleared by a completed handoff this run.
+		self.handed_over_patterns: set[str] = set()
+
+	def record_latency(self, decision_ms: float) -> None:
+		"""Once per act() — decision_count == number of actions evaluated."""
+		self.decision_count += 1
+		self.decision_ms_total += decision_ms
+		self.decision_ms_max = max(self.decision_ms_max, decision_ms)
+
+	def count_verdict(self, verdict: str) -> None:
+		"""Once per emitted enforcement event (an approved action emits both
+		approval_required and allowed — 'decisions' mirrors the event stream)."""
+		self.decisions_by_verdict[verdict] = self.decisions_by_verdict.get(verdict, 0) + 1
+
+	def enforcement_summary(self) -> dict[str, Any]:
+		return {
+			'decisions': dict(self.decisions_by_verdict),
+			'decision_count': self.decision_count,
+			'decision_ms_total': round(self.decision_ms_total, 3),
+			'decision_ms_mean': round(self.decision_ms_total / self.decision_count, 3) if self.decision_count else 0.0,
+			'decision_ms_max': round(self.decision_ms_max, 3),
+			'human_wait_s': round(self.human_wait_s, 1),
+			'human_interventions': self.human_interventions,
+		}
 
 
 class GovernedLLM:

@@ -35,8 +35,8 @@
 .msg-row.user { justify-content: flex-end; }
 
 .bubble {
-  max-width: 86%; border-radius: var(--r-xl); padding: 9px 12px;
-  font-size: 0.8125rem; line-height: 1.55; overflow-wrap: break-word;
+  max-width: 86%; min-width: 0; border-radius: var(--r-xl); padding: 9px 12px;
+  font-size: 0.8125rem; line-height: 1.55; overflow-wrap: anywhere;
 }
 .bubble p { margin: 0; }
 .user-bubble {
@@ -53,11 +53,11 @@
   border-top-left-radius: 4px; display: grid; gap: 7px; min-width: 0;
 }
 .bubble-meta {
-  display: flex; gap: 8px; font: 500 0.6875rem/1.3 var(--sans);
+  display: flex; gap: 8px; min-width: 0; font: 500 0.6875rem/1.3 var(--sans);
   color: var(--muted-foreground);
 }
-.bubble-meta .num { font-weight: 500; }
-.bubble-url { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.bubble-meta .num { font-weight: 500; flex: none; white-space: nowrap; }
+.bubble-url { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .result-bubble { border-color: oklch(0.792 0.209 151.711 / 0.45); }
 .followup-hint { font-size: 0.71875rem; color: var(--muted-foreground); }
 
@@ -113,8 +113,11 @@
 .handover-reason { font: 600 0.8125rem/1.4 var(--sans); color: var(--foreground); }
 .handover-hint { font-size: 0.71875rem; color: var(--muted-foreground); }
 
-.step-actions { display: flex; flex-wrap: wrap; gap: 5px; }
-.step-actions .chip { font-family: var(--mono); font-size: 0.6875rem; }
+.step-actions { display: flex; flex-wrap: wrap; gap: 5px; min-width: 0; }
+.step-actions .chip {
+  font-family: var(--mono); font-size: 0.6875rem;
+  max-width: 100%; overflow-wrap: anywhere;
+}
 
 .done-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .done-meta { font: 400 0.71875rem/1.3 var(--sans); font-variant-numeric: tabular-nums; color: var(--muted-foreground); }

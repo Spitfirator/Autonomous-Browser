@@ -183,7 +183,9 @@ class AgentRunner:
 			ctx=ctx,
 			approval_timeout_s=budgets.approval_timeout_s,
 			handover_timeout_s=budgets.handover_timeout_s,
-			exclude_actions=list(config.policies.blocked_actions),
+			# Blocked actions leave the LLM schema only when enforcing; shadow
+			# mode must let them through so the would-block events are real.
+			exclude_actions=list(config.policies.blocked_actions) if config.policies.mode == 'enforce' else [],
 		)
 
 		# Approval and handover waits happen INSIDE a step, so the step timeout
@@ -259,12 +261,15 @@ class AgentRunner:
 
 	async def _run(self, agent: Agent, max_steps: int, ctx: RunContext, task: str) -> None:
 		started_at = time.time()
+		config = self._config_store.get()
 		record: dict[str, Any] = {
 			'run_id': ctx.run_id,
 			'task': task,
 			'started_at': started_at,
-			'model': self._config_store.get().model.model,
-			'provider': self._config_store.get().model.provider,
+			'model': config.model.model,
+			'provider': config.model.provider,
+			'policy_mode': config.policies.mode,
+			'policies': config.policies.model_dump(mode='json'),
 		}
 		try:
 			history = await agent.run(max_steps=max_steps)
@@ -294,6 +299,7 @@ class AgentRunner:
 							'total_tokens': ctx.total_tokens,
 							'by_model': dict(ctx.tokens_by_model),
 						},
+						enforcement=ctx.enforcement_summary(),
 					)
 				)
 				record.update(status='done' if success else 'finished', success=success, final_result=(final_result or '')[:2000])
@@ -316,6 +322,7 @@ class AgentRunner:
 				llm_calls=ctx.llm_calls,
 				total_tokens=ctx.total_tokens,
 				by_model=dict(ctx.tokens_by_model),
+				enforcement=ctx.enforcement_summary(),
 			)
 			self._history.append(record)
 			self._agent = None

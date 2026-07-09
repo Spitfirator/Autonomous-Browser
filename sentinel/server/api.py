@@ -167,7 +167,7 @@ async def put_config(request: web.Request) -> web.Response:
 		config = config_store.update(patch)
 	except ValidationError as e:
 		return web.json_response({'error': 'validation failed', 'details': json.loads(e.json())}, status=422)
-	browser_manager.refresh_allowed_domains()
+	browser_manager.refresh_domain_policy()
 	hub.emit(ConfigChanged(config=config.model_dump(mode='json')))
 	return web.json_response(config.model_dump(mode='json'))
 

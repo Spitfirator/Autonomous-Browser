@@ -30,6 +30,7 @@ from server.events import EventHub  # noqa: E402
 from server.governance import ApprovalManager, HandoverManager, PolicyEngine  # noqa: E402
 from server.history import HistoryStore  # noqa: E402
 from server.runner import AgentRunner  # noqa: E402
+from server.traces import TraceStore  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)-7s %(name)s  %(message)s', datefmt='%H:%M:%S')
 logger = logging.getLogger('sentinel')
@@ -48,6 +49,8 @@ async def main() -> None:
 	handovers = HandoverManager(hub.emit)
 	policy = PolicyEngine(config_store)
 	history = HistoryStore(HISTORY_FILE)
+	traces = TraceStore(DATA_DIR / 'traces', config_store)
+	hub.add_listener(traces.on_event)
 	browser_manager = BrowserManager(config_store)
 	runner = AgentRunner(config_store, hub, policy, approvals, handovers, browser_manager, history)
 	hub.status_provider = runner.status_dict
@@ -84,6 +87,7 @@ async def main() -> None:
 	await runner.shutdown()
 	approvals.cancel_all()
 	handovers.cancel_all()
+	traces.close_all()
 	await app_runner.cleanup()
 
 

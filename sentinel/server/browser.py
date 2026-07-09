@@ -24,6 +24,7 @@ from browser_use import BrowserSession
 from browser_use.skill_cli.utils import find_chrome_executable
 
 from server.config import BASE_URL, BROWSER_STATE_FILE, EXTENSION_DIST, PROFILE_DIR, ConfigStore
+from server.governance.policy import to_watchdog_patterns
 
 logger = logging.getLogger('sentinel.browser')
 
@@ -32,11 +33,26 @@ _EXTRA_ALLOWED = ['127.0.0.1', 'localhost', 'chrome-extension://*']
 
 def _allowed_domains(config_store: ConfigStore) -> list[str] | None:
 	"""Mirror the policy allowlist into browser-use's SecurityWatchdog (defense in
-	depth). PolicyEngine remains the authoritative live layer."""
-	allowlist = config_store.get().policies.domain_allowlist
-	if allowlist is None:
+	depth). PolicyEngine remains the authoritative live layer. Shadow/off modes
+	must not enforce anywhere, so the mirror is disabled there too."""
+	policies = config_store.get().policies
+	if policies.mode != 'enforce' or policies.domain_allowlist is None:
 		return None
-	return [*allowlist, *_EXTRA_ALLOWED]
+	return [*to_watchdog_patterns(policies.domain_allowlist), *_EXTRA_ALLOWED]
+
+
+def _prohibited_domains(config_store: ConfigStore) -> list[str] | None:
+	"""Mirror the policy blocklist into browser-use's SecurityWatchdog. This is
+	the hard navigation-level net: it blocks the target of a navigate, bounces
+	redirects to about:blank, and closes blocked new tabs — so the agent cannot
+	reach a blocked site by switching search engines, following a link, or any
+	other path. Patterns reproduce PolicyEngine's keyword/domain matching.
+	(When an allowlist is active, browser-use lets it take precedence — that is
+	already the stricter net.)"""
+	policies = config_store.get().policies
+	if policies.mode != 'enforce' or not policies.domain_blocklist:
+		return None
+	return to_watchdog_patterns(policies.domain_blocklist)
 
 
 class BrowserManager:
@@ -69,6 +85,10 @@ class BrowserManager:
 		self._started_at = time.time()
 		session = await self._reconnect() or await self._launch()
 		self.session = session
+		# Apply domain policy on BOTH paths — the reconnect BrowserSession is
+		# built without domain args, so without this the navigation net would be
+		# off whenever we reuse an already-open Chrome (the common case).
+		self.refresh_domain_policy()
 		self._save_state()
 		logger.info(f'Browser ready (cdp_url={session.cdp_url})')
 		await self._ensure_extension()
@@ -112,6 +132,7 @@ class BrowserManager:
 			keep_alive=True,
 			enable_default_extensions=False,
 			allowed_domains=_allowed_domains(self._config_store),
+			prohibited_domains=_prohibited_domains(self._config_store),
 			args=[
 				f'--load-extension={EXTENSION_DIST}',       # rung 1 (ignored by branded Chrome >=137)
 				'--enable-unsafe-extension-debugging',      # prerequisite for rung 3
@@ -187,10 +208,13 @@ class BrowserManager:
 			pass
 		return False
 
-	def refresh_allowed_domains(self) -> None:
-		"""Mirror live policy edits into the running session's SecurityWatchdog."""
+	def refresh_domain_policy(self) -> None:
+		"""Mirror live policy edits into the running session's SecurityWatchdog.
+		The watchdog reads these fields per navigation, so edits apply to the
+		next navigation even mid-run."""
 		if self.session is not None:
 			try:
 				self.session.browser_profile.allowed_domains = _allowed_domains(self._config_store)
+				self.session.browser_profile.prohibited_domains = _prohibited_domains(self._config_store)
 			except Exception as e:
-				logger.warning(f'Could not update allowed_domains live: {e}')
+				logger.warning(f'Could not update domain policy live: {e}')
