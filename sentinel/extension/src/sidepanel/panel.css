@@ -1,4 +1,4 @@
-/* Side panel layout (~320–420px wide) — chat-first, white canvas. */
+/* Side panel layout (~320–420px wide) - chat-first, white canvas. */
 
 .panel-head {
   display: flex; align-items: center; justify-content: space-between;
@@ -92,7 +92,7 @@
 }
 .send-btn { height: 38px; border-radius: 12px; padding: 0 14px; flex: none; }
 
-/* Approval / takeover cards — the hero moment: amber-marked, in-flow (flat) */
+/* Approval / takeover cards - the hero moment: amber-marked, in-flow (flat) */
 .approval, .handover {
   border-color: color-mix(in oklch, var(--primary) 55%, var(--border));
   border-radius: 12px; padding: 12px; display: grid; gap: 10px;

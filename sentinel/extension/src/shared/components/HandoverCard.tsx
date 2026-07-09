@@ -28,7 +28,7 @@ export function HandoverCard({ handover }: { handover: ControlRequest }) {
     try {
       await api.completeHandover(handover.handover_id, note.trim());
     } catch {
-      /* already resolved elsewhere (e.g. the page overlay) — WS event cleans up */
+      /* already resolved elsewhere (e.g. the page overlay) - WS event cleans up */
     }
     removeHandover(handover.handover_id);
   };
@@ -36,7 +36,7 @@ export function HandoverCard({ handover }: { handover: ControlRequest }) {
   return (
     <div className="card handover rise">
       <div className="approval-head">
-        <span className="chip approval_required">Your turn — agent is waiting</span>
+        <span className="chip approval_required">Your turn - agent is waiting</span>
         <span className="approval-timer">
           {minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`}
         </span>

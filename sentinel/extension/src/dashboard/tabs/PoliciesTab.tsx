@@ -61,7 +61,7 @@ export function PoliciesTab() {
       const next = await api.putConfig({ policies });
       setConfig(next);
       setPolicies(next.policies);
-      showToast({ text: 'Policies saved — live immediately', kind: 'ok' });
+      showToast({ text: 'Policies saved - live immediately', kind: 'ok' });
     } catch (e) {
       showToast({ text: e instanceof Error ? e.message : 'Save failed', kind: 'err' });
     } finally {
@@ -74,7 +74,7 @@ export function PoliciesTab() {
       <header className="tab-head">
         <div>
           <h1>Policies</h1>
-          <p>Enforced by the middleware on every action — even mid-run.</p>
+          <p>Enforced by the middleware on every action - even mid-run.</p>
         </div>
         <button className="primary" disabled={!dirty || saving} onClick={save}>
           {dirty ? 'Save changes' : 'Saved'}
@@ -90,7 +90,7 @@ export function PoliciesTab() {
           {(
             [
               ['enforce', 'Enforce', 'Verdicts are applied'],
-              ['shadow', 'Shadow', 'Log only — everything allowed'],
+              ['shadow', 'Shadow', 'Log only - everything allowed'],
               ['off', 'Off', 'No policy evaluation'],
             ] as const
           ).map(([value, label, hint]) => (
@@ -111,10 +111,13 @@ export function PoliciesTab() {
         <div className="card-head">
           <h2 className="card-title">Domains</h2>
           <span className="help-text">
-            A bare word is a <b>keyword</b> — blocks any host containing it (<code>amazon</code> →
-            amazon.com, www.amazon.co.uk, myamazonshop.net). A word with a dot is a{' '}
-            <b>domain</b> — that site and its subdomains only (<code>amazon.com</code> won't touch
-            look-alikes). Each entry shows how it's read as you type.
+            <b>Keyword</b> (a bare word): blocks any host containing it. <code>amazon</code> matches
+            amazon.com, www.amazon.co.uk, myamazonshop.net.
+            <br />
+            <b>Domain</b> (has a dot): that site and its subdomains only. <code>amazon.com</code>{' '}
+            skips look-alikes.
+            <br />
+            Each entry shows how it reads as you type.
           </span>
         </div>
         <div className="form-grid">
@@ -187,7 +190,7 @@ export function PoliciesTab() {
 
       <div className="card rise">
         <div className="card-head">
-          <h2 className="card-title">Sensitive domains — hand off to human</h2>
+          <h2 className="card-title">Sensitive domains - hand off to human</h2>
           <span className="help-text">
             First touch of these domains freezes the agent and hands you the browser; after you hand
             back, the agent may continue there for the rest of the run

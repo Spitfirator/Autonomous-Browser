@@ -1,4 +1,4 @@
-// Inline stroke icons (16px grid, 1.5 stroke, round caps) — bundled locally,
+// Inline stroke icons (16px grid, 1.5 stroke, round caps) - bundled locally,
 // matching the stroke-icon language of the FUZER dashboard.
 
 import type { ReactNode } from 'react';

@@ -1,7 +1,7 @@
-/* Sentinel design system — FUZER's "Control Room" language (see /DESIGN.md).
+/* Sentinel design system - FUZER's "Control Room" language (see /DESIGN.md).
    Light-first, flat tonal surfaces, hairline borders, Sora with weight-based
    hierarchy, amber rationed as the signal (≤10% of any screen).
-   Fonts are bundled locally via @fontsource — MV3 pages load no remote assets. */
+   Fonts are bundled locally via @fontsource - MV3 pages load no remote assets. */
 
 :root {
   color-scheme: light;
@@ -86,7 +86,7 @@ body {
 .mark.lg { width: 40px; height: 40px; border-radius: 12px; }
 .mark.lg::after { width: 9px; height: 20px; border-radius: 4px; }
 
-/* ── State dot (always paired with a word — never color alone) ──────────── */
+/* ── State dot (always paired with a word - never color alone) ──────────── */
 .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; background: var(--ring); }
 .dot.idle { background: var(--ring); }
 .dot.running { background: var(--success); animation: pulse 1.3s ease-in-out infinite; }
@@ -95,7 +95,7 @@ body {
 .dot.offline { background: var(--destructive); }
 @keyframes pulse { 50% { opacity: 0.3; } }
 
-/* ── Buttons — compact and tactile: 32px, 10px radius, 1px press ────────── */
+/* ── Buttons - compact and tactile: 32px, 10px radius, 1px press ────────── */
 button {
   font: 500 0.8rem/1 var(--sans);
   border-radius: var(--r-lg); border: 1px solid var(--input);
@@ -144,7 +144,7 @@ input[type='checkbox'] { accent-color: var(--accent-deep); }
 label.field { display: grid; gap: 6px; }
 label.field > span { font: 500 0.8rem/1.2 var(--sans); color: var(--foreground); }
 
-/* ── Cards & chips — flat, edges drawn by hairlines ─────────────────────── */
+/* ── Cards & chips - flat, edges drawn by hairlines ─────────────────────── */
 .card {
   background: var(--card); border: 1px solid var(--border);
   border-radius: var(--r-xl); padding: 16px;
@@ -224,7 +224,7 @@ label.field > span { font: 500 0.8rem/1.2 var(--sans); color: var(--foreground);
   font: 400 0.71875rem/1.4 var(--sans); color: var(--muted-foreground);
 }
 
-/* ── Tables — quiet chrome, sentence-case headers ───────────────────────── */
+/* ── Tables - quiet chrome, sentence-case headers ───────────────────────── */
 table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; }
 th {
   text-align: left; font: 500 0.75rem/1.2 var(--sans); color: var(--muted-foreground);
@@ -234,7 +234,7 @@ td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align:
 tr:last-child td { border-bottom: none; }
 tbody tr:hover td { background: var(--muted); }
 
-/* ── Toast — a true overlay, so it floats with a shadow ─────────────────── */
+/* ── Toast - a true overlay, so it floats with a shadow ─────────────────── */
 .toast {
   position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
   background: var(--background); border: 1px solid var(--border);
@@ -246,7 +246,7 @@ tbody tr:hover td { background: var(--muted); }
 .toast.ok { color: var(--success-deep); }
 .toast.err { color: var(--destructive); }
 
-/* ── Reduced motion — every animation gets a calm alternative ───────────── */
+/* ── Reduced motion - every animation gets a calm alternative ───────────── */
 @media (prefers-reduced-motion: reduce) {
   .rise, .toast { animation: none; }
   .dot.running, .dot.stopping { animation: none; }

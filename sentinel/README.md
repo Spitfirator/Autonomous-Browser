@@ -26,13 +26,13 @@ That builds the extension bundle if missing (first run: `npm install && npm run 
 starts the backend on `127.0.0.1:8765`, and opens the dedicated Chrome window. The
 Sentinel extension is auto-installed into that window via CDP; if Chrome ever refuses
 (the flag/API landscape shifts by version), the window opens a one-time setup page with
-copy-paste "Load unpacked" instructions — after that it persists in the profile forever.
+copy-paste "Load unpacked" instructions - after that it persists in the profile forever.
 
 Open the panel with the **Sentinel icon** in the Chrome toolbar (pin it via the puzzle
-icon). Stop the server with `Ctrl-C` — the Chrome window intentionally stays open
+icon). Stop the server with `Ctrl-C` - the Chrome window intentionally stays open
 (`keep_alive`); the next `./start.sh` reconnects to it instead of launching a new one.
 
-Requirements: `uv` (uses `../browser-use`'s venv — zero extra Python deps), `node`/`npm`
+Requirements: `uv` (uses `../browser-use`'s venv - zero extra Python deps), `node`/`npm`
 for the extension build, Google Chrome. API keys live in `../browser-use/.env`
 (`GEMINI_API_KEY`, `GROQ_API_KEY`, …) and can also be set from the dashboard.
 
@@ -56,25 +56,25 @@ for the extension build, Google Chrome. API keys live in `../browser-use/.env`
 
 ## The middleware
 
-`PolicyEngine.evaluate(action, params, url)` is the single decision point — extend here.
+`PolicyEngine.evaluate(action, params, url)` is the single decision point - extend here.
 Schema + decision order: **[POLICY.md](POLICY.md)**. Metrics: **[EVALS.md](EVALS.md)**.
 
-- **Domain allow/blocklist** — glob patterns (`*.bank.com`); checked per action against
+- **Domain allow/blocklist** - glob patterns (`*.bank.com`); checked per action against
   the navigation target or current page, and mirrored into browser-use's SecurityWatchdog
   as a second net. Live: dashboard edits apply to the *next action*, even mid-run.
-- **Blocked actions** — removed from the LLM's toolbox at run start *and* refused at
+- **Blocked actions** - removed from the LLM's toolbox at run start *and* refused at
   runtime; the agent gets an explanatory error and re-plans.
-- **Approval gate** — by action type or by domain: the agent pauses inside the step; the
+- **Approval gate** - by action type or by domain: the agent pauses inside the step; the
   side panel shows an approval card with countdown; deny/timeout returns an error the
   agent adapts to.
-- **Sensitive domains → forced handoff** — first touch of a listed domain freezes the run
+- **Sensitive domains → forced handoff** - first touch of a listed domain freezes the run
   and hands the browser to the human (same flow as `request_human_control`, but initiated
   by policy). After the human hands back, the agent may act there for the rest of the run.
-- **Modes** — `enforce` (default), `shadow` (log would-be verdicts, allow everything —
-  for false-block evals), `off` (no evaluation — the overhead baseline).
-- **Budgets** — max steps, max LLM calls per task (graceful stop at the limit, hard
+- **Modes** - `enforce` (default), `shadow` (log would-be verdicts, allow everything -
+  for false-block evals), `off` (no evaluation - the overhead baseline).
+- **Budgets** - max steps, max LLM calls per task (graceful stop at the limit, hard
   backstop two calls later), approval + takeover timeouts.
-- **Full audit stream** — every decision is a WS `enforcement_decision` event (with
+- **Full audit stream** - every decision is a WS `enforcement_decision` event (with
   `decision_ms` policy latency); every model call a `llm_call` event with latency +
   tokens; every run is persisted to `data/traces/<run_id>/` (events + step screenshots +
   meta with per-run enforcement metrics).
@@ -96,12 +96,12 @@ indicator shows while it thinks; the final answer arrives as a highlighted bubbl
 ## The in-page control layer
 
 While the agent works, the controlled window shows a pulsing amber frame and a floating
-pill — **Working on task · [Take over] [Open chat] [Stop]** — rendered by the extension's
+pill - **Working on task · [Take over] [Open chat] [Stop]** - rendered by the extension's
 content script on whatever page the agent is on. Real mouse/keyboard input is shielded
 (swallowed) while the agent thinks, and released during the agent's own action windows;
 **Take over** pauses the agent (pill flips to *You're in control · Give control back*),
 after which the page is fully yours until you hand it back. The small ◉ toggle in the
-panel header turns the in-page layer off — do that in your personal Chrome if you load
+panel header turns the in-page layer off - do that in your personal Chrome if you load
 the extension there, since the agent only ever drives the dedicated window.
 
 Screenshots the model sees include this UI; its system prompt tells it to ignore it.
@@ -115,9 +115,9 @@ payment, or personal details (postcodes, addresses). When it fires:
 1. The run freezes inside the step and the in-page pill switches to an amber **"Your
    turn"** state with the agent's reason; the side panel shows the same takeover card
    with a countdown.
-2. You do the step by hand in the browser — click, type, log in, whatever's needed.
+2. You do the step by hand in the browser - click, type, log in, whatever's needed.
 3. Optionally type a note for the agent ("logged in, postcode is SW1A 1AA"), then hit
-   **Done — continue** on the page pill (or **Give control back** in the panel).
+   **Done - continue** on the page pill (or **Give control back** in the panel).
 4. The agent resumes from the *current* page state with your note in its context.
 
 If nobody responds within the takeover timeout (default 15 min, Policies tab), the agent
@@ -147,5 +147,5 @@ header) so your own browsing doesn't show the control pill. After rebuilding the
 
 Known quirks: `pause` takes effect after the in-flight step completes (upstream behavior,
 it also prints a cosmetic "Press Enter" line in the server log). Profile persistence
-relies on the `browser-use-user-data-dir-` marker in the profile path — re-check
+relies on the `browser-use-user-data-dir-` marker in the profile path - re-check
 `BrowserProfile._copy_profile()` if you upgrade browser-use past v0.13.x.

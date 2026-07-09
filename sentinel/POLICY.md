@@ -24,7 +24,7 @@ Edits apply to the agent's **very next action**, even mid-run.
     "mode": "enforce",
 
     // null = any site allowed. A list = ONLY these sites (entries matched the
-    // same way as every other domain list — see the table below).
+    // same way as every other domain list - see the table below).
     "domain_allowlist": null,
 
     // Never allowed, even if the allowlist would permit them.
@@ -62,14 +62,14 @@ against a URL's **host** with these four shapes, most rigid to most precise:
 
 | Entry | Means | Blocks / matches |
 |---|---|---|
-| `facebook` | **keyword** — host *contains* the word | `facebook.com`, `www.facebook.com`, `m.facebook.com`, `business.facebook.net`, even `notfacebook.com` |
-| `facebook.com` | **domain** — that domain + its subdomains | `facebook.com`, `www.facebook.com`; **not** `notfacebook.com` |
+| `facebook` | **keyword** - host *contains* the word | `facebook.com`, `www.facebook.com`, `m.facebook.com`, `business.facebook.net`, even `notfacebook.com` |
+| `facebook.com` | **domain** - that domain + its subdomains | `facebook.com`, `www.facebook.com`; **not** `notfacebook.com` |
 | `*.facebook.com` | **glob** on the host | subdomains + apex |
-| `https://facebook.com` | **full URL** — scheme-aware | that origin only |
+| `https://facebook.com` | **full URL** - scheme-aware | that origin only |
 
-A bare word (no dot) is the rigid one — use it when you want to block a service
+A bare word (no dot) is the rigid one - use it when you want to block a service
 however the agent spells the URL. It matches the **host only**, so
-`duckduckgo.com/?q=facebook` (the word in a search query) is still allowed — the
+`duckduckgo.com/?q=facebook` (the word in a search query) is still allowed - the
 agent can search, it just can't *reach* the site.
 
 ### Domain rules are enforced at the navigation layer
@@ -79,11 +79,11 @@ is mirrored into browser-use's SecurityWatchdog as `prohibited_domains` (and an
 allowlist, when set, as `allowed_domains`), which enforce at the browser's real
 navigation events:
 
-- **direct navigation** — blocked before it starts;
-- **redirects** — a redirect that lands on a disallowed host is bounced to
+- **direct navigation** - blocked before it starts;
+- **redirects** - a redirect that lands on a disallowed host is bounced to
   `about:blank`;
-- **new tabs / pop-ups** — a disallowed tab is closed;
-- **link clicks, JS navigation, switching search engines** — all caught the same
+- **new tabs / pop-ups** - a disallowed tab is closed;
+- **link clicks, JS navigation, switching search engines** - all caught the same
   way, because the net is on the navigation, not on the agent's chosen action.
 
 So the agent cannot reach a blocked site by clicking a search result, following
@@ -91,13 +91,13 @@ a redirect, or trying a different search engine. The LLM-level check (rules
 below) and this navigation net use the **same** matching, so the panel's
 "Blocked" reason always matches what the browser enforces. (One precedence note:
 if a domain is on both lists, the allowlist wins at the browser layer, while the
-`PolicyEngine` decision below always applies the blocklist first — so keep a
+`PolicyEngine` decision below always applies the blocklist first - so keep a
 domain on one list, not both.)
 
 ## Decision order (first match wins)
 
-Every browser action passes through `PolicyEngine.evaluate()` —
-[server/governance/policy.py](server/governance/policy.py) — the single
+Every browser action passes through `PolicyEngine.evaluate()` -
+[server/governance/policy.py](server/governance/policy.py) - the single
 decision point:
 
 | # | Rule | Verdict | What happens |
@@ -111,7 +111,7 @@ decision point:
 
 The agent can also hand over voluntarily: it has a `request_human_control`
 action and standing instructions to use it for logins, one-time codes,
-CAPTCHAs, payment, or personal details — the same handoff flow, initiated by
+CAPTCHAs, payment, or personal details - the same handoff flow, initiated by
 the model instead of a rule.
 
 ## Where decisions are visible

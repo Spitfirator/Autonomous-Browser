@@ -8,7 +8,7 @@ export function OfflineBanner() {
       <span className="dot offline" />
       {wsState === 'connecting'
         ? 'Connecting to backend…'
-        : 'Backend offline — run ./start.sh in sentinel/'}
+        : 'Backend offline - run ./start.sh in sentinel/'}
     </div>
   );
 }

@@ -75,7 +75,7 @@ function ResultBubble({ event }: { event: TaskDone }) {
           </span>
         </div>
         {event.final_result && <p>{event.final_result}</p>}
-        <span className="followup-hint">Ask a follow-up below — the browser stays where it is.</span>
+        <span className="followup-hint">Ask a follow-up below - the browser stays where it is.</span>
       </div>
     </div>
   );
@@ -99,7 +99,7 @@ function renderEvent(e: SentinelEvent) {
       return <ResultBubble key={e.seq} event={e} />;
     case 'task_error': {
       const ev = e as TaskError;
-      const label = ev.kind === 'stopped' ? 'Stopped by you' : ev.kind === 'budget_exceeded' ? 'Stopped — LLM budget reached' : ev.error;
+      const label = ev.kind === 'stopped' ? 'Stopped by you' : ev.kind === 'budget_exceeded' ? 'Stopped - LLM budget reached' : ev.error;
       return (
         <SystemRow key={e.seq}>
           <span className={`chip ${ev.kind === 'stopped' ? 'approval_required' : 'blocked'}`}>{label}</span>
@@ -114,7 +114,7 @@ function renderEvent(e: SentinelEvent) {
         blocked: ['Blocked', 'blocked'],
         approval_required: ['Held for approval', 'approval_required'],
         denied_by_human: ['Denied by you', 'blocked'],
-        denied_timeout: ['Denied — timed out', 'blocked'],
+        denied_timeout: ['Denied - timed out', 'blocked'],
         handoff_required: ['Handed to you', 'approval_required'],
         handoff_returned: ['You finished the step', 'allowed'],
         handoff_timeout: ['Handoff timed out', 'blocked'],
@@ -179,7 +179,7 @@ export function ChatThread() {
             <b>Ready when you are.</b>
           </p>
           <p>
-            Tell me what to do in this browser — I’ll narrate every step here, ask before anything
+            Tell me what to do in this browser - I’ll narrate every step here, ask before anything
             sensitive, and hand you the keys when a login or personal detail comes up.
           </p>
         </div>

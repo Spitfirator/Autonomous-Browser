@@ -70,7 +70,7 @@ export function App() {
 
   const placeholder =
     agentStatus === 'running'
-      ? 'Steer the agent — applied at its next thought…'
+      ? 'Steer the agent - applied at its next thought…'
       : agentStatus === 'paused'
         ? 'Queue guidance for when it resumes…'
         : status?.task === null && wsState === 'connected'

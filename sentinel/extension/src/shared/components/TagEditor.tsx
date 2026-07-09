@@ -3,17 +3,17 @@ import { useState } from 'react';
 type EntryKind = 'keyword' | 'domain' | 'glob' | 'url';
 
 // Mirrors the server matcher (server/governance/policy.py: entry_matches).
-// Keep the two in sync — this is what the operator is shown, it must match
+// Keep the two in sync - this is what the operator is shown, it must match
 // what actually gets enforced.
 export function classifyEntry(raw: string): { kind: EntryKind; scope: string } {
   const v = raw.trim().toLowerCase();
-  if (v.includes('://')) return { kind: 'url', scope: `only ${v} — that exact origin` };
+  if (v.includes('://')) return { kind: 'url', scope: `only ${v} - that exact origin` };
   if (v.includes('*')) return { kind: 'glob', scope: `hosts matching ${v}` };
   if (v.includes('.'))
     return { kind: 'domain', scope: `${v} and its subdomains (not look-alikes like not${v})` };
   return {
     kind: 'keyword',
-    scope: `ANY host containing “${v}” — ${v}.com, www.${v}.com, ${v}.co.uk, my${v}shop.net…`,
+    scope: `ANY host containing “${v}” - ${v}.com, www.${v}.com, ${v}.co.uk, my${v}shop.net…`,
   };
 }
 

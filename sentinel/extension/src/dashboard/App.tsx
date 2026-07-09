@@ -44,7 +44,7 @@ export function App() {
         <div className="dash-foot">
           <span className={`dot ${wsState !== 'connected' ? 'offline' : (status?.agent_status ?? 'idle')}`} />
           {wsState === 'connected'
-            ? `Backend connected · agent ${status?.agent_status ?? '—'}`
+            ? `Backend connected · agent ${status?.agent_status ?? '-'}`
             : 'Backend offline'}
         </div>
       </aside>

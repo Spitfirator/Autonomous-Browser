@@ -1,4 +1,4 @@
-/* Dashboard (full-tab options page) — FUZER app shell: white sidebar + content. */
+/* Dashboard (full-tab options page) - FUZER app shell: white sidebar + content. */
 
 #root { flex-direction: row; }
 
@@ -116,7 +116,7 @@
 @media (max-width: 860px) { .budget-grid { grid-template-columns: 1fr 1fr; } }
 .budget-grid input { font-variant-numeric: tabular-nums; }
 
-/* Run totals — one quiet strip, not a row of hero-metric cards */
+/* Run totals - one quiet strip, not a row of hero-metric cards */
 .stat-strip {
   display: grid; grid-template-columns: repeat(3, minmax(110px, max-content)) 1fr;
   border: 1px solid var(--border); border-radius: var(--r-xl);

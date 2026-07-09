@@ -235,7 +235,7 @@ export function ModelsTab() {
       <div className="card rise">
         <div className="card-head">
           <h2 className="card-title">API keys</h2>
-          <span className="help-text">Stored in browser-use/.env — never shown back</span>
+          <span className="help-text">Stored in browser-use/.env - never shown back</span>
         </div>
         <div className="keys-grid">
           {PROVIDERS.map((p) => (
@@ -244,7 +244,7 @@ export function ModelsTab() {
               <span className="key-name">{p.keyName}</span>
               <input
                 type="password"
-                placeholder={keys[p.keyName] ? '••••••••  (set — paste to replace)' : 'Paste key…'}
+                placeholder={keys[p.keyName] ? '••••••••  (set - paste to replace)' : 'Paste key…'}
                 value={keyDrafts[p.keyName] ?? ''}
                 onChange={(e) => setKeyDrafts({ ...keyDrafts, [p.keyName]: e.target.value })}
               />

@@ -25,7 +25,7 @@ export function ApprovalCard({ approval }: { approval: ApprovalRequest }) {
     try {
       await api.resolveApproval(approval.approval_id, approve);
     } catch {
-      /* resolved elsewhere or expired — the WS event will clean up */
+      /* resolved elsewhere or expired - the WS event will clean up */
     }
     removeApproval(approval.approval_id);
   };

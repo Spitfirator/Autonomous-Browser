@@ -17,7 +17,7 @@ function statusChip(record: HistoryRecord): { cls: string; label: string } {
     case 'error':
       return { cls: 'blocked', label: 'Error' };
     default:
-      return { cls: 'info', label: record.status ?? '—' };
+      return { cls: 'info', label: record.status ?? '-' };
   }
 }
 
@@ -74,7 +74,7 @@ export function ActivityTab() {
         <div className="stat">
           <span className="stat-label">Tokens by model</span>
           {Object.keys(totals.byModel).length === 0 ? (
-            <strong>—</strong>
+            <strong>-</strong>
           ) : (
             <div className="by-model-list">
               {Object.entries(totals.byModel).map(([m, t]) => (
@@ -132,8 +132,8 @@ export function ActivityTab() {
                     <td>
                       <span className={`chip ${chip.cls}`}>{chip.label}</span>
                     </td>
-                    <td className="num-cell">{r.steps ?? '—'}</td>
-                    <td className="num-cell">{r.llm_calls ?? '—'}</td>
+                    <td className="num-cell">{r.steps ?? '-'}</td>
+                    <td className="num-cell">{r.llm_calls ?? '-'}</td>
                     <td className="num-cell">{(r.total_tokens ?? 0).toLocaleString()}</td>
                   </tr>
                 );

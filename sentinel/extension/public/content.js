@@ -1,5 +1,5 @@
 // Sentinel content script: renders the in-page control layer while the agent
-// drives this browser — pulsing frame, control pill (Take over / Open chat /
+// drives this browser - pulsing frame, control pill (Take over / Open chat /
 // Stop), input shield, and the "YOUR TURN" takeover card. State arrives via
 // chrome.storage.session (written by the service worker from the backend WS).
 //
@@ -29,7 +29,7 @@
         :host { all: initial; }
         /* FUZER "Control Room" language (see /DESIGN.md). The pill is a true
            floating overlay, so it carries a soft shadow; the amber frame IS
-           the "agent is driving" signal. System font — no loading in pages. */
+           the "agent is driving" signal. System font - no loading in pages. */
         * { box-sizing: border-box; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; }
         .glow {
           position: fixed; inset: 0; pointer-events: none;
@@ -130,7 +130,7 @@
   }
 
   // Block real keyboard input while shielded (agent typing happens during
-  // state.acting, when the shield is down — so it is never affected).
+  // state.acting, when the shield is down - so it is never affected).
   ['keydown', 'keypress', 'keyup'].forEach((type) =>
     window.addEventListener(
       type,
@@ -185,7 +185,7 @@
     pill.appendChild(label);
 
     if (s.handover) {
-      label.innerHTML = '<b>Your turn</b> — ';
+      label.innerHTML = '<b>Your turn</b> - ';
       label.appendChild(document.createTextNode(s.handover.reason || 'the agent needs your help'));
       const timer = document.createElement('span');
       timer.className = 'timer';
@@ -203,7 +203,7 @@
       pill.append(
         timer,
         note,
-        button('Done — continue', 'amber', () =>
+        button('Done - continue', 'amber', () =>
           send('handover_complete', { id: s.handover.handover_id, note: note.value }),
         ),
       );

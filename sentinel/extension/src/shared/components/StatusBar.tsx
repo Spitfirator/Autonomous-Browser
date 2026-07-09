@@ -19,7 +19,7 @@ export function StatusBar() {
       <span className={`dot ${agentStatus}`} />
       <span className="sb-state">{stateWord}</span>
       <span className="sb-model" title={`${status?.provider ?? ''} / ${status?.model ?? ''}`}>
-        {status?.model ?? '—'}
+        {status?.model ?? '-'}
       </span>
       <div className="sb-budget" title={`LLM calls: ${used}/${budget}`}>
         <span>
