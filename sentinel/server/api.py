@@ -9,6 +9,7 @@ import asyncio
 import json
 import logging
 import os
+from pathlib import Path
 from typing import Any
 
 from aiohttp import WSMsgType, web
@@ -27,6 +28,7 @@ from server.config import (
 from server.events import ConfigChanged, EventHub
 from server.governance import ApprovalManager
 from server.history import HistoryStore
+from server.labels import LabelStore
 from server.llm_factory import MissingApiKeyError
 from server.runner import AgentRunner, BrowserNotReady, RunnerBusy
 
@@ -238,6 +240,73 @@ async def get_actions(request: web.Request) -> web.Response:
 	return web.json_response(KNOWN_ACTIONS)
 
 
+# Verdicts that aren't a block/pause the operator needs explained.
+_NON_EXPLAIN_VERDICTS = {'allowed', 'handoff_returned'}
+
+
+async def get_run_decisions(request: web.Request) -> web.Response:
+	"""Non-allow enforcement decisions for one run (the blocks/pauses whose reason
+	the operator sees), each tagged with any 'understood?' tick they've left."""
+	traces_dir: Path = request.app['traces_dir']
+	labels: LabelStore = request.app['labels']
+	run_id = request.match_info['run_id']
+	if not run_id.isalnum():   # run ids are uuid4().hex[:8] — blocks path traversal
+		return _json_error(400, 'invalid run_id')
+	events_path = traces_dir / run_id / 'events.jsonl'
+	if not events_path.exists():
+		return web.json_response([])
+	understood = labels.for_run(run_id)
+	rows: list[dict[str, Any]] = []
+	try:
+		for line in events_path.read_text().splitlines():
+			line = line.strip()
+			if not line:
+				continue
+			try:
+				ev = json.loads(line)
+			except json.JSONDecodeError:
+				continue
+			if ev.get('type') != 'enforcement_decision' or ev.get('verdict') in _NON_EXPLAIN_VERDICTS:
+				continue
+			seq = ev.get('seq')
+			rows.append({
+				'seq': seq,
+				'ts': ev.get('ts'),
+				'action': ev.get('action'),
+				'url': ev.get('url'),
+				'verdict': ev.get('verdict'),
+				'rule': ev.get('rule'),
+				'reason': ev.get('reason'),
+				'understood': understood.get(seq),
+			})
+	except OSError as e:
+		logger.warning(f'Failed to read trace events for {run_id}: {e}')
+		return _json_error(500, 'failed to read trace')
+	return web.json_response(rows)
+
+
+async def post_understood(request: web.Request) -> web.Response:
+	"""Record (or clear, with understood=null) the operator's 'could you tell why?'
+	tick for one decision in a run."""
+	labels: LabelStore = request.app['labels']
+	run_id = request.match_info['run_id']
+	if not run_id.isalnum():
+		return _json_error(400, 'invalid run_id')
+	try:
+		seq = int(request.match_info['seq'])
+	except ValueError:
+		return _json_error(400, 'seq must be an integer')
+	try:
+		body = await request.json()
+	except json.JSONDecodeError:
+		return _json_error(400, 'Invalid JSON body')
+	understood = body.get('understood')
+	if understood is not None and not isinstance(understood, bool):
+		return _json_error(400, 'understood must be a boolean or null')
+	labels.set_understood(run_id, seq, understood)
+	return web.json_response({'ok': True})
+
+
 async def ws_handler(request: web.Request) -> web.WebSocketResponse:
 	hub: EventHub = request.app['hub']
 	approvals: ApprovalManager = request.app['approvals']
@@ -285,6 +354,8 @@ def build_app(
 	handovers: Any,
 	browser_manager: BrowserManager,
 	history: HistoryStore,
+	traces_dir: Path,
+	labels: LabelStore,
 ) -> web.Application:
 	app = web.Application(middlewares=[origin_middleware], client_max_size=1024 * 1024)
 	app['config_store'] = config_store
@@ -294,6 +365,8 @@ def build_app(
 	app['handovers'] = handovers
 	app['browser_manager'] = browser_manager
 	app['history'] = history
+	app['traces_dir'] = traces_dir
+	app['labels'] = labels
 
 	app.router.add_get('/api/status', get_status)
 	app.router.add_get('/api/ping', get_ping)
@@ -308,6 +381,8 @@ def build_app(
 	app.router.add_post('/api/approvals/{approval_id}', post_approval)
 	app.router.add_post('/api/handover/{handover_id}/complete', post_handover_complete)
 	app.router.add_get('/api/history', get_history)
+	app.router.add_get('/api/traces/{run_id}/decisions', get_run_decisions)
+	app.router.add_post('/api/traces/{run_id}/decisions/{seq}', post_understood)
 	app.router.add_get('/api/actions', get_actions)
 	app.router.add_get('/ws', ws_handler)
 	app.router.add_get('/setup', get_setup)

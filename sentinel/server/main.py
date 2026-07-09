@@ -29,6 +29,7 @@ from server.browser_use_patches import install as install_browser_use_patches  #
 from server.events import EventHub  # noqa: E402
 from server.governance import ApprovalManager, HandoverManager, PolicyEngine  # noqa: E402
 from server.history import HistoryStore  # noqa: E402
+from server.labels import LabelStore  # noqa: E402
 from server.runner import AgentRunner  # noqa: E402
 from server.traces import TraceStore  # noqa: E402
 
@@ -50,12 +51,15 @@ async def main() -> None:
 	policy = PolicyEngine(config_store)
 	history = HistoryStore(HISTORY_FILE)
 	traces = TraceStore(DATA_DIR / 'traces', config_store)
+	labels = LabelStore(DATA_DIR / 'labels.jsonl')
 	hub.add_listener(traces.on_event)
 	browser_manager = BrowserManager(config_store)
 	runner = AgentRunner(config_store, hub, policy, approvals, handovers, browser_manager, history)
 	hub.status_provider = runner.status_dict
 
-	app = build_app(config_store, hub, runner, approvals, handovers, browser_manager, history)
+	app = build_app(
+		config_store, hub, runner, approvals, handovers, browser_manager, history, DATA_DIR / 'traces', labels
+	)
 	app_runner = web.AppRunner(app)
 	await app_runner.setup()
 	site = web.TCPSite(app_runner, HOST, PORT)

@@ -1,4 +1,4 @@
-import type { HistoryRecord, SentinelConfig, Status } from './types';
+import type { DecisionRow, HistoryRecord, SentinelConfig, Status } from './types';
 
 export const BASE = 'http://127.0.0.1:8765';
 
@@ -45,5 +45,11 @@ export const api = {
       body: JSON.stringify({ note }),
     }),
   history: (limit = 50) => request<HistoryRecord[]>(`/api/history?limit=${limit}`),
+  runDecisions: (runId: string) => request<DecisionRow[]>(`/api/traces/${runId}/decisions`),
+  setUnderstood: (runId: string, seq: number, understood: boolean | null) =>
+    request<{ ok: boolean }>(`/api/traces/${runId}/decisions/${seq}`, {
+      method: 'POST',
+      body: JSON.stringify({ understood }),
+    }),
   actions: () => request<string[]>('/api/actions'),
 };

@@ -2,7 +2,8 @@ import { Fragment, useCallback, useEffect, useState } from 'react';
 import { api } from '../../shared/api';
 import { RefreshIcon } from '../../shared/components/Icons';
 import { useStore } from '../../shared/store';
-import type { HistoryRecord } from '../../shared/types';
+import type { DecisionRow, HistoryRecord } from '../../shared/types';
+import { verdictStyle } from '../../shared/verdicts';
 
 function statusChip(record: HistoryRecord): { cls: string; label: string } {
   switch (record.status) {
@@ -102,6 +103,68 @@ function EnforcementPanel({ record }: { record: HistoryRecord }) {
         <span className={`chip ${interventions > 0 ? 'info' : 'zero'}`}>
           {interventions} intervention{interventions === 1 ? '' : 's'}
         </span>
+      </div>
+    </div>
+  );
+}
+
+/** Per-decision "could you tell why?" list with a yes/no tick (metric 6). */
+function DecisionsPanel({ runId }: { runId: string }) {
+  const [rows, setRows] = useState<DecisionRow[] | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    api
+      .runDecisions(runId)
+      .then((r) => alive && setRows(r))
+      .catch(() => alive && setRows([]));
+    return () => {
+      alive = false;
+    };
+  }, [runId]);
+
+  if (!rows || rows.length === 0) return null;
+
+  const tick = (seq: number, value: boolean) => {
+    const row = rows.find((r) => r.seq === seq);
+    const next = row && row.understood === value ? null : value; // click the active one = clear
+    setRows((cur) => (cur ? cur.map((r) => (r.seq === seq ? { ...r, understood: next } : r)) : cur));
+    api.setUnderstood(runId, seq, next).catch(() => {});
+  };
+
+  return (
+    <div className="dec-panel">
+      <h4>Understood why each was blocked or paused?</h4>
+      <div className="dec-list">
+        {rows.map((r) => {
+          const [label, cls] = verdictStyle(r.verdict);
+          return (
+            <div className="dec-row" key={r.seq}>
+              <div className="dec-main">
+                <span className={`chip ${cls}`}>
+                  {label} · <span className="mono">{r.action}</span>
+                </span>
+                <span className="dec-reason">{r.reason}</span>
+              </div>
+              <div className="dec-tick">
+                <button
+                  className={`tick yes ${r.understood === true ? 'on' : ''}`}
+                  onClick={() => tick(r.seq, true)}
+                  aria-pressed={r.understood === true}
+                >
+                  Yes
+                </button>
+                <button
+                  className={`tick no ${r.understood === false ? 'on' : ''}`}
+                  onClick={() => tick(r.seq, false)}
+                  aria-pressed={r.understood === false}
+                >
+                  No
+                </button>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -221,6 +284,7 @@ export function ActivityTab() {
                         <td colSpan={6}>
                           {(r.final_result || r.error) && <div className="row-detail">{r.final_result ?? r.error}</div>}
                           <EnforcementPanel record={r} />
+                          <DecisionsPanel runId={r.run_id} />
                         </td>
                       </tr>
                     )}

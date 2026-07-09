@@ -249,6 +249,19 @@ export interface EnforcementSummary {
   human_interventions: number;
 }
 
+// One non-allow enforcement decision from a run's trace, for the Activity tab's
+// "could you tell why?" list. `understood` is the operator's tick (null = unset).
+export interface DecisionRow {
+  seq: number;
+  ts: number;
+  action: string;
+  url: string | null;
+  verdict: Verdict;
+  rule: string;
+  reason: string;
+  understood: boolean | null;
+}
+
 export interface HistoryRecord {
   run_id: string;
   task: string;

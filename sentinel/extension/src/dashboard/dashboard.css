@@ -197,3 +197,32 @@
 .chip.mode-enforce { background: oklch(0.792 0.209 151.711 / 0.16); color: var(--success-deep); }
 .chip.mode-shadow { background: oklch(0.852 0.199 91.936 / 0.2); color: var(--primary-foreground); }
 .chip.mode-off { background: var(--secondary); color: var(--secondary-foreground); }
+
+/* Per-decision "could you tell why?" list + understood tick */
+.dec-panel { margin-top: 10px; display: grid; gap: 8px; }
+.dec-panel h4 {
+  margin: 0; font: 600 0.6875rem/1 var(--sans);
+  letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted-foreground);
+}
+.dec-list { display: grid; gap: 6px; }
+.dec-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--r-md);
+  background: var(--card);
+}
+.dec-main { display: grid; gap: 4px; min-width: 0; }
+.dec-main .mono { font-family: var(--mono); }
+.dec-reason { font: 400 0.75rem/1.4 var(--sans); color: var(--muted-foreground); }
+.dec-tick { display: flex; gap: 4px; flex: none; }
+.dec-tick .tick {
+  min-width: 42px; padding: 4px 10px; font: 500 0.75rem/1 var(--sans);
+  border: 1px solid var(--border); border-radius: var(--r-md);
+  background: var(--background); color: var(--muted-foreground); cursor: pointer;
+}
+.dec-tick .tick:hover:not(:disabled) { background: var(--muted); }
+.dec-tick .tick.yes.on {
+  background: oklch(0.792 0.209 151.711 / 0.16); color: var(--success-deep); border-color: transparent;
+}
+.dec-tick .tick.no.on {
+  background: oklch(0.577 0.245 27.325 / 0.1); color: var(--destructive); border-color: transparent;
+}

@@ -105,6 +105,18 @@ def main() -> None:
 		print(f'\n── Explainability proxy (metric 6): {pct(with_reason, non_allow)} of {non_allow} '
 		      f'non-allow decisions carry a reason string')
 
+	# ── Metric 6 (human): operator "understood?" ticks from data/labels.jsonl ─
+	ticks = load_jsonl(args.history.parent / 'labels.jsonl')
+	latest: dict[tuple, object] = {}   # (run_id, seq) -> last understood value
+	for t in ticks:
+		if t.get('run_id') and isinstance(t.get('seq'), int) and 'understood' in t:
+			latest[(t['run_id'], t['seq'])] = t['understood']
+	answered = [v for v in latest.values() if isinstance(v, bool)]
+	if answered:
+		yes = sum(1 for v in answered if v)
+		print(f'── Explainability ticks (metric 6, human): {pct(yes, len(answered))} of {len(answered)} '
+		      f'reviewed blocks/pauses were understood')
+
 	# ── Metric 3: labelled precision (needs --labels) ────────────────────────
 	if args.labels:
 		labels = load_jsonl(args.labels)
