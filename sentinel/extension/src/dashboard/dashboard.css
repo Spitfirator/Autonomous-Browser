@@ -148,3 +148,52 @@
   font-size: 0.75rem; color: var(--secondary-foreground);
   white-space: pre-wrap; word-break: break-word;
 }
+
+/* Enforcement detail panel (expanded Activity row) */
+.detail-row > td { padding: 0 8px 10px; }
+.detail-row .row-detail { margin-top: 10px; }
+.enf-panel {
+  margin-top: 10px; padding: 14px 16px;
+  border: 1px solid var(--border); border-radius: var(--r-lg);
+  background: var(--card); display: grid; gap: 9px;
+}
+.enf-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.enf-head h4 {
+  margin: 0; font: 600 0.6875rem/1 var(--sans);
+  letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted-foreground);
+}
+.enf-bar {
+  display: flex; height: 10px; border-radius: 999px; overflow: hidden;
+  background: var(--muted);
+}
+.enf-bar .seg { display: block; height: 100%; }
+.enf-bar .seg.base { background: color-mix(in oklch, var(--secondary-foreground) 22%, transparent); }
+.enf-bar .seg.add { background: var(--primary); }
+.enf-legend {
+  display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: baseline;
+  font: 400 0.75rem/1.3 var(--sans); color: var(--muted-foreground);
+}
+.enf-legend b { font-weight: 600; color: var(--foreground); font-variant-numeric: tabular-nums; }
+.enf-legend .key {
+  width: 9px; height: 9px; border-radius: 3px;
+  display: inline-block; vertical-align: middle; margin-right: 5px;
+}
+.enf-legend .key.base { background: color-mix(in oklch, var(--secondary-foreground) 22%, transparent); }
+.enf-legend .key.add { background: var(--primary); }
+.enf-total {
+  margin-left: auto; font-weight: 500;
+  color: var(--secondary-foreground); font-variant-numeric: tabular-nums;
+}
+.enf-overhead { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.enf-overhead-num {
+  font: 600 1.5rem/1 var(--sans); font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em; color: var(--foreground);
+}
+.enf-overhead-pct { font: 500 0.8125rem/1.2 var(--sans); color: var(--muted-foreground); }
+.enf-sub { font: 400 0.71875rem/1.45 var(--mono); color: var(--muted-foreground); }
+.enf-decisions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
+.enf-decisions .chip { font-variant-numeric: tabular-nums; }
+.chip.zero { background: var(--muted); color: var(--muted-foreground); }
+.chip.mode-enforce { background: oklch(0.792 0.209 151.711 / 0.16); color: var(--success-deep); }
+.chip.mode-shadow { background: oklch(0.852 0.199 91.936 / 0.2); color: var(--primary-foreground); }
+.chip.mode-off { background: var(--secondary); color: var(--secondary-foreground); }

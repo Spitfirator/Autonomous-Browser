@@ -125,7 +125,7 @@ class GovernedTools(Tools):
 			request = self._approvals.create(name, params, current_url, self._approval_timeout_s, self._ctx.run_id)
 			wait_t0 = time.monotonic()
 			outcome = await self._approvals.wait(request.approval_id, self._approval_timeout_s)
-			self._ctx.human_wait_s += time.monotonic() - wait_t0
+			self._ctx.approval_wait_s += time.monotonic() - wait_t0
 			if outcome == 'denied':
 				self._ctx.human_interventions += 1
 			if outcome != 'approved':
@@ -179,7 +179,11 @@ class GovernedTools(Tools):
 		request = self._handovers.create(reason, current_url, self._handover_timeout_s, self._ctx.run_id)
 		wait_t0 = time.monotonic()
 		outcome, note = await self._handovers.wait(request.handover_id, self._handover_timeout_s)
-		self._ctx.human_wait_s += time.monotonic() - wait_t0
+		# Every handoff — policy-forced or agent-initiated — puts a human on a step
+		# in the browser (login, CAPTCHA, sensitive action). That's part of what the
+		# task costs regardless of enforcement, so it's baseline, not overhead. Only
+		# approval gates (above) are time enforcement genuinely adds.
+		self._ctx.handoff_wait_s += time.monotonic() - wait_t0
 
 		if outcome == 'returned':
 			self._ctx.human_interventions += 1

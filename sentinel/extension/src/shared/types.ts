@@ -237,6 +237,18 @@ export interface SentinelConfig {
   pinned_extension_id: string | null;
 }
 
+export interface EnforcementSummary {
+  decisions: Partial<Record<Verdict, number>>;
+  decision_count: number;
+  decision_ms_total: number;
+  decision_ms_mean: number;
+  decision_ms_max: number;
+  human_wait_s: number; // total frozen-on-a-human time (approvals + handoffs)
+  approval_wait_s?: number; // approval gates — the extra time enforcement adds
+  handoff_wait_s?: number; // handed-over steps (login/CAPTCHA) — baseline, happens either way
+  human_interventions: number;
+}
+
 export interface HistoryRecord {
   run_id: string;
   task: string;
@@ -252,4 +264,6 @@ export interface HistoryRecord {
   error?: string;
   model?: string;
   provider?: string;
+  policy_mode?: PolicyMode;
+  enforcement?: EnforcementSummary;
 }

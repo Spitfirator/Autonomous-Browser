@@ -40,7 +40,15 @@ class RunContext:
 		self.decision_ms_total = 0.0                     # policy evaluation time only
 		self.decision_ms_max = 0.0
 		self.decision_count = 0
-		self.human_wait_s = 0.0                          # time spent awaiting approvals/handoffs
+		# Human wait, split by mechanism so a single run decomposes into baseline
+		# task time vs. the extra time enforcement adds:
+		#   approval_wait_s — side-panel approve/deny gates. The agent could have
+		#     acted on its own, so this is time enforcement genuinely ADDS.
+		#   handoff_wait_s — a human did the step in the browser (login, CAPTCHA,
+		#     sensitive action). The task needs it with or without enforcement, so
+		#     it's BASELINE, not overhead.
+		self.approval_wait_s = 0.0
+		self.handoff_wait_s = 0.0
 		self.human_interventions = 0                     # approvals resolved by a human + handoffs completed
 		# Sensitive-domain patterns cleared by a completed handoff this run.
 		self.handed_over_patterns: set[str] = set()
@@ -63,7 +71,12 @@ class RunContext:
 			'decision_ms_total': round(self.decision_ms_total, 3),
 			'decision_ms_mean': round(self.decision_ms_total / self.decision_count, 3) if self.decision_count else 0.0,
 			'decision_ms_max': round(self.decision_ms_max, 3),
-			'human_wait_s': round(self.human_wait_s, 1),
+			# Total frozen-on-a-human time, plus the split: approval_wait_s is the
+			# extra time enforcement adds; handoff_wait_s is baseline the task needs
+			# either way (see the panel's baseline-vs-added decomposition).
+			'human_wait_s': round(self.approval_wait_s + self.handoff_wait_s, 1),
+			'approval_wait_s': round(self.approval_wait_s, 1),
+			'handoff_wait_s': round(self.handoff_wait_s, 1),
 			'human_interventions': self.human_interventions,
 		}
 

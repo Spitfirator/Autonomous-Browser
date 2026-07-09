@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { Fragment, useCallback, useEffect, useState } from 'react';
 import { api } from '../../shared/api';
 import { RefreshIcon } from '../../shared/components/Icons';
 import { useStore } from '../../shared/store';
@@ -19,6 +19,92 @@ function statusChip(record: HistoryRecord): { cls: string; label: string } {
     default:
       return { cls: 'info', label: record.status ?? '-' };
   }
+}
+
+function fmtDur(s: number): string {
+  if (s <= 0) return '0s';
+  if (s < 1) return `${Math.round(s * 1000)}ms`;
+  if (s < 60) return `${s < 10 ? s.toFixed(1) : Math.round(s)}s`;
+  const m = Math.floor(s / 60);
+  const sec = Math.round(s % 60);
+  return sec ? `${m}m ${sec}s` : `${m}m`;
+}
+
+/** Baseline-vs-enforcement time split + decision breakdown for one run. */
+function EnforcementPanel({ record }: { record: HistoryRecord }) {
+  const enf = record.enforcement;
+  if (!enf) return null;
+
+  const total = record.duration_s ?? 0;
+  const machineMs = enf.decision_ms_total ?? 0;
+  const approvalWait = enf.approval_wait_s ?? 0;
+  const handoffWait = enf.handoff_wait_s ?? 0;
+  // Enforcement adds approval-gate waits + policy-check time; everything else —
+  // agent work and handed-over steps (logins, CAPTCHAs) — is baseline the task
+  // needs either way. Direct decomposition; doesn't capture block re-planning.
+  const added = approvalWait + machineMs / 1000;
+  const baseline = Math.max(0, total - added);
+  const addPct = total > 0 ? Math.min(100, (added / total) * 100) : 0;
+  const machineStr = machineMs < 1 ? `${machineMs.toFixed(2)}ms` : `${Math.round(machineMs)}ms`;
+
+  const d = enf.decisions ?? {};
+  const allowed = d.allowed ?? 0;
+  const approvals = d.approval_required ?? 0;
+  const handoffs = d.handoff_required ?? 0;
+  const blocked = (d.blocked ?? 0) + (d.denied_by_human ?? 0) + (d.denied_timeout ?? 0);
+  const interventions = enf.human_interventions ?? 0;
+
+  return (
+    <div className="enf-panel">
+      <div className="enf-head">
+        <h4>Enforcement cost</h4>
+        {record.policy_mode && <span className={`chip mode-${record.policy_mode}`}>{record.policy_mode}</span>}
+      </div>
+
+      {total > 0 ? (
+        <>
+          <div className="enf-bar" role="img" aria-label={`enforcement added ${Math.round(addPct)}% of the run`}>
+            <span className="seg base" style={{ width: `${100 - addPct}%` }} />
+            <span className="seg add" style={{ width: `${addPct}%` }} />
+          </div>
+          <div className="enf-legend">
+            <span>
+              <i className="key base" /> Without enforcement <b>{fmtDur(baseline)}</b>
+            </span>
+            <span>
+              <i className="key add" /> Enforcement added <b>+{fmtDur(added)}</b>
+            </span>
+            <span className="enf-total">Total {fmtDur(total)}</span>
+          </div>
+        </>
+      ) : (
+        <div className="enf-overhead">
+          <span className="enf-overhead-num">+{fmtDur(added)}</span>
+          <span className="enf-overhead-pct">enforcement added</span>
+        </div>
+      )}
+
+      <div className="enf-sub">
+        {fmtDur(approvalWait)} on approval gates · {machineStr} policy checks
+        {handoffWait > 0 &&
+          ` · ${fmtDur(handoffWait)} on handed-over steps (login/CAPTCHA — baseline, happens either way)`}
+      </div>
+
+      <div className="enf-decisions">
+        <span className={`chip ${allowed > 0 ? 'allowed' : 'zero'}`}>{allowed} allowed</span>
+        <span className={`chip ${approvals > 0 ? 'approval_required' : 'zero'}`}>
+          {approvals} approval{approvals === 1 ? '' : 's'}
+        </span>
+        <span className={`chip ${handoffs > 0 ? 'info' : 'zero'}`}>
+          {handoffs} handoff{handoffs === 1 ? '' : 's'}
+        </span>
+        <span className={`chip ${blocked > 0 ? 'blocked' : 'zero'}`}>{blocked} blocked</span>
+        <span className={`chip ${interventions > 0 ? 'info' : 'zero'}`}>
+          {interventions} intervention{interventions === 1 ? '' : 's'}
+        </span>
+      </div>
+    </div>
+  );
 }
 
 export function ActivityTab() {
@@ -110,32 +196,35 @@ export function ActivityTab() {
                 const chip = statusChip(r);
                 const open = expanded === r.run_id;
                 return (
-                  <tr
-                    key={r.run_id}
-                    onClick={() => setExpanded(open ? null : r.run_id)}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <td className="num-cell nowrap">
-                      {new Date(r.started_at * 1000).toLocaleString(undefined, {
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </td>
-                    <td className="task-cell">
-                      {open ? r.task : r.task.length > 90 ? `${r.task.slice(0, 90)}…` : r.task}
-                      {open && (r.final_result || r.error) && (
-                        <div className="row-detail">{r.final_result ?? r.error}</div>
-                      )}
-                    </td>
-                    <td>
-                      <span className={`chip ${chip.cls}`}>{chip.label}</span>
-                    </td>
-                    <td className="num-cell">{r.steps ?? '-'}</td>
-                    <td className="num-cell">{r.llm_calls ?? '-'}</td>
-                    <td className="num-cell">{(r.total_tokens ?? 0).toLocaleString()}</td>
-                  </tr>
+                  <Fragment key={r.run_id}>
+                    <tr onClick={() => setExpanded(open ? null : r.run_id)} style={{ cursor: 'pointer' }}>
+                      <td className="num-cell nowrap">
+                        {new Date(r.started_at * 1000).toLocaleString(undefined, {
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </td>
+                      <td className="task-cell">
+                        {open ? r.task : r.task.length > 90 ? `${r.task.slice(0, 90)}…` : r.task}
+                      </td>
+                      <td>
+                        <span className={`chip ${chip.cls}`}>{chip.label}</span>
+                      </td>
+                      <td className="num-cell">{r.steps ?? '-'}</td>
+                      <td className="num-cell">{r.llm_calls ?? '-'}</td>
+                      <td className="num-cell">{(r.total_tokens ?? 0).toLocaleString()}</td>
+                    </tr>
+                    {open && (
+                      <tr className="detail-row">
+                        <td colSpan={6}>
+                          {(r.final_result || r.error) && <div className="row-detail">{r.final_result ?? r.error}</div>}
+                          <EnforcementPanel record={r} />
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
                 );
               })}
             </tbody>

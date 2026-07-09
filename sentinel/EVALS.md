@@ -64,9 +64,17 @@ Two very different costs, reported separately:
 - **Machine overhead:** `decision_ms` per enforcement decision (policy
   evaluation only). Summary per run: `enforcement.decision_ms_mean` / `_max`.
   This should stay ≪ 1 ms - the policy check is in-memory glob matching.
-- **Human overhead:** `enforcement.human_wait_s` - wall-clock time the run
-  spent frozen waiting for approvals/handoffs. This dominates in practice and
-  is a UX budget, not a performance bug.
+- **Human overhead:** `enforcement.human_wait_s` - total wall-clock time the run
+  spent frozen on a human, split by mechanism: `approval_wait_s` (side-panel
+  approve/deny gates — the extra time enforcement genuinely *adds*, since the
+  agent could have acted on its own) and `handoff_wait_s` (a human did the step
+  in the browser — logins, CAPTCHAs, sensitive actions — which the task needs
+  with or without enforcement, so it counts as baseline, not overhead). The
+  activity panel decomposes a single run into `baseline = duration_s − (approval_wait_s
+  + decision_ms_total)` vs. `enforcement added = approval_wait_s + decision_ms_total`,
+  so you get both numbers without a separate off-mode run. This is a direct
+  decomposition — it does not capture second-order cost (a block that makes the
+  agent re-plan into extra steps).
 - End-to-end: compare `duration_s` for the same task across modes (subtract
   `human_wait_s` from enforce runs to isolate the machine cost).
 
