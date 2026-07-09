@@ -52,7 +52,8 @@ function EnforcementPanel({ record }: { record: HistoryRecord }) {
   const allowed = d.allowed ?? 0;
   const approvals = d.approval_required ?? 0;
   const handoffs = d.handoff_required ?? 0;
-  const blocked = (d.blocked ?? 0) + (d.denied_by_human ?? 0) + (d.denied_timeout ?? 0);
+  const blocked = (d.blocked ?? 0) + (d.denied_by_human ?? 0); // deliberately stopped
+  const timedOut = (d.denied_timeout ?? 0) + (d.handoff_timeout ?? 0); // nobody responded
   const interventions = enf.human_interventions ?? 0;
 
   return (
@@ -100,6 +101,12 @@ function EnforcementPanel({ record }: { record: HistoryRecord }) {
           {handoffs} handoff{handoffs === 1 ? '' : 's'}
         </span>
         <span className={`chip ${blocked > 0 ? 'blocked' : 'zero'}`}>{blocked} blocked</span>
+        <span
+          className={`chip ${timedOut > 0 ? 'unattended' : 'zero'}`}
+          title="Approvals or handoffs that expired because no one responded"
+        >
+          {timedOut} timed out
+        </span>
         <span className={`chip ${interventions > 0 ? 'info' : 'zero'}`}>
           {interventions} intervention{interventions === 1 ? '' : 's'}
         </span>

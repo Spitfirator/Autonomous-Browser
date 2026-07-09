@@ -194,6 +194,7 @@
 .enf-decisions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
 .enf-decisions .chip { font-variant-numeric: tabular-nums; }
 .chip.zero { background: var(--muted); color: var(--muted-foreground); }
+.chip.unattended { background: oklch(0.769 0.188 70.08 / 0.18); color: var(--accent-deep); }
 .chip.mode-enforce { background: oklch(0.792 0.209 151.711 / 0.16); color: var(--success-deep); }
 .chip.mode-shadow { background: oklch(0.852 0.199 91.936 / 0.2); color: var(--primary-foreground); }
 .chip.mode-off { background: var(--secondary); color: var(--secondary-foreground); }
