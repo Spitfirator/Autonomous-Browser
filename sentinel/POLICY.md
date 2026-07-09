@@ -23,7 +23,8 @@ Edits apply to the agent's **very next action**, even mid-run.
     // off      - policy evaluation is skipped (baseline for eval runs)
     "mode": "enforce",
 
-    // null = any site allowed. A list = ONLY these sites (glob syntax).
+    // null = any site allowed. A list = ONLY these sites (entries matched the
+    // same way as every other domain list — see the table below).
     "domain_allowlist": null,
 
     // Never allowed, even if the allowlist would permit them.
@@ -71,23 +72,27 @@ however the agent spells the URL. It matches the **host only**, so
 `duckduckgo.com/?q=facebook` (the word in a search query) is still allowed — the
 agent can search, it just can't *reach* the site.
 
-### Blocklist enforcement is at the navigation layer
+### Domain rules are enforced at the navigation layer
 
-Blocklist entries aren't just checked when the agent calls `navigate`. They are
-mirrored into browser-use's SecurityWatchdog as `prohibited_domains`, which
-enforces at the browser's real navigation events:
+Domain rules aren't just checked when the agent calls `navigate`. The blocklist
+is mirrored into browser-use's SecurityWatchdog as `prohibited_domains` (and an
+allowlist, when set, as `allowed_domains`), which enforce at the browser's real
+navigation events:
 
 - **direct navigation** — blocked before it starts;
-- **redirects** — a redirect that lands on a blocked host is bounced to
+- **redirects** — a redirect that lands on a disallowed host is bounced to
   `about:blank`;
-- **new tabs / pop-ups** — a blocked tab is closed;
+- **new tabs / pop-ups** — a disallowed tab is closed;
 - **link clicks, JS navigation, switching search engines** — all caught the same
   way, because the net is on the navigation, not on the agent's chosen action.
 
 So the agent cannot reach a blocked site by clicking a search result, following
 a redirect, or trying a different search engine. The LLM-level check (rules
 below) and this navigation net use the **same** matching, so the panel's
-"Blocked" reason always matches what the browser enforces.
+"Blocked" reason always matches what the browser enforces. (One precedence note:
+if a domain is on both lists, the allowlist wins at the browser layer, while the
+`PolicyEngine` decision below always applies the blocklist first — so keep a
+domain on one list, not both.)
 
 ## Decision order (first match wins)
 
