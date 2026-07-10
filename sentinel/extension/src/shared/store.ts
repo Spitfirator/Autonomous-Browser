@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type {
   ApprovalRequest,
   ControlRequest,
+  ConversationTurn,
   SentinelConfig,
   SentinelEvent,
   Snapshot,
@@ -20,10 +21,14 @@ interface SentinelStore {
   approvals: ApprovalRequest[];
   handovers: ControlRequest[];
   lastError: string | null;
+  conversationId: string | null; // chat this panel is showing
+  turns: ConversationTurn[]; // persisted transcript, rendered before live events
 
   setWsState: (s: WsState) => void;
   applySnapshot: (snap: Snapshot) => void;
   applyEvent: (event: SentinelEvent) => void;
+  setConversation: (id: string | null, turns: ConversationTurn[]) => void;
+  reconcileConversation: (id: string | null, turns: ConversationTurn[]) => void;
   setConfig: (config: SentinelConfig) => void;
   setLastError: (message: string | null) => void;
   removeApproval: (approvalId: string) => void;
@@ -38,6 +43,8 @@ export const useStore = create<SentinelStore>((set, get) => ({
   approvals: [],
   handovers: [],
   lastError: null,
+  conversationId: null,
+  turns: [],
 
   setWsState: (wsState) => set({ wsState }),
 
@@ -48,6 +55,8 @@ export const useStore = create<SentinelStore>((set, get) => ({
       events: snap.events.slice(-FEED_CAP),
       approvals: snap.pending_approvals,
       handovers: snap.pending_handovers ?? [],
+      // conversationId/turns stay: the panel reconciles them against
+      // status.conversation_id and refetches turns when they differ.
     }),
 
   applyEvent: (event) => {
@@ -114,6 +123,12 @@ export const useStore = create<SentinelStore>((set, get) => ({
     set(patch);
   },
 
+  // Explicit switch: fresh chat view.
+  setConversation: (conversationId, turns) =>
+    set({ conversationId, turns, events: [], approvals: [], handovers: [] }),
+  // Reconnect/cross-client sync: adopt the server's chat but keep the live
+  // event replay (ChatThread hides turns whose run is already in the feed).
+  reconcileConversation: (conversationId, turns) => set({ conversationId, turns }),
   setConfig: (config) => set({ config }),
   setLastError: (lastError) => set({ lastError }),
   removeApproval: (approvalId) =>

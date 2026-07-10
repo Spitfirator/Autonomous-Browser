@@ -227,3 +227,68 @@
 .dec-tick .tick.no.on {
   background: oklch(0.577 0.245 27.325 / 0.1); color: var(--destructive); border-color: transparent;
 }
+.dec-jump {
+  justify-self: start; padding: 0; border: 0; background: none;
+  font: 500 0.71875rem/1 var(--sans); color: var(--muted-foreground); cursor: pointer;
+}
+.dec-jump:hover { color: var(--foreground); text-decoration: underline; }
+
+/* Enforcement chips that deep-link into the log */
+.chip-btn { cursor: pointer; border: 0; font: inherit; }
+.chip-btn:hover { filter: brightness(0.96); }
+
+/* Per-run event log (expanded Activity row) */
+.log-panel {
+  margin-top: 10px; padding: 12px 16px;
+  border: 1px solid var(--border); border-radius: var(--r-lg);
+  background: var(--card); display: grid; gap: 8px;
+}
+.log-head {
+  display: flex; align-items: baseline; gap: 8px;
+  padding: 0; border: 0; background: none; cursor: pointer; text-align: left;
+}
+.log-head h4 {
+  margin: 0; font: 600 0.6875rem/1 var(--sans);
+  letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted-foreground);
+}
+.log-caret {
+  font: 600 0.8125rem/1 var(--sans); color: var(--muted-foreground);
+  transition: transform 120ms ease; display: inline-block;
+}
+.log-caret.open { transform: rotate(90deg); }
+.log-note { font: 400 0.71875rem/1.4 var(--sans); color: var(--muted-foreground); }
+.log-head .log-note { margin-left: auto; }
+.log-scroll {
+  max-height: 340px; overflow-y: auto;
+  border: 1px solid var(--border); border-radius: var(--r-md);
+  padding: 4px; display: grid; gap: 1px; align-content: start;
+}
+.log-row {
+  display: flex; gap: 10px; align-items: baseline;
+  padding: 3px 6px; border-radius: var(--r-sm);
+  font: 400 0.75rem/1.45 var(--sans);
+}
+.log-seq {
+  flex: none; width: 34px; text-align: right;
+  font: 400 0.6875rem/1.45 var(--mono); color: var(--muted-foreground);
+}
+.log-time {
+  flex: none; width: 52px;
+  font: 400 0.6875rem/1.45 var(--mono); font-variant-numeric: tabular-nums;
+  color: var(--muted-foreground);
+}
+.log-type {
+  flex: none; font: 500 0.6875rem/1.45 var(--mono); color: var(--secondary-foreground);
+}
+.log-text {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: var(--foreground);
+}
+.log-text .mono, .log-text.mono { font-family: var(--mono); font-size: 0.6875rem; }
+.log-row .chip { flex: none; }
+.log-row.hl { background: oklch(0.852 0.199 91.936 / 0.14); }
+.log-row.flash { animation: log-flash 1.2s ease-out 1; }
+@keyframes log-flash {
+  0% { background: oklch(0.852 0.199 91.936 / 0.55); }
+  100% { background: oklch(0.852 0.199 91.936 / 0.14); }
+}

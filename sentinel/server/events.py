@@ -37,6 +37,7 @@ class SentinelEvent(BaseModel):
 	ts: float = Field(default_factory=time.time)
 	seq: int = 0
 	run_id: str | None = None
+	conversation_id: str | None = None
 
 
 class StatusChanged(SentinelEvent):
@@ -192,6 +193,8 @@ class EventHub:
 		self._listeners: list[Callable[[SentinelEvent], None]] = []
 		# Composed by main.py to include runner + browser + extension state.
 		self.status_provider: Callable[[], dict[str, Any]] | None = None
+		# Active chat; stamped on every event so clients can partition feeds.
+		self.current_conversation_id: str | None = None
 
 	def add_listener(self, listener: Callable[[SentinelEvent], None]) -> None:
 		self._listeners.append(listener)
@@ -201,6 +204,8 @@ class EventHub:
 		event.seq = self._seq
 		if event.ts == 0:
 			event.ts = time.time()
+		if event.conversation_id is None:
+			event.conversation_id = self.current_conversation_id
 
 		for listener in self._listeners:
 			try:
@@ -237,6 +242,12 @@ class EventHub:
 	def client_count(self) -> int:
 		return len(self._queues)
 
+	def clear_replay(self) -> None:
+		"""Drop the replay buffer (switching chats). Never resets _seq — labels
+		and traces key on the monotonic per-process sequence."""
+		self._replay.clear()
+		self._last_step_screenshot = None
+
 	def snapshot(
 		self,
 		pending_approvals: list[dict[str, Any]],
@@ -254,6 +265,7 @@ class EventHub:
 			'type': 'snapshot',
 			'ts': time.time(),
 			'seq': self._seq,
+			'conversation_id': self.current_conversation_id,
 			'status': self.status_provider() if self.status_provider else {},
 			'events': events,
 			'pending_approvals': pending_approvals,

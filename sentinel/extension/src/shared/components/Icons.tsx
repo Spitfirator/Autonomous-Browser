@@ -98,6 +98,23 @@ export function ShieldIcon() {
   );
 }
 
+export function ChatsIcon() {
+  return (
+    <Svg>
+      <path d="M2.2 3.8h8.2c.7 0 1.2.5 1.2 1.2v4.4c0 .7-.5 1.2-1.2 1.2H6.8l-2.6 2.2v-2.2H3.4c-.7 0-1.2-.5-1.2-1.2V5c0-.7.5-1.2 1.2-1.2Z" />
+      <path d="M13.8 6.2v4.6c0 .9-.5 1.4-1.4 1.4h-.3" />
+    </Svg>
+  );
+}
+
+export function PlusIcon() {
+  return (
+    <Svg>
+      <path d="M8 3v10M3 8h10" />
+    </Svg>
+  );
+}
+
 export function ActivityIcon() {
   return (
     <Svg>

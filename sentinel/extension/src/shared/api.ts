@@ -1,4 +1,12 @@
-import type { DecisionRow, HistoryRecord, SentinelConfig, Status } from './types';
+import type {
+  ConversationDetail,
+  ConversationMeta,
+  DecisionRow,
+  HistoryRecord,
+  SentinelConfig,
+  Status,
+  TraceEventsResponse,
+} from './types';
 
 export const BASE = 'http://127.0.0.1:8765';
 
@@ -22,7 +30,7 @@ export const api = {
       body: JSON.stringify({ task, ...(maxSteps ? { max_steps: maxSteps } : {}) }),
     }),
   sendMessage: (text: string) =>
-    request<{ kind: 'task' | 'followup' | 'steer'; run_id?: string }>('/api/message', {
+    request<{ kind: 'task' | 'followup' | 'steer'; run_id?: string; conversation_id?: string }>('/api/message', {
       method: 'POST',
       body: JSON.stringify({ text }),
     }),
@@ -51,5 +59,20 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ understood }),
     }),
+  runEvents: (runId: string, limit = 2000) =>
+    request<TraceEventsResponse>(`/api/traces/${runId}/events?limit=${limit}`),
+  conversations: () => request<ConversationMeta[]>('/api/conversations'),
+  createConversation: (force = true) =>
+    request<{ conversation_id: string; title: string; created_at: number }>('/api/conversations', {
+      method: 'POST',
+      body: JSON.stringify({ force }),
+    }),
+  getConversation: (id: string) => request<ConversationDetail>(`/api/conversations/${id}`),
+  activateConversation: (id: string, force = false) =>
+    request<{ conversation_id: string }>(`/api/conversations/${id}/activate`, {
+      method: 'POST',
+      body: JSON.stringify({ force }),
+    }),
+  resetAgent: () => request<{ ok: boolean; agent_status: string }>('/api/agent/reset', { method: 'POST' }),
   actions: () => request<string[]>('/api/actions'),
 };

@@ -20,6 +20,7 @@ interface EventBase {
   ts: number;
   seq: number;
   run_id: string | null;
+  conversation_id?: string | null;
 }
 
 export interface StatusChanged extends EventBase {
@@ -175,6 +176,7 @@ export interface Snapshot {
   type: 'snapshot';
   ts: number;
   seq: number;
+  conversation_id?: string | null;
   status: Status;
   events: SentinelEvent[];
   pending_approvals: ApprovalRequest[];
@@ -196,6 +198,7 @@ export interface Status {
   calls_budget: number;
   total_tokens: number;
   ws_clients: number;
+  conversation_id?: string | null;
 }
 
 export interface ThrottleConfig {
@@ -279,4 +282,40 @@ export interface HistoryRecord {
   provider?: string;
   policy_mode?: PolicyMode;
   enforcement?: EnforcementSummary;
+  conversation_id?: string | null;
+}
+
+// Full event trace of one run, served from data/traces/<run_id>/events.jsonl.
+// When truncated, `events` holds the LAST `limit` of `total` events.
+export interface TraceEventsResponse {
+  run_id: string;
+  total: number;
+  truncated: boolean;
+  events: SentinelEvent[];
+}
+
+export interface ConversationMeta {
+  conversation_id: string;
+  title: string;
+  created_at: number;
+  updated_at: number;
+  turn_count: number;
+  preview: string;
+  active: boolean;
+}
+
+export interface ConversationTurn {
+  role: 'user' | 'agent';
+  text: string;
+  ts: number;
+  run_id: string | null;
+  kind: 'task' | 'followup' | 'steer' | 'result' | 'error';
+}
+
+export interface ConversationDetail {
+  conversation_id: string;
+  title: string;
+  created_at: number;
+  updated_at: number;
+  turns: ConversationTurn[];
 }

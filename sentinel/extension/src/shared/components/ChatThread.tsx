@@ -4,6 +4,7 @@ import { verdictStyle } from '../verdicts';
 import type {
   ControlRequest,
   ControlReturned,
+  ConversationTurn,
   EnforcementDecision,
   OperatorMessage,
   SentinelEvent,
@@ -90,6 +91,29 @@ function SystemRow({ children, title }: { children: React.ReactNode; title?: str
   );
 }
 
+/** A restored turn from a past run in this chat (loaded on switch/reconnect). */
+function TurnBubble({ turn }: { turn: ConversationTurn }) {
+  if (turn.role === 'user') {
+    return (
+      <div className="msg-row user">
+        <div className="bubble user-bubble">
+          {turn.kind === 'steer' && <span className="bubble-tag">Steering</span>}
+          {turn.text}
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="msg-row agent">
+      <Avatar />
+      <div className="bubble agent-bubble">
+        {turn.kind === 'error' && <span className="chip blocked turn-chip">Did not finish</span>}
+        <p>{turn.text}</p>
+      </div>
+    </div>
+  );
+}
+
 function renderEvent(e: SentinelEvent) {
   switch (e.type) {
     case 'user_message':
@@ -146,6 +170,7 @@ function renderEvent(e: SentinelEvent) {
 
 export function ChatThread() {
   const events = useStore((s) => s.events);
+  const turns = useStore((s) => s.turns);
   const status = useStore((s) => s.status);
   const handoverActive = useStore((s) => s.handovers.length > 0);
   const endRef = useRef<HTMLDivElement>(null);
@@ -155,12 +180,24 @@ export function ChatThread() {
     endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }, [lastSeq, status?.agent_status]);
 
+  // Runs already present in the live feed render from events; drop their
+  // restored turns so a reconnect doesn't show the same exchange twice.
+  const liveRuns = new Set(events.map((e) => e.run_id).filter(Boolean));
+  const shownTurns = turns.filter((t) => !t.run_id || !liveRuns.has(t.run_id));
   const items = events.map(renderEvent).filter(Boolean);
   const thinking = status?.agent_status === 'running' && !handoverActive;
 
   return (
     <div className="thread">
-      {items.length === 0 ? (
+      {shownTurns.map((t, i) => (
+        <TurnBubble key={`t-${i}`} turn={t} />
+      ))}
+      {shownTurns.length > 0 && items.length > 0 && (
+        <div className="sys-row">
+          <span className="thread-divider">earlier in this chat ↑</span>
+        </div>
+      )}
+      {shownTurns.length === 0 && items.length === 0 ? (
         <div className="thread-empty">
           <span className="mark lg" aria-hidden="true" />
           <p>

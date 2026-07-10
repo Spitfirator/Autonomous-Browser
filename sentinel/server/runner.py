@@ -15,6 +15,7 @@ from browser_use import Agent
 
 from server.browser import BrowserManager
 from server.config import ConfigStore
+from server.conversations import ConversationStore
 from server.events import (
 	AgentStatus,
 	EventHub,
@@ -73,6 +74,7 @@ class AgentRunner:
 		handovers: HandoverManager,
 		browser_manager: BrowserManager,
 		history: HistoryStore,
+		conversations: ConversationStore,
 	) -> None:
 		self._config_store = config_store
 		self._hub = hub
@@ -81,17 +83,18 @@ class AgentRunner:
 		self._handovers = handovers
 		self._browser_manager = browser_manager
 		self._history = history
+		self._conversations = conversations
 
 		self.status: AgentStatus = 'idle'
 		self.task_text: str | None = None
 		self.run_id: str | None = None
 		self.ctx: RunContext | None = None
+		# Active chat; each run's follow-up context is built from its turns.
+		self.conversation_id: str | None = None
 		self._agent: Agent | None = None
 		self._run_task: asyncio.Task | None = None
 		self._stop_requested = False
 		self._budget_stopped = False
-		# Last finished run, used to give follow-up messages continuity.
-		self._last_run: dict[str, str] | None = None
 
 	# ── Status ───────────────────────────────────────────────────────────────
 	def status_dict(self) -> dict[str, Any]:
@@ -110,6 +113,7 @@ class AgentRunner:
 			'total_tokens': self.ctx.total_tokens if self.ctx else 0,
 			'ws_clients': self._hub.client_count,
 			'handover': (self._handovers.pending_list() or [None])[0],
+			'conversation_id': self.conversation_id,
 		}
 
 	def _set_status(self, status: AgentStatus) -> None:
@@ -126,18 +130,59 @@ class AgentRunner:
 			)
 		)
 
+	# ── Conversations ────────────────────────────────────────────────────────
+	def _ensure_conversation(self) -> str:
+		if self.conversation_id is None or not self._conversations.exists(self.conversation_id):
+			conv = self._conversations.create()
+			self.conversation_id = conv['conversation_id']
+			self._hub.current_conversation_id = self.conversation_id
+		return self.conversation_id
+
+	def activate_conversation(self, conversation_id: str) -> None:
+		"""Switch the active chat. Requires idle; the caller stops/resets first."""
+		if self.status != 'idle':
+			raise RunnerBusy(f'A task is already {self.status} — stop it before switching chats')
+		self.conversation_id = conversation_id
+		self._hub.current_conversation_id = conversation_id
+		self._hub.clear_replay()
+		self.ctx = None   # status-bar counters belong to the previous chat's last run
+		self._set_status('idle')   # re-broadcast so every panel sees the new chat
+
+	async def force_reset(self) -> None:
+		"""Escape hatch for a wedged runner: stop, wait briefly, then hard-reset
+		to idle so a new chat never requires a server restart."""
+		if self._run_task is not None:
+			self.stop()
+			try:
+				await asyncio.wait_for(asyncio.shield(self._run_task), timeout=10)
+			except (TimeoutError, asyncio.CancelledError):
+				self._run_task.cancel()
+		self._agent = None
+		self._run_task = None
+		self.task_text = None
+		self.run_id = None
+		self._stop_requested = False
+		self._budget_stopped = False
+		self._set_status('idle')
+
 	# ── Chat entrypoint ──────────────────────────────────────────────────────
 	async def handle_message(self, text: str) -> dict[str, Any]:
 		"""One chatbot-style entrypoint: steer if a run is live, otherwise start
-		a (follow-up-aware) task."""
+		a task carrying the whole chat's history as context."""
+		cid = self._ensure_conversation()
 		if self.status in ('running', 'paused', 'stopping'):
 			self.steer(text)
-			return {'kind': 'steer'}
-		if self._last_run is not None:
-			run_id = await self.start_task(self._build_followup(text), message_text=text, kind='followup')
-			return {'kind': 'followup', 'run_id': run_id}
-		run_id = await self.start_task(text)
-		return {'kind': 'task', 'run_id': run_id}
+			self._conversations.append_turn(cid, 'user', text, run_id=self.run_id, kind='steer')
+			return {'kind': 'steer', 'conversation_id': cid}
+		conv = self._conversations.get(cid)
+		turns = (conv or {}).get('turns') or []
+		task = self._build_task_with_context(text, turns) if turns else text
+		kind = 'followup' if turns else 'task'
+		run_id = await self.start_task(task, message_text=text, kind=kind)
+		# After start_task: a RunnerBusy/BrowserNotReady failure must not record
+		# a phantom turn.
+		self._conversations.append_turn(cid, 'user', text, run_id=run_id, kind=kind)
+		return {'kind': kind, 'run_id': run_id, 'conversation_id': cid}
 
 	def steer(self, text: str) -> None:
 		if self.ctx is None:
@@ -146,13 +191,30 @@ class AgentRunner:
 		self._hub.emit(OperatorMessage(run_id=self.run_id, text=text, kind='steer'))
 		logger.info(f'Steering queued for next LLM call: {text[:80]}')
 
-	def _build_followup(self, text: str) -> str:
-		assert self._last_run is not None
+	# Context budget for follow-up runs: whole-chat history embedded in the task
+	# string (browser-use's Agent takes no separate history), oldest turns
+	# dropped first. Small enough for gemini flash-lite, ~10-15 useful turns.
+	_CTX_TURN_CAP = 600
+	_CTX_TOTAL_CAP = 8000
+
+	def _build_task_with_context(self, text: str, turns: list[dict[str, Any]]) -> str:
+		lines: list[str] = []
+		used = 0
+		for turn in reversed(turns):
+			speaker = 'operator' if turn.get('role') == 'user' else 'agent'
+			line = f'[{speaker}] {str(turn.get("text") or "")[: self._CTX_TURN_CAP]}'
+			if used + len(line) > self._CTX_TOTAL_CAP:
+				break
+			lines.append(line)
+			used += len(line)
+		lines.reverse()
+		history = '\n'.join(lines)
 		return (
-			f'Earlier you completed this task: {self._last_run["task"]}\n'
-			f'Outcome: {self._last_run["result"]}\n'
-			f'The same browser session is still open — continue from its current state.\n'
-			f'Follow-up request from the operator: {text}'
+			'You are continuing an ongoing chat session with the operator. '
+			'Conversation so far (oldest first, may be truncated):\n'
+			f'{history}\n'
+			'The same browser session is still open — continue from its current state.\n'
+			f'New request from the operator: {text}'
 		)
 
 	# ── Task lifecycle ───────────────────────────────────────────────────────
@@ -262,10 +324,12 @@ class AgentRunner:
 	async def _run(self, agent: Agent, max_steps: int, ctx: RunContext, task: str) -> None:
 		started_at = time.time()
 		config = self._config_store.get()
+		cid = self.conversation_id   # capture: switching requires idle, but be safe
 		record: dict[str, Any] = {
 			'run_id': ctx.run_id,
 			'task': task,
 			'started_at': started_at,
+			'conversation_id': cid,
 			'model': config.model.model,
 			'provider': config.model.provider,
 			'policy_mode': config.policies.mode,
@@ -285,7 +349,6 @@ class AgentRunner:
 			else:
 				final_result = history.final_result()
 				success = history.is_successful()
-				self._last_run = {'task': task[:400], 'result': (final_result or 'finished')[:400]}
 				self._hub.emit(
 					TaskDone(
 						run_id=ctx.run_id,
@@ -325,6 +388,20 @@ class AgentRunner:
 				enforcement=ctx.enforcement_summary(),
 			)
 			self._history.append(record)
+			if cid is not None:
+				status = record.get('status')
+				if status in ('done', 'finished'):
+					self._conversations.append_turn(
+						cid, 'agent', record.get('final_result') or 'finished', run_id=ctx.run_id, kind='result'
+					)
+				else:
+					fallback = {
+						'stopped': 'Stopped by user',
+						'budget_exceeded': f'LLM call budget reached ({ctx.max_llm_calls})',
+					}.get(status or '', 'Run failed')
+					self._conversations.append_turn(
+						cid, 'agent', record.get('error') or fallback, run_id=ctx.run_id, kind='error'
+					)
 			self._agent = None
 			self._run_task = None
 			self.task_text = None

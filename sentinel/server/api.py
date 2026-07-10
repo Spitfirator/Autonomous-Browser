@@ -25,6 +25,7 @@ from server.config import (
 	KNOWN_API_KEYS,
 	ConfigStore,
 )
+from server.conversations import ConversationStore
 from server.events import ConfigChanged, EventHub
 from server.governance import ApprovalManager
 from server.history import HistoryStore
@@ -307,6 +308,120 @@ async def post_understood(request: web.Request) -> web.Response:
 	return web.json_response({'ok': True})
 
 
+async def _ready_for_conversation_change(request: web.Request, body: dict[str, Any]) -> web.Response | None:
+	"""Shared guard for create/activate: a live run blocks the switch unless
+	force=true, which hard-resets the runner (the new-chat recovery path)."""
+	runner: AgentRunner = request.app['runner']
+	if runner.status == 'idle':
+		return None
+	if body.get('force'):
+		await runner.force_reset()
+		return None
+	return _json_error(409, f'A task is already {runner.status} — stop it first or pass force')
+
+
+async def post_conversation_create(request: web.Request) -> web.Response:
+	runner: AgentRunner = request.app['runner']
+	conversations: ConversationStore = request.app['conversations']
+	try:
+		body = await request.json()
+	except json.JSONDecodeError:
+		body = {}
+	blocked = await _ready_for_conversation_change(request, body)
+	if blocked is not None:
+		return blocked
+	conv = conversations.create(body.get('title'))
+	runner.activate_conversation(conv['conversation_id'])
+	return web.json_response(conv)
+
+
+async def get_conversations(request: web.Request) -> web.Response:
+	runner: AgentRunner = request.app['runner']
+	conversations: ConversationStore = request.app['conversations']
+	out = conversations.list()
+	for conv in out:
+		conv['active'] = conv['conversation_id'] == runner.conversation_id
+	return web.json_response(out)
+
+
+async def get_conversation(request: web.Request) -> web.Response:
+	conversations: ConversationStore = request.app['conversations']
+	conversation_id = request.match_info['conversation_id']
+	if not conversation_id.isalnum():
+		return _json_error(400, 'invalid conversation_id')
+	conv = conversations.get(conversation_id)
+	if conv is None:
+		return _json_error(404, 'conversation not found')
+	return web.json_response(conv)
+
+
+async def post_conversation_activate(request: web.Request) -> web.Response:
+	runner: AgentRunner = request.app['runner']
+	conversations: ConversationStore = request.app['conversations']
+	conversation_id = request.match_info['conversation_id']
+	if not conversation_id.isalnum():
+		return _json_error(400, 'invalid conversation_id')
+	if not conversations.exists(conversation_id):
+		return _json_error(404, 'conversation not found')
+	try:
+		body = await request.json()
+	except json.JSONDecodeError:
+		body = {}
+	blocked = await _ready_for_conversation_change(request, body)
+	if blocked is not None:
+		return blocked
+	runner.activate_conversation(conversation_id)
+	return web.json_response({'conversation_id': conversation_id})
+
+
+async def post_agent_reset(request: web.Request) -> web.Response:
+	"""Hard-reset a wedged runner to idle without restarting the server."""
+	runner: AgentRunner = request.app['runner']
+	await runner.force_reset()
+	return web.json_response({'ok': True, 'agent_status': runner.status})
+
+
+async def get_run_events(request: web.Request) -> web.Response:
+	"""Full event trace for one run, for the Activity tab's inline Logs panel.
+
+	When the trace exceeds `limit` lines we keep the LAST `limit` events and set
+	truncated=true — the anchors the operator jumps to (decisions, approvals,
+	the outcome) cluster late in a run."""
+	traces_dir: Path = request.app['traces_dir']
+	run_id = request.match_info['run_id']
+	if not run_id.isalnum():   # run ids are uuid4().hex[:8] — blocks path traversal
+		return _json_error(400, 'invalid run_id')
+	try:
+		limit = min(int(request.query.get('limit', '2000')), 5000)
+	except ValueError:
+		limit = 2000
+	limit = max(1, limit)
+	events_path = traces_dir / run_id / 'events.jsonl'
+	if not events_path.exists():
+		return web.json_response({'run_id': run_id, 'total': 0, 'truncated': False, 'events': []})
+	events: list[dict[str, Any]] = []
+	total = 0
+	try:
+		for line in events_path.read_text().splitlines():
+			line = line.strip()
+			if not line:
+				continue
+			try:
+				ev = json.loads(line)
+			except json.JSONDecodeError:   # torn last line after a crash
+				continue
+			total += 1
+			ev.pop('screenshot_b64', None)   # traces null it already; belt and braces
+			events.append(ev)
+	except OSError as e:
+		logger.warning(f'Failed to read trace events for {run_id}: {e}')
+		return _json_error(500, 'failed to read trace')
+	truncated = total > limit
+	if truncated:
+		events = events[-limit:]
+	return web.json_response({'run_id': run_id, 'total': total, 'truncated': truncated, 'events': events})
+
+
 async def ws_handler(request: web.Request) -> web.WebSocketResponse:
 	hub: EventHub = request.app['hub']
 	approvals: ApprovalManager = request.app['approvals']
@@ -356,6 +471,7 @@ def build_app(
 	history: HistoryStore,
 	traces_dir: Path,
 	labels: LabelStore,
+	conversations: ConversationStore,
 ) -> web.Application:
 	app = web.Application(middlewares=[origin_middleware], client_max_size=1024 * 1024)
 	app['config_store'] = config_store
@@ -367,13 +483,19 @@ def build_app(
 	app['history'] = history
 	app['traces_dir'] = traces_dir
 	app['labels'] = labels
+	app['conversations'] = conversations
 
 	app.router.add_get('/api/status', get_status)
 	app.router.add_get('/api/ping', get_ping)
 	app.router.add_post('/api/hello', post_hello)
 	app.router.add_post('/api/task', post_task)
 	app.router.add_post('/api/message', post_message)
+	app.router.add_post('/api/agent/reset', post_agent_reset)   # before the {command} catch-all
 	app.router.add_post('/api/agent/{command}', post_agent_control)
+	app.router.add_post('/api/conversations', post_conversation_create)
+	app.router.add_get('/api/conversations', get_conversations)
+	app.router.add_get('/api/conversations/{conversation_id}', get_conversation)
+	app.router.add_post('/api/conversations/{conversation_id}/activate', post_conversation_activate)
 	app.router.add_get('/api/config', get_config)
 	app.router.add_put('/api/config', put_config)
 	app.router.add_get('/api/keys', get_keys)
@@ -383,6 +505,7 @@ def build_app(
 	app.router.add_get('/api/history', get_history)
 	app.router.add_get('/api/traces/{run_id}/decisions', get_run_decisions)
 	app.router.add_post('/api/traces/{run_id}/decisions/{seq}', post_understood)
+	app.router.add_get('/api/traces/{run_id}/events', get_run_events)
 	app.router.add_get('/api/actions', get_actions)
 	app.router.add_get('/ws', ws_handler)
 	app.router.add_get('/setup', get_setup)

@@ -4,6 +4,7 @@ import { RefreshIcon } from '../../shared/components/Icons';
 import { useStore } from '../../shared/store';
 import type { DecisionRow, HistoryRecord } from '../../shared/types';
 import { verdictStyle } from '../../shared/verdicts';
+import { LogsPanel, type LogAnchor, type LogAnchorKind } from '../components/LogsPanel';
 
 function statusChip(record: HistoryRecord): { cls: string; label: string } {
   switch (record.status) {
@@ -32,7 +33,13 @@ function fmtDur(s: number): string {
 }
 
 /** Baseline-vs-enforcement time split + decision breakdown for one run. */
-function EnforcementPanel({ record }: { record: HistoryRecord }) {
+function EnforcementPanel({
+  record,
+  onChipClick,
+}: {
+  record: HistoryRecord;
+  onChipClick?: (kind: LogAnchorKind) => void;
+}) {
   const enf = record.enforcement;
   if (!enf) return null;
 
@@ -55,6 +62,18 @@ function EnforcementPanel({ record }: { record: HistoryRecord }) {
   const blocked = (d.blocked ?? 0) + (d.denied_by_human ?? 0); // deliberately stopped
   const timedOut = (d.denied_timeout ?? 0) + (d.handoff_timeout ?? 0); // nobody responded
   const interventions = enf.human_interventions ?? 0;
+
+  // Non-zero chips deep-link into the run's log; zero chips stay inert.
+  const chip = (count: number, kind: LogAnchorKind, cls: string, label: string, title?: string) =>
+    count > 0 && onChipClick ? (
+      <button className={`chip ${cls} chip-btn`} onClick={() => onChipClick(kind)} title={title ?? 'Show in log'}>
+        {label}
+      </button>
+    ) : (
+      <span className={`chip ${count > 0 ? cls : 'zero'}`} title={title}>
+        {label}
+      </span>
+    );
 
   return (
     <div className="enf-panel">
@@ -93,30 +112,25 @@ function EnforcementPanel({ record }: { record: HistoryRecord }) {
       </div>
 
       <div className="enf-decisions">
-        <span className={`chip ${allowed > 0 ? 'allowed' : 'zero'}`}>{allowed} allowed</span>
-        <span className={`chip ${approvals > 0 ? 'approval_required' : 'zero'}`}>
-          {approvals} approval{approvals === 1 ? '' : 's'}
-        </span>
-        <span className={`chip ${handoffs > 0 ? 'info' : 'zero'}`}>
-          {handoffs} handoff{handoffs === 1 ? '' : 's'}
-        </span>
-        <span className={`chip ${blocked > 0 ? 'blocked' : 'zero'}`}>{blocked} blocked</span>
-        <span
-          className={`chip ${timedOut > 0 ? 'unattended' : 'zero'}`}
-          title="Approvals or handoffs that expired because no one responded"
-        >
-          {timedOut} timed out
-        </span>
-        <span className={`chip ${interventions > 0 ? 'info' : 'zero'}`}>
-          {interventions} intervention{interventions === 1 ? '' : 's'}
-        </span>
+        {chip(allowed, 'allowed', 'allowed', `${allowed} allowed`)}
+        {chip(approvals, 'approvals', 'approval_required', `${approvals} approval${approvals === 1 ? '' : 's'}`)}
+        {chip(handoffs, 'handoffs', 'info', `${handoffs} handoff${handoffs === 1 ? '' : 's'}`)}
+        {chip(blocked, 'blocked', 'blocked', `${blocked} blocked`)}
+        {chip(
+          timedOut,
+          'timed_out',
+          'unattended',
+          `${timedOut} timed out`,
+          'Approvals or handoffs that expired because no one responded',
+        )}
+        {chip(interventions, 'interventions', 'info', `${interventions} intervention${interventions === 1 ? '' : 's'}`)}
       </div>
     </div>
   );
 }
 
 /** Per-decision "could you tell why?" list with a yes/no tick (metric 6). */
-function DecisionsPanel({ runId }: { runId: string }) {
+function DecisionsPanel({ runId, onJump }: { runId: string; onJump?: (seq: number) => void }) {
   const [rows, setRows] = useState<DecisionRow[] | null>(null);
 
   useEffect(() => {
@@ -152,6 +166,11 @@ function DecisionsPanel({ runId }: { runId: string }) {
                   {label} · <span className="mono">{r.action}</span>
                 </span>
                 <span className="dec-reason">{r.reason}</span>
+                {onJump && (
+                  <button className="dec-jump" onClick={() => onJump(r.seq)}>
+                    View in log ›
+                  </button>
+                )}
               </div>
               <div className="dec-tick">
                 <button
@@ -180,7 +199,13 @@ function DecisionsPanel({ runId }: { runId: string }) {
 export function ActivityTab() {
   const [records, setRecords] = useState<HistoryRecord[]>([]);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [logAnchor, setLogAnchor] = useState<LogAnchor | null>(null);
   const agentStatus = useStore((s) => s.status?.agent_status);
+
+  const toggleExpanded = (runId: string, open: boolean) => {
+    setExpanded(open ? null : runId);
+    setLogAnchor(null); // anchors are meaningless across rows
+  };
 
   const refresh = useCallback(() => {
     api.history(100).then(setRecords).catch(() => {});
@@ -267,7 +292,7 @@ export function ActivityTab() {
                 const open = expanded === r.run_id;
                 return (
                   <Fragment key={r.run_id}>
-                    <tr onClick={() => setExpanded(open ? null : r.run_id)} style={{ cursor: 'pointer' }}>
+                    <tr onClick={() => toggleExpanded(r.run_id, open)} style={{ cursor: 'pointer' }}>
                       <td className="num-cell nowrap">
                         {new Date(r.started_at * 1000).toLocaleString(undefined, {
                           month: 'short',
@@ -290,8 +315,15 @@ export function ActivityTab() {
                       <tr className="detail-row">
                         <td colSpan={6}>
                           {(r.final_result || r.error) && <div className="row-detail">{r.final_result ?? r.error}</div>}
-                          <EnforcementPanel record={r} />
-                          <DecisionsPanel runId={r.run_id} />
+                          <EnforcementPanel
+                            record={r}
+                            onChipClick={(kind) => setLogAnchor({ kind, nonce: Date.now() })}
+                          />
+                          <DecisionsPanel
+                            runId={r.run_id}
+                            onJump={(seq) => setLogAnchor({ kind: 'seq', seq, nonce: Date.now() })}
+                          />
+                          <LogsPanel runId={r.run_id} anchor={logAnchor} />
                         </td>
                       </tr>
                     )}

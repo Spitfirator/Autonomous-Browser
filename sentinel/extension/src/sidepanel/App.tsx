@@ -4,9 +4,11 @@ import { ApprovalCard } from '../shared/components/ApprovalCard';
 import { ChatThread } from '../shared/components/ChatThread';
 import { HandoverCard } from '../shared/components/HandoverCard';
 import {
+  ChatsIcon,
   OverlayIcon,
   PauseIcon,
   PlayIcon,
+  PlusIcon,
   SendIcon,
   SettingsIcon,
   StopIcon,
@@ -14,6 +16,7 @@ import {
 import { OfflineBanner } from '../shared/components/OfflineBanner';
 import { StatusBar } from '../shared/components/StatusBar';
 import { useStore } from '../shared/store';
+import { ChatListPanel } from './ChatListPanel';
 
 const hasChrome = typeof chrome !== 'undefined' && !!chrome.storage;
 
@@ -27,9 +30,21 @@ export function App() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [visuals, setVisuals] = useState(true);
+  const [showChats, setShowChats] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const agentStatus = status?.agent_status ?? 'idle';
+  const serverConversationId = status?.conversation_id ?? null;
+
+  // Adopt the server's active chat after a reconnect or a switch made from
+  // another client; keeps the live feed and hides duplicated history turns.
+  useEffect(() => {
+    if (!serverConversationId || serverConversationId === useStore.getState().conversationId) return;
+    api
+      .getConversation(serverConversationId)
+      .then((c) => useStore.getState().reconcileConversation(serverConversationId, c.turns))
+      .catch(() => useStore.getState().reconcileConversation(serverConversationId, []));
+  }, [serverConversationId]);
   const running = agentStatus === 'running' || agentStatus === 'paused';
   const canSend = wsState === 'connected' && draft.trim().length > 0 && agentStatus !== 'stopping';
 
@@ -63,6 +78,20 @@ export function App() {
     setError(null);
     try {
       await api.control(command);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  // Always forces: starting a new chat is also the recovery path when the
+  // runner is wedged mid-task.
+  const newChat = async () => {
+    setError(null);
+    setShowChats(false);
+    try {
+      const conv = await api.createConversation(true);
+      useStore.getState().setConversation(conv.conversation_id, []);
+      inputRef.current?.focus();
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     }
@@ -118,6 +147,23 @@ export function App() {
             </>
           )}
           <button
+            className="ghost icon-btn"
+            title="New chat"
+            aria-label="Start a new chat"
+            onClick={newChat}
+          >
+            <PlusIcon />
+          </button>
+          <button
+            className={`ghost icon-btn ${showChats ? 'on' : ''}`}
+            title="Chats"
+            aria-label="Show past chats"
+            aria-pressed={showChats}
+            onClick={() => setShowChats((v) => !v)}
+          >
+            <ChatsIcon />
+          </button>
+          <button
             className={`ghost icon-btn ${visuals ? '' : 'off'}`}
             title={visuals ? 'In-page control bar: on (turn off in your personal browser)' : 'In-page control bar: off'}
             aria-label="Toggle the in-page control bar"
@@ -140,6 +186,7 @@ export function App() {
       <main className="panel-main chat-main">
         <OfflineBanner />
         <ChatThread />
+        {showChats && <ChatListPanel onClose={() => setShowChats(false)} />}
       </main>
 
       {(handovers.length > 0 || approvals.length > 0 || error) && (
