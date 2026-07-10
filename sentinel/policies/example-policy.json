@@ -1,0 +1,37 @@
+{
+  "policies": {
+    "mode": "enforce",
+
+    "domain_allowlist": null,
+
+    "domain_blocklist": [
+      "*.bank.com",
+      "internal-admin.corp",
+      "facebook"
+    ],
+
+    "blocked_actions": [
+      "upload_file"
+    ],
+
+    "approval_required_actions": [
+      "execute_javascript"
+    ],
+    "approval_required_domains": [
+      "checkout.stripe.com",
+      "*.paypal.com"
+    ],
+
+    "sensitive_domains": [
+      "accounts.google.com",
+      "*.okta.com"
+    ],
+
+    "budgets": {
+      "max_steps": 30,
+      "max_llm_calls": 60,
+      "approval_timeout_s": 120,
+      "handover_timeout_s": 900
+    }
+  }
+}
