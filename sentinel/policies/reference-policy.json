@@ -7,6 +7,28 @@
     "approval_required_actions": ["click"],
     "approval_required_domains": ["checkout.stripe.com", "*.paypal.com"],
     "sensitive_domains": ["practicetestautomation.com", "accounts.google.com"],
+    "prompt_injection": {
+      "enabled": true,
+      "detection_threshold": 0.55,
+      "block_threshold": 0.85
+    },
+    "data_flow": {
+      "enabled": true,
+      "trusted_domains": [],
+      "sensitive_data_verdict": "block"
+    },
+    "adaptive_approvals": {
+      "enabled": true,
+      "approval_risk_threshold": 55,
+      "grant_ttl_s": 300,
+      "grant_max_uses": 3,
+      "max_prompts_per_run": 4,
+      "fatigue_strategy": "handoff"
+    },
+    "audit": {
+      "store_screenshots": false,
+      "store_model_reasoning": false
+    },
     "budgets": {
       "max_steps": 30,
       "max_llm_calls": 60,

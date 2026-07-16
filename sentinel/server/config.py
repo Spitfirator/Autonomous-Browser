@@ -7,7 +7,7 @@ import tempfile
 from pathlib import Path
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 logger = logging.getLogger('sentinel.config')
 
@@ -99,6 +99,62 @@ class Budgets(BaseModel):
 	handover_timeout_s: float = 900.0   # how long the agent waits for a human takeover
 
 
+class PromptInjectionPolicy(BaseModel):
+	"""Indirect prompt-injection detection at the untrusted page boundary."""
+
+	model_config = ConfigDict(extra='forbid')
+
+	enabled: bool = True
+	detection_threshold: float = Field(default=0.55, ge=0.0, le=1.0)
+	# At/above this confidence, protected sinks influenced by the page are
+	# blocked instead of merely held for approval.
+	block_threshold: float = Field(default=0.85, ge=0.0, le=1.0)
+
+	@model_validator(mode='after')
+	def thresholds_are_ordered(self) -> 'PromptInjectionPolicy':
+		if self.block_threshold < self.detection_threshold:
+			raise ValueError('block_threshold must be greater than or equal to detection_threshold')
+		return self
+
+
+class DataFlowPolicy(BaseModel):
+	"""Rules for data moving from sensitive/untrusted sources into sinks."""
+
+	model_config = ConfigDict(extra='forbid')
+
+	enabled: bool = True
+	# Sensitive values may only be disclosed to these explicitly trusted
+	# destinations.  Empty by default: logins and payments should use handoff.
+	trusted_domains: list[str] = Field(default_factory=list)
+	sensitive_data_verdict: Literal['block', 'approve'] = 'block'
+
+
+class AdaptiveApprovalPolicy(BaseModel):
+	"""Risk-adaptive approval and bounded consent reuse to reduce fatigue."""
+
+	model_config = ConfigDict(extra='forbid')
+
+	enabled: bool = True
+	approval_risk_threshold: int = Field(default=55, ge=0, le=100)
+	grant_ttl_s: float = Field(default=300.0, ge=1.0, le=3600.0)
+	grant_max_uses: int = Field(default=3, ge=1, le=100)
+	max_prompts_per_run: int = Field(default=4, ge=1, le=100)
+	# Once the prompt budget is exhausted, one browser handoff is less prone to
+	# rubber-stamping than a stream of near-identical approval cards.
+	fatigue_strategy: Literal['handoff', 'block'] = 'handoff'
+
+
+class AuditPolicy(BaseModel):
+	"""At-rest trace retention; live side-panel monitoring is unaffected."""
+
+	model_config = ConfigDict(extra='forbid')
+
+	# Screenshots and free-form model reasoning can contain page/private data
+	# that deterministic text redaction cannot reliably remove.
+	store_screenshots: bool = False
+	store_model_reasoning: bool = False
+
+
 class Policies(BaseModel):
 	model_config = ConfigDict(extra='forbid')
 
@@ -113,6 +169,10 @@ class Policies(BaseModel):
 	# payment, account pages). After the human hands control back once, the agent
 	# may act there for the rest of the run — the human vouched for the context.
 	sensitive_domains: list[str] = Field(default_factory=list)
+	prompt_injection: PromptInjectionPolicy = Field(default_factory=PromptInjectionPolicy)
+	data_flow: DataFlowPolicy = Field(default_factory=DataFlowPolicy)
+	adaptive_approvals: AdaptiveApprovalPolicy = Field(default_factory=AdaptiveApprovalPolicy)
+	audit: AuditPolicy = Field(default_factory=AuditPolicy)
 	budgets: Budgets = Field(default_factory=Budgets)
 
 

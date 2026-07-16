@@ -60,9 +60,14 @@ class TraceStore:
 		payload = event.model_dump(mode='json')
 		trace.event_counts[event.type] = trace.event_counts.get(event.type, 0) + 1
 
-		if isinstance(event, StepEvent) and event.screenshot_b64:
+		if isinstance(event, StepEvent):
+			audit = self._config_store.get().policies.audit
 			payload['screenshot_b64'] = None
-			payload['screenshot_file'] = self._save_screenshot(trace, event.step, event.screenshot_b64)
+			if event.screenshot_b64 and audit.store_screenshots:
+				payload['screenshot_file'] = self._save_screenshot(trace, event.step, event.screenshot_b64)
+			if not audit.store_model_reasoning:
+				payload['thinking'] = None
+				payload['memory'] = None
 
 		try:
 			trace.file.write(json.dumps(payload, default=str) + '\n')

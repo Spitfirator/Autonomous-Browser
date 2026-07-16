@@ -222,7 +222,10 @@ async def post_approval(request: web.Request) -> web.Response:
 	approve = body.get('approve')
 	if not isinstance(approve, bool):
 		return _json_error(400, 'approve must be a boolean')
-	resolved = approvals.resolve(approval_id, approve)
+	scope = body.get('scope', 'once')
+	if scope not in ('once', 'similar'):
+		return _json_error(400, 'scope must be once or similar')
+	resolved = approvals.resolve(approval_id, approve, scope)
 	if not resolved:
 		return _json_error(404, 'Approval not found or already resolved')
 	return web.json_response({'resolved': True})
@@ -242,7 +245,7 @@ async def get_actions(request: web.Request) -> web.Response:
 
 
 # Verdicts that aren't a block/pause the operator needs explained.
-_NON_EXPLAIN_VERDICTS = {'allowed', 'handoff_returned'}
+_NON_EXPLAIN_VERDICTS = {'allowed', 'approval_reused', 'handoff_returned'}
 
 
 async def get_run_decisions(request: web.Request) -> web.Response:

@@ -8,10 +8,12 @@ next action. Rule order (first match wins):
   3. domain_allowlist         -> block    (URL matches nothing on the list)
   4. sensitive_domains        -> handoff  (first touch of the domain this run;
                                            the human takes over in the browser)
-  5. approval_required_actions/domains -> approve (side-panel approve/deny gate)
-  6. default                  -> allow
+  5. dynamic injection/sensitive flow -> block
+  6. approval_required_actions/domains -> approve (side-panel consent gate)
+  7. adaptive action risk     -> approve
+  8. default                  -> allow
 
-Modes (policies.mode): 'enforce' applies verdicts; 'shadow' evaluates rules 1-5
+Modes (policies.mode): 'enforce' applies verdicts; 'shadow' evaluates rules 1-7
 and reports the would-be verdict in PolicyDecision.shadow_verdict while
 returning allow (log-only, for false-block/missed-danger evals); 'off' skips
 evaluation entirely (overhead + completion-rate baseline).
@@ -25,7 +27,8 @@ from urllib.parse import urlparse
 from browser_use.utils import match_url_with_domain_pattern
 from pydantic import BaseModel
 
-from server.config import ConfigStore, PolicyMode
+from server.config import ConfigStore, Policies, PolicyMode
+from server.governance.security import RiskAssessment, redact_url
 
 logger = logging.getLogger('sentinel.policy')
 
@@ -46,6 +49,8 @@ class PolicyDecision(BaseModel):
 	# (e.g. sensitive_domains marks the pattern as handed-over after the human
 	# returns control).
 	pattern: str | None = None
+	# Opaque, per-run scope for an explicit "allow similar" approval grant.
+	approval_key: str | None = None
 
 
 def entry_matches(url: str, entry: str) -> bool:
@@ -115,12 +120,18 @@ class PolicyEngine:
 	def mode(self) -> PolicyMode:
 		return self._config_store.get().policies.mode
 
+	@property
+	def policies(self) -> Policies:
+		"""Live policy snapshot for risk analysis at the next action boundary."""
+		return self._config_store.get().policies
+
 	def evaluate(
 		self,
 		action_name: str,
 		params: dict,
 		current_url: str | None,
 		handed_over_patterns: set[str] | None = None,
+		risk: RiskAssessment | None = None,
 	) -> PolicyDecision:
 		"""handed_over_patterns: sensitive-domain patterns already cleared by a
 		completed human handoff this run (tracked per-run in RunContext)."""
@@ -129,7 +140,7 @@ class PolicyEngine:
 		if policies.mode == 'off':
 			return PolicyDecision(verdict='allow', rule='enforcement_off', reason='enforcement mode is off', mode='off')
 
-		decision = self._evaluate_rules(action_name, params, current_url, handed_over_patterns or set(), policies)
+		decision = self._evaluate_rules(action_name, params, current_url, handed_over_patterns or set(), policies, risk)
 		if policies.mode == 'shadow' and decision.verdict != 'allow':
 			return PolicyDecision(
 				verdict='allow',
@@ -138,6 +149,7 @@ class PolicyEngine:
 				mode='shadow',
 				shadow_verdict=decision.verdict,
 				pattern=decision.pattern,
+				approval_key=decision.approval_key,
 			)
 		decision.mode = policies.mode
 		return decision
@@ -149,6 +161,7 @@ class PolicyEngine:
 		current_url: str | None,
 		handed_over_patterns: set[str],
 		policies,
+		risk: RiskAssessment | None,
 	) -> PolicyDecision:
 		# 1. Hard-blocked action types (also excluded from the LLM schema at run
 		#    start; this live check covers policy edits made mid-run).
@@ -168,13 +181,14 @@ class PolicyEngine:
 				target_url = current_url
 
 		if target_url:
+			display_url = redact_url(target_url)
 			# 2. Blocklist.
 			blocked = first_match(target_url, policies.domain_blocklist)
 			if blocked is not None:
 				return PolicyDecision(
 					verdict='block',
 					rule='domain_blocklist',
-					reason=f"'{target_url}' matches blocked entry '{blocked}'",
+					reason=f"'{display_url}' matches blocked entry '{blocked}'",
 					pattern=blocked,
 				)
 			# 3. Allowlist (when enabled, anything not on it is blocked).
@@ -182,7 +196,7 @@ class PolicyEngine:
 				return PolicyDecision(
 					verdict='block',
 					rule='domain_allowlist',
-					reason=f"'{target_url}' is not on the domain allowlist",
+					reason=f"'{display_url}' is not on the domain allowlist",
 				)
 			# 4. Sensitive domains: force a human handoff on first touch this run.
 			sensitive = first_match(target_url, [p for p in policies.sensitive_domains if p not in handed_over_patterns])
@@ -191,18 +205,29 @@ class PolicyEngine:
 					verdict='handoff',
 					rule='sensitive_domain',
 					reason=(
-						f"'{target_url}' matches sensitive entry '{sensitive}' — "
+						f"'{display_url}' matches sensitive entry '{sensitive}' — "
 						f'a human must take over in the browser for this step'
 					),
 					pattern=sensitive,
 				)
 
-		# 5. Human-in-the-loop approval gate (by action type or by domain).
+		# 5. Dynamic data-flow and prompt-injection enforcement. Static hard
+		# blocks above always win; a dynamic hard block wins over an approval rule.
+		if risk is not None and risk.recommendation == 'block':
+			return PolicyDecision(
+				verdict='block',
+				rule=risk.rule,
+				reason=risk.reason,
+				approval_key=risk.approval_key,
+			)
+
+		# 6. Human-in-the-loop approval gate (by action type or by domain).
 		if action_name in policies.approval_required_actions:
 			return PolicyDecision(
 				verdict='approve',
 				rule='approval_required_action',
 				reason=f"action '{action_name}' requires human approval",
+				approval_key=risk.approval_key if risk is not None else None,
 			)
 		if target_url:
 			approval = first_match(target_url, policies.approval_required_domains)
@@ -210,9 +235,17 @@ class PolicyEngine:
 				return PolicyDecision(
 					verdict='approve',
 					rule='approval_required_domain',
-					reason=f"'{target_url}' matches approval-required entry '{approval}'",
+					reason=f"'{redact_url(target_url)}' matches approval-required entry '{approval}'",
 					pattern=approval,
+					approval_key=risk.approval_key if risk is not None else None,
 				)
+		if risk is not None and risk.recommendation == 'approve':
+			return PolicyDecision(
+				verdict='approve',
+				rule=risk.rule,
+				reason=risk.reason,
+				approval_key=risk.approval_key,
+			)
 
-		# 6. Default.
+		# 7. Default.
 		return PolicyDecision(verdict='allow', rule='default', reason='no policy matched')

@@ -49,8 +49,10 @@ The engine checks rules top-to-bottom and returns the first one that fires:
 | 2 | `domain_blocklist`                      | `block`   |
 | 3 | `domain_allowlist` (URL on nothing)     | `block`   |
 | 4 | `sensitive_domains` (first touch/run)   | `handoff` |
-| 5 | `approval_required_actions` / `_domains`| `approve` |
-| 6 | default                                 | `allow`   |
+| 5 | dynamic sensitive-data / high-confidence injection flow | `block` |
+| 6 | `approval_required_actions` / `_domains`| `approve` |
+| 7 | dynamic side-effect risk ≥ threshold    | `approve` |
+| 8 | default                                 | `allow`   |
 
 ---
 
@@ -59,7 +61,8 @@ The engine checks rules top-to-bottom and returns the first one that fires:
 ```jsonc
 {
   "policies": {
-    // enforce = apply verdicts | shadow = log would-be verdicts, allow anyway | off = skip
+    // enforce = apply | shadow = observe without changing model/actions
+    // off = no prompt boundary/verdict enforcement (redacted action audit remains)
     "mode": "enforce",
 
     // null = allow any domain. A list = strict allowlist: anything NOT matching is BLOCKED.
@@ -79,6 +82,33 @@ The engine checks rules top-to-bottom and returns the first one that fires:
 
     // First time the agent touches one of these domains in a run -> HANDOFF.
     "sensitive_domains": ["accounts.google.com", "*.okta.com"],
+
+    "prompt_injection": {
+      "enabled": true,
+      "detection_threshold": 0.55,
+      "block_threshold": 0.85
+    },
+
+    "data_flow": {
+      "enabled": true,
+      // Sensitive values may flow only to these destinations.
+      "trusted_domains": [],
+      "sensitive_data_verdict": "block" // block | approve
+    },
+
+    "adaptive_approvals": {
+      "enabled": true,
+      "approval_risk_threshold": 55,
+      "grant_ttl_s": 300,
+      "grant_max_uses": 3,
+      "max_prompts_per_run": 4,
+      "fatigue_strategy": "handoff" // handoff | block
+    },
+
+    "audit": {
+      "store_screenshots": false,      // live panel is unaffected
+      "store_model_reasoning": false   // thinking/memory in at-rest traces
+    },
 
     "budgets": {
       "max_steps": 30,           // hard stop on agent steps per run
@@ -113,10 +143,18 @@ Every domain list accepts four entry shapes, from most rigid to most precise:
 - **Shadow mode.** In `mode: "shadow"` the engine evaluates every rule and logs
   the verdict it *would* have returned, but executes the action as `allow`
   anyway. Use it to measure false blocks / missed dangerous actions before
-  turning on `enforce`. `off` skips evaluation entirely (overhead baseline).
+  turning on `enforce`. `off` skips prompt-boundary and verdict enforcement;
+  paired redacted action auditing remains for a measurable baseline.
 - **After a denial or timeout.** A denied approval, or a handoff no human answers
   before `handover_timeout_s`, does not silently pass — the agent is told the
   step was refused and instructed not to retry it, so it finds another way or
   finishes with what it has.
+- **Allow similar is bounded consent, not an allowlist edit.** It is scoped to
+  action, origin, capabilities, taint and sensitive category for this run only,
+  and expires by both time and use count. The server only accepts this scope if
+  the pending request explicitly offered it.
+- **Monitoring is redacted.** Approval cards, decisions and paired action-audit
+  events never receive raw detected secrets. See `../POLICY.md` for the complete
+  prompt-boundary, taint, action-capability and audit model.
 
 ---

@@ -1,9 +1,8 @@
-"""Enforcement middleware v0.
+"""Sentinel enforcement middleware.
 
 Every LLM call flows through GovernedLLM (events + budgets) and every browser
-action flows through GovernedTools.act() (PolicyEngine gate: allow / block /
-human approval). The full policy engine plugs in here later — PolicyEngine.evaluate
-is the single decision point to extend.
+action flows through GovernedTools.act() (prompt boundary, taint/data-flow risk,
+PolicyEngine gate, bounded human consent, and paired audit records).
 """
 
 from server.governance.approvals import ApprovalManager

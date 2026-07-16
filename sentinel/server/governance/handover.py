@@ -17,6 +17,7 @@ from typing import Any, Literal
 from uuid import uuid4
 
 from server.events import ControlRequest, ControlReturned, SentinelEvent
+from server.governance.security import redact_params, redact_url
 
 logger = logging.getLogger('sentinel.handover')
 
@@ -33,11 +34,12 @@ class HandoverManager:
 		self._pending: dict[str, PendingHandover] = {}
 
 	def create(self, reason: str, url: str | None, timeout_s: float, run_id: str | None) -> ControlRequest:
+		safe_reason = str(redact_params({'reason': reason}).get('reason') or 'Protected step requires human control')
 		request = ControlRequest(
 			run_id=run_id,
-			handover_id=uuid4().hex[:12],
-			reason=reason,
-			url=url,
+			handover_id=uuid4().hex,
+			reason=safe_reason,
+			url=redact_url(url) if url else None,
 			expires_at=time.time() + timeout_s,
 		)
 		self._pending[request.handover_id] = PendingHandover(request)
@@ -58,8 +60,11 @@ class HandoverManager:
 			return 'timeout', None
 		try:
 			note = await asyncio.wait_for(asyncio.shield(pending.future), timeout=timeout_s)
+			safe_note = str(redact_params({'note': note}).get('note')) if note else None
 			self._emit(
-				ControlReturned(run_id=pending.request.run_id, handover_id=handover_id, note=note, resolved_by='user')
+				ControlReturned(
+					run_id=pending.request.run_id, handover_id=handover_id, note=safe_note, resolved_by='user'
+				)
 			)
 			return 'returned', note
 		except TimeoutError:
@@ -79,4 +84,3 @@ class HandoverManager:
 		for pending in self._pending.values():
 			if not pending.future.done():
 				pending.future.set_result(None)
-

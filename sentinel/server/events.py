@@ -19,6 +19,7 @@ logger = logging.getLogger('sentinel.events')
 AgentStatus = Literal['idle', 'running', 'paused', 'stopping']
 Verdict = Literal[
 	'allowed',
+	'approval_reused',       # covered by a narrow, explicit run-scoped grant
 	'blocked',
 	'approval_required',
 	'denied_by_human',
@@ -83,6 +84,18 @@ class LLMCall(SentinelEvent):
 	is_fallback: bool = False
 
 
+class PromptInjectionDetected(SentinelEvent):
+	"""A privacy-preserving alert: payload text is never included in the event."""
+
+	type: Literal['prompt_injection_detected'] = 'prompt_injection_detected'
+	url: str | None = None
+	score: float
+	severity: Literal['low', 'medium', 'high', 'critical']
+	signals: list[str] = Field(default_factory=list)
+	content_hash: str
+	action_taken: Literal['model_warned', 'shadow_monitored']
+
+
 class EnforcementDecision(SentinelEvent):
 	type: Literal['enforcement_decision'] = 'enforcement_decision'
 	action: str
@@ -93,6 +106,45 @@ class EnforcementDecision(SentinelEvent):
 	reason: str
 	mode: str = 'enforce'
 	decision_ms: float = 0.0   # policy evaluation latency (excludes human wait)
+	enforcement_ms: float = 0.0  # URL/DOM context + risk analysis + policy evaluation
+	action_id: str | None = None
+	risk_score: int = 0
+	risk_factors: list[str] = Field(default_factory=list)
+	capabilities: list[str] = Field(default_factory=list)
+	taint_labels: list[str] = Field(default_factory=list)
+	target_origin: str | None = None
+	params_digest: str | None = None
+
+
+class ActionAudit(SentinelEvent):
+	"""Start/completion record for every attempted action, including denials."""
+
+	type: Literal['action_audit'] = 'action_audit'
+	phase: Literal['attempted', 'completed']
+	action_id: str
+	action: str
+	url: str | None = None
+	target_origin: str | None = None
+	capabilities: list[str] = Field(default_factory=list)
+	risk_score: int = 0
+	enforcement_ms: float = 0.0
+	risk_factors: list[str] = Field(default_factory=list)
+	taint_labels: list[str] = Field(default_factory=list)
+	params_digest: str
+	verdict: str
+	outcome: Literal[
+		'pending',
+		'executed',
+		'tool_error',
+		'blocked',
+		'denied',
+		'timeout',
+		'handoff_returned',
+		'handoff_timeout',
+		'exception',
+	] = 'pending'
+	duration_ms: float | None = None
+	error_type: str | None = None
 
 
 class ApprovalRequest(SentinelEvent):
@@ -102,6 +154,11 @@ class ApprovalRequest(SentinelEvent):
 	params: dict[str, Any] = Field(default_factory=dict)
 	url: str | None = None
 	expires_at: float
+	reason: str = ''
+	risk_score: int = 0
+	risk_factors: list[str] = Field(default_factory=list)
+	approval_key: str | None = None
+	can_approve_scope: bool = False
 
 
 class ApprovalResolved(SentinelEvent):
@@ -109,6 +166,7 @@ class ApprovalResolved(SentinelEvent):
 	approval_id: str
 	approved: bool
 	resolved_by: Literal['user', 'timeout']
+	scope: Literal['once', 'similar'] = 'once'
 
 
 class OperatorMessage(SentinelEvent):
