@@ -94,6 +94,15 @@ function rowContent(e: SentinelEvent) {
           </span>
         </>
       );
+    case 'prompt_injection_detected':
+      return (
+        <>
+          <span className="chip blocked">Injection contained</span>
+          <span className="log-text">
+            {Math.round(e.score * 100)}% · {e.severity} · {e.signals.join(', ')}
+          </span>
+        </>
+      );
     case 'enforcement_decision': {
       const [label, cls] = e.verdict === 'allowed' ? ['Allowed', 'allowed'] : verdictStyle(e.verdict);
       return (
@@ -117,7 +126,23 @@ function rowContent(e: SentinelEvent) {
       return (
         <>
           <span className={`chip ${e.approved ? 'allowed' : e.resolved_by === 'timeout' ? 'unattended' : 'blocked'}`}>
-            {e.resolved_by === 'timeout' ? 'Approval timed out' : e.approved ? 'Approved by you' : 'Denied by you'}
+            {e.resolved_by === 'timeout'
+              ? 'Approval timed out'
+              : e.approved
+                ? e.scope === 'similar'
+                  ? 'Approved similar scope'
+                  : 'Approved once'
+                : 'Denied by you'}
+          </span>
+        </>
+      );
+    case 'action_audit':
+      return (
+        <>
+          <span className="log-type">{e.phase === 'attempted' ? 'attempt' : e.outcome}</span>
+          <span className="log-text">
+            <span className="mono">{e.action}</span> · risk {e.risk_score}/100 · {e.verdict}
+            {e.taint_labels.length > 0 ? ` · ${e.taint_labels.join(', ')}` : ''}
           </span>
         </>
       );

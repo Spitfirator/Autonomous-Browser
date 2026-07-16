@@ -4,6 +4,7 @@ import type { Verdict } from './types';
 // verdict. Shared by the live chat feed (ChatThread) and the Activity tab's
 // per-decision explainability list so both read identically.
 export const VERDICT_STYLE: Partial<Record<Verdict, [string, string]>> = {
+  approval_reused: ['Covered by prior approval', 'allowed'],
   blocked: ['Blocked', 'blocked'],
   approval_required: ['Held for approval', 'approval_required'],
   denied_by_human: ['Denied by you', 'blocked'],

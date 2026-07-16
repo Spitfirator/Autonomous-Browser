@@ -206,6 +206,257 @@ export function PoliciesTab() {
 
       <div className="card rise">
         <div className="card-head">
+          <h2 className="card-title">Prompt-injection defense</h2>
+          <span className="help-text">
+            Treats page, file and tool-result instructions as untrusted; detected attacks taint downstream actions
+          </span>
+        </div>
+        <label className="check-row">
+          <input
+            type="checkbox"
+            checked={policies.prompt_injection.enabled}
+            onChange={(e) =>
+              setPolicies({
+                ...policies,
+                prompt_injection: { ...policies.prompt_injection, enabled: e.target.checked },
+              })
+            }
+          />
+          <span className="check-label">Detect and contain indirect prompt injections</span>
+        </label>
+        <div className="budget-grid" style={{ marginTop: 12 }}>
+          <label className="field">
+            <span>Detection threshold (0–1)</span>
+            <input
+              type="number"
+              min="0"
+              max="1"
+              step="0.05"
+              value={policies.prompt_injection.detection_threshold}
+              onChange={(e) =>
+                setPolicies({
+                  ...policies,
+                  prompt_injection: {
+                    ...policies.prompt_injection,
+                    detection_threshold: Number(e.target.value),
+                  },
+                })
+              }
+            />
+          </label>
+          <label className="field">
+            <span>Protected-sink block threshold</span>
+            <input
+              type="number"
+              min="0"
+              max="1"
+              step="0.05"
+              value={policies.prompt_injection.block_threshold}
+              onChange={(e) =>
+                setPolicies({
+                  ...policies,
+                  prompt_injection: {
+                    ...policies.prompt_injection,
+                    block_threshold: Number(e.target.value),
+                  },
+                })
+              }
+            />
+          </label>
+        </div>
+      </div>
+
+      <div className="card rise">
+        <div className="card-head">
+          <h2 className="card-title">Sensitive-data flow control</h2>
+          <span className="help-text">
+            Blocks credentials, tokens, payment data and private keys from flowing to untrusted origins; audit payloads are redacted
+          </span>
+        </div>
+        <label className="check-row">
+          <input
+            type="checkbox"
+            checked={policies.data_flow.enabled}
+            onChange={(e) =>
+              setPolicies({ ...policies, data_flow: { ...policies.data_flow, enabled: e.target.checked } })
+            }
+          />
+          <span className="check-label">Enforce source-to-sink data-flow rules</span>
+        </label>
+        <div className="field-block" style={{ marginTop: 12 }}>
+          <span className="field-label">Origins trusted to receive sensitive values</span>
+          <TagEditor
+            explain
+            values={policies.data_flow.trusted_domains}
+            onChange={(v) => setPolicies({ ...policies, data_flow: { ...policies.data_flow, trusted_domains: v } })}
+            placeholder="trusted for secrets: accounts.example.com…"
+          />
+        </div>
+        <label className="field" style={{ marginTop: 12 }}>
+          <span>Untrusted sensitive-data flow</span>
+          <select
+            value={policies.data_flow.sensitive_data_verdict}
+            onChange={(e) =>
+              setPolicies({
+                ...policies,
+                data_flow: {
+                  ...policies.data_flow,
+                  sensitive_data_verdict: e.target.value as 'block' | 'approve',
+                },
+              })
+            }
+          >
+            <option value="block">Block</option>
+            <option value="approve">Hold for approval</option>
+          </select>
+        </label>
+      </div>
+
+      <div className="card rise">
+        <div className="card-head">
+          <h2 className="card-title">Fatigue-resistant approvals</h2>
+          <span className="help-text">
+            Prompts only above the risk threshold; an explicit “Allow similar” grant is origin/action/taint scoped, time-limited and use-limited
+          </span>
+        </div>
+        <label className="check-row">
+          <input
+            type="checkbox"
+            checked={policies.adaptive_approvals.enabled}
+            onChange={(e) =>
+              setPolicies({
+                ...policies,
+                adaptive_approvals: { ...policies.adaptive_approvals, enabled: e.target.checked },
+              })
+            }
+          />
+          <span className="check-label">Use risk-adaptive prompts and bounded consent reuse</span>
+        </label>
+        <div className="budget-grid" style={{ marginTop: 12 }}>
+          <label className="field">
+            <span>Approval risk threshold / 100</span>
+            <input
+              type="number"
+              min="0"
+              max="100"
+              value={policies.adaptive_approvals.approval_risk_threshold}
+              onChange={(e) =>
+                setPolicies({
+                  ...policies,
+                  adaptive_approvals: {
+                    ...policies.adaptive_approvals,
+                    approval_risk_threshold: Number(e.target.value),
+                  },
+                })
+              }
+            />
+          </label>
+          <label className="field">
+            <span>Similar grant TTL (s)</span>
+            <input
+              type="number"
+              min="1"
+              max="3600"
+              value={policies.adaptive_approvals.grant_ttl_s}
+              onChange={(e) =>
+                setPolicies({
+                  ...policies,
+                  adaptive_approvals: {
+                    ...policies.adaptive_approvals,
+                    grant_ttl_s: Number(e.target.value),
+                  },
+                })
+              }
+            />
+          </label>
+          <label className="field">
+            <span>Similar grant max uses</span>
+            <input
+              type="number"
+              min="1"
+              max="100"
+              value={policies.adaptive_approvals.grant_max_uses}
+              onChange={(e) =>
+                setPolicies({
+                  ...policies,
+                  adaptive_approvals: {
+                    ...policies.adaptive_approvals,
+                    grant_max_uses: Number(e.target.value),
+                  },
+                })
+              }
+            />
+          </label>
+          <label className="field">
+            <span>Max prompts / run</span>
+            <input
+              type="number"
+              min="1"
+              max="100"
+              value={policies.adaptive_approvals.max_prompts_per_run}
+              onChange={(e) =>
+                setPolicies({
+                  ...policies,
+                  adaptive_approvals: {
+                    ...policies.adaptive_approvals,
+                    max_prompts_per_run: Number(e.target.value),
+                  },
+                })
+              }
+            />
+          </label>
+        </div>
+        <label className="field" style={{ marginTop: 12 }}>
+          <span>After prompt budget is exhausted</span>
+          <select
+            value={policies.adaptive_approvals.fatigue_strategy}
+            onChange={(e) =>
+              setPolicies({
+                ...policies,
+                adaptive_approvals: {
+                  ...policies.adaptive_approvals,
+                  fatigue_strategy: e.target.value as 'handoff' | 'block',
+                },
+              })
+            }
+          >
+            <option value="handoff">One direct browser handoff</option>
+            <option value="block">Block further held actions</option>
+          </select>
+        </label>
+      </div>
+
+      <div className="card rise">
+        <div className="card-head">
+          <h2 className="card-title">Audit retention</h2>
+          <span className="help-text">
+            Action events stay redacted. Visuals and free-form reasoning can contain private page data, so storing them on disk is opt-in.
+          </span>
+        </div>
+        <label className="check-row">
+          <input
+            type="checkbox"
+            checked={policies.audit.store_screenshots}
+            onChange={(e) =>
+              setPolicies({ ...policies, audit: { ...policies.audit, store_screenshots: e.target.checked } })
+            }
+          />
+          <span className="check-label">Persist step screenshots in trace folders</span>
+        </label>
+        <label className="check-row" style={{ marginTop: 10 }}>
+          <input
+            type="checkbox"
+            checked={policies.audit.store_model_reasoning}
+            onChange={(e) =>
+              setPolicies({ ...policies, audit: { ...policies.audit, store_model_reasoning: e.target.checked } })
+            }
+          />
+          <span className="check-label">Persist model thinking and memory in event traces</span>
+        </label>
+      </div>
+
+      <div className="card rise">
+        <div className="card-head">
           <h2 className="card-title">Budgets</h2>
         </div>
         <div className="budget-grid">

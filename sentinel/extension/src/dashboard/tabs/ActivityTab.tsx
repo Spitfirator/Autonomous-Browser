@@ -44,7 +44,7 @@ function EnforcementPanel({
   if (!enf) return null;
 
   const total = record.duration_s ?? 0;
-  const machineMs = enf.decision_ms_total ?? 0;
+  const machineMs = enf.enforcement_ms_total ?? enf.decision_ms_total ?? 0;
   const approvalWait = enf.approval_wait_s ?? 0;
   const handoffWait = enf.handoff_wait_s ?? 0;
   // Enforcement adds approval-gate waits + policy-check time; everything else —

@@ -144,6 +144,15 @@ function renderEvent(e: SentinelEvent) {
         </SystemRow>
       );
     }
+    case 'prompt_injection_detected':
+      return (
+        <SystemRow key={e.seq} title={e.signals.join(', ')}>
+          <span className="chip blocked">Prompt injection contained · {Math.round(e.score * 100)}%</span>
+          <span className="sys-rule">
+            Page instructions were treated as untrusted data; protected actions remain policy-gated.
+          </span>
+        </SystemRow>
+      );
     case 'control_request': {
       const ev = e as ControlRequest;
       return (

@@ -20,10 +20,10 @@ export function ApprovalCard({ approval }: { approval: ApprovalRequest }) {
     if (left <= 0) removeApproval(approval.approval_id);
   }, [left, approval.approval_id, removeApproval]);
 
-  const decide = async (approve: boolean) => {
+  const decide = async (approve: boolean, scope: 'once' | 'similar' = 'once') => {
     setBusy(true);
     try {
-      await api.resolveApproval(approval.approval_id, approve);
+      await api.resolveApproval(approval.approval_id, approve, scope);
     } catch {
       /* resolved elsewhere or expired - the WS event will clean up */
     }
@@ -39,6 +39,13 @@ export function ApprovalCard({ approval }: { approval: ApprovalRequest }) {
       <div className="approval-body">
         <span className="approval-action">{approval.action}</span>
         {approval.url && <span className="approval-url">{approval.url}</span>}
+        {approval.reason && <span className="approval-url">{approval.reason}</span>}
+        {approval.risk_score > 0 && (
+          <span className="approval-url">
+            Risk {approval.risk_score}/100
+            {approval.risk_factors.length > 0 ? ` · ${approval.risk_factors.join(' · ')}` : ''}
+          </span>
+        )}
         {Object.keys(approval.params).length > 0 && (
           <code className="approval-params">{JSON.stringify(approval.params).slice(0, 200)}</code>
         )}
@@ -47,10 +54,19 @@ export function ApprovalCard({ approval }: { approval: ApprovalRequest }) {
         <i style={{ width: `${(left / total) * 100}%` }} />
       </div>
       <div className="approval-actions">
-        <button className="primary" disabled={busy} onClick={() => decide(true)}>
-          Approve
+        <button className="primary" disabled={busy} onClick={() => decide(true, 'once')}>
+          Allow once
         </button>
-        <button className="danger" disabled={busy} onClick={() => decide(false)}>
+        {approval.can_approve_scope && (
+          <button
+            disabled={busy}
+            title="Allow only the same action, origin and risk/taint class for a bounded time and number of uses in this run"
+            onClick={() => decide(true, 'similar')}
+          >
+            Allow similar
+          </button>
+        )}
+        <button className="danger" disabled={busy} onClick={() => decide(false, 'once')}>
           Deny
         </button>
       </div>

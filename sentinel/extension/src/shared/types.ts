@@ -3,6 +3,7 @@
 export type AgentStatus = 'idle' | 'running' | 'paused' | 'stopping';
 export type Verdict =
   | 'allowed'
+  | 'approval_reused'
   | 'blocked'
   | 'approval_required'
   | 'denied_by_human'
@@ -66,6 +67,16 @@ export interface LLMCall extends EventBase {
   is_fallback: boolean;
 }
 
+export interface PromptInjectionDetected extends EventBase {
+  type: 'prompt_injection_detected';
+  url: string | null;
+  score: number;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  signals: string[];
+  content_hash: string;
+  action_taken: 'model_warned' | 'shadow_monitored';
+}
+
 export interface EnforcementDecision extends EventBase {
   type: 'enforcement_decision';
   action: string;
@@ -76,6 +87,42 @@ export interface EnforcementDecision extends EventBase {
   reason: string;
   mode: PolicyMode;
   decision_ms: number;
+  enforcement_ms: number;
+  action_id: string | null;
+  risk_score: number;
+  risk_factors: string[];
+  capabilities: string[];
+  taint_labels: string[];
+  target_origin: string | null;
+  params_digest: string | null;
+}
+
+export interface ActionAudit extends EventBase {
+  type: 'action_audit';
+  phase: 'attempted' | 'completed';
+  action_id: string;
+  action: string;
+  url: string | null;
+  target_origin: string | null;
+  capabilities: string[];
+  risk_score: number;
+  enforcement_ms: number;
+  risk_factors: string[];
+  taint_labels: string[];
+  params_digest: string;
+  verdict: string;
+  outcome:
+    | 'pending'
+    | 'executed'
+    | 'tool_error'
+    | 'blocked'
+    | 'denied'
+    | 'timeout'
+    | 'handoff_returned'
+    | 'handoff_timeout'
+    | 'exception';
+  duration_ms: number | null;
+  error_type: string | null;
 }
 
 export interface ApprovalRequest extends EventBase {
@@ -85,6 +132,11 @@ export interface ApprovalRequest extends EventBase {
   params: Record<string, unknown>;
   url: string | null;
   expires_at: number;
+  reason: string;
+  risk_score: number;
+  risk_factors: string[];
+  approval_key: string | null;
+  can_approve_scope: boolean;
 }
 
 export interface ApprovalResolved extends EventBase {
@@ -92,6 +144,7 @@ export interface ApprovalResolved extends EventBase {
   approval_id: string;
   approved: boolean;
   resolved_by: 'user' | 'timeout';
+  scope: 'once' | 'similar';
 }
 
 export interface OperatorMessage extends EventBase {
@@ -159,7 +212,9 @@ export type SentinelEvent =
   | TaskStarted
   | StepEvent
   | LLMCall
+  | PromptInjectionDetected
   | EnforcementDecision
+  | ActionAudit
   | ApprovalRequest
   | ApprovalResolved
   | OperatorMessage
@@ -222,6 +277,32 @@ export interface Budgets {
   handover_timeout_s: number;
 }
 
+export interface PromptInjectionPolicy {
+  enabled: boolean;
+  detection_threshold: number;
+  block_threshold: number;
+}
+
+export interface DataFlowPolicy {
+  enabled: boolean;
+  trusted_domains: string[];
+  sensitive_data_verdict: 'block' | 'approve';
+}
+
+export interface AdaptiveApprovalPolicy {
+  enabled: boolean;
+  approval_risk_threshold: number;
+  grant_ttl_s: number;
+  grant_max_uses: number;
+  max_prompts_per_run: number;
+  fatigue_strategy: 'handoff' | 'block';
+}
+
+export interface AuditPolicy {
+  store_screenshots: boolean;
+  store_model_reasoning: boolean;
+}
+
 export interface Policies {
   mode: PolicyMode;
   domain_allowlist: string[] | null;
@@ -230,6 +311,10 @@ export interface Policies {
   approval_required_actions: string[];
   approval_required_domains: string[];
   sensitive_domains: string[];
+  prompt_injection: PromptInjectionPolicy;
+  data_flow: DataFlowPolicy;
+  adaptive_approvals: AdaptiveApprovalPolicy;
+  audit: AuditPolicy;
   budgets: Budgets;
 }
 
@@ -246,10 +331,18 @@ export interface EnforcementSummary {
   decision_ms_total: number;
   decision_ms_mean: number;
   decision_ms_max: number;
+  enforcement_ms_total?: number;
+  enforcement_ms_mean?: number;
+  enforcement_ms_max?: number;
   human_wait_s: number; // total frozen-on-a-human time (approvals + handoffs)
   approval_wait_s?: number; // approval gates — the extra time enforcement adds
   handoff_wait_s?: number; // handed-over steps (login/CAPTCHA) — baseline, happens either way
   human_interventions: number;
+  prompt_injection_detections?: number;
+  approval_prompts?: number;
+  approval_reuses?: number;
+  actions_attempted?: number;
+  actions_completed?: number;
 }
 
 // One non-allow enforcement decision from a run's trace, for the Activity tab's

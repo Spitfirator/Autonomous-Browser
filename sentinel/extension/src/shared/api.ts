@@ -42,10 +42,10 @@ export const api = {
   getKeys: () => request<Record<string, boolean>>('/api/keys'),
   putKey: (name: string, value: string) =>
     request<{ ok: boolean }>('/api/keys', { method: 'PUT', body: JSON.stringify({ name, value }) }),
-  resolveApproval: (approvalId: string, approve: boolean) =>
+  resolveApproval: (approvalId: string, approve: boolean, scope: 'once' | 'similar' = 'once') =>
     request<{ resolved: boolean }>(`/api/approvals/${approvalId}`, {
       method: 'POST',
-      body: JSON.stringify({ approve }),
+      body: JSON.stringify({ approve, scope }),
     }),
   completeHandover: (handoverId: string, note: string) =>
     request<{ resolved: boolean }>(`/api/handover/${handoverId}/complete`, {
