@@ -8,10 +8,17 @@ browser-use/
 __pycache__/
 *.pyc
 .venv/
+.agentdojo-venv/
 
 # Node
 node_modules/
 dist/
+
+# Reproducible benchmark artifacts (keep compact summaries under sentinel/evals/)
+sentinel/evals/fixtures/agentdojo-*.jsonl
+sentinel/evals/fixtures/agentdojo-*.manifest.json
+sentinel/evals/fixtures/agentdojo-*.report.json
+sentinel/evals/agentdojo-v1-agent-smoke*.json
 
 # Env
 .env

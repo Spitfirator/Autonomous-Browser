@@ -1,0 +1,166 @@
+{
+  "aggregate": {
+    "all_families_benign_approval_task_rate": 0.010309,
+    "all_families_benign_block_rate": 0.0,
+    "all_families_hard_block_rate": 1.0,
+    "detection_f1": 1.0,
+    "detection_precision": 1.0,
+    "detection_recall": 1.0,
+    "families": 16,
+    "security_cases_across_families": 7404,
+    "unique_benign_tasks_per_family": 97
+  },
+  "attack_families": {
+    "captcha_dos": {
+      "benign_approval_task_rate": 0.010309,
+      "benign_block_rate": 0.0,
+      "detection_f1": 1.0,
+      "detection_precision": 1.0,
+      "detection_recall": 1.0,
+      "hard_block_rate": 1.0,
+      "security_cases": 97
+    },
+    "direct": {
+      "benign_approval_task_rate": 0.010309,
+      "benign_block_rate": 0.0,
+      "detection_f1": 1.0,
+      "detection_precision": 1.0,
+      "detection_recall": 1.0,
+      "hard_block_rate": 1.0,
+      "security_cases": 629
+    },
+    "dos": {
+      "benign_approval_task_rate": 0.010309,
+      "benign_block_rate": 0.0,
+      "detection_f1": 1.0,
+      "detection_precision": 1.0,
+      "detection_recall": 1.0,
+      "hard_block_rate": 1.0,
+      "security_cases": 97
+    },
+    "felony_dos": {
+      "benign_approval_task_rate": 0.010309,
+      "benign_block_rate": 0.0,
+      "detection_f1": 1.0,
+      "detection_precision": 1.0,
+      "detection_recall": 1.0,
+      "hard_block_rate": 1.0,
+      "security_cases": 97
+    },
+    "ignore_previous": {
+      "benign_approval_task_rate": 0.010309,
+      "benign_block_rate": 0.0,
+      "detection_f1": 1.0,
+      "detection_precision": 1.0,
+      "detection_recall": 1.0,
+      "hard_block_rate": 1.0,
+      "security_cases": 629
+    },
+    "important_instructions": {
+      "benign_approval_task_rate": 0.010309,
+      "benign_block_rate": 0.0,
+      "detection_f1": 1.0,
+      "detection_precision": 1.0,
+      "detection_recall": 1.0,
+      "hard_block_rate": 1.0,
+      "security_cases": 629
+    },
+    "important_instructions_no_model_name": {
+      "benign_approval_task_rate": 0.010309,
+      "benign_block_rate": 0.0,
+      "detection_f1": 1.0,
+      "detection_precision": 1.0,
+      "detection_recall": 1.0,
+      "hard_block_rate": 1.0,
+      "security_cases": 629
+    },
+    "important_instructions_no_names": {
+      "benign_approval_task_rate": 0.010309,
+      "benign_block_rate": 0.0,
+      "detection_f1": 1.0,
+      "detection_precision": 1.0,
+      "detection_recall": 1.0,
+      "hard_block_rate": 1.0,
+      "security_cases": 629
+    },
+    "important_instructions_no_user_name": {
+      "benign_approval_task_rate": 0.010309,
+      "benign_block_rate": 0.0,
+      "detection_f1": 1.0,
+      "detection_precision": 1.0,
+      "detection_recall": 1.0,
+      "hard_block_rate": 1.0,
+      "security_cases": 629
+    },
+    "important_instructions_wrong_model_name": {
+      "benign_approval_task_rate": 0.010309,
+      "benign_block_rate": 0.0,
+      "detection_f1": 1.0,
+      "detection_precision": 1.0,
+      "detection_recall": 1.0,
+      "hard_block_rate": 1.0,
+      "security_cases": 629
+    },
+    "important_instructions_wrong_user_name": {
+      "benign_approval_task_rate": 0.010309,
+      "benign_block_rate": 0.0,
+      "detection_f1": 1.0,
+      "detection_precision": 1.0,
+      "detection_recall": 1.0,
+      "hard_block_rate": 1.0,
+      "security_cases": 629
+    },
+    "injecagent": {
+      "benign_approval_task_rate": 0.010309,
+      "benign_block_rate": 0.0,
+      "detection_f1": 1.0,
+      "detection_precision": 1.0,
+      "detection_recall": 1.0,
+      "hard_block_rate": 1.0,
+      "security_cases": 629
+    },
+    "offensive_email_dos": {
+      "benign_approval_task_rate": 0.010309,
+      "benign_block_rate": 0.0,
+      "detection_f1": 1.0,
+      "detection_precision": 1.0,
+      "detection_recall": 1.0,
+      "hard_block_rate": 1.0,
+      "security_cases": 97
+    },
+    "swearwords_dos": {
+      "benign_approval_task_rate": 0.010309,
+      "benign_block_rate": 0.0,
+      "detection_f1": 1.0,
+      "detection_precision": 1.0,
+      "detection_recall": 1.0,
+      "hard_block_rate": 1.0,
+      "security_cases": 97
+    },
+    "system_message": {
+      "benign_approval_task_rate": 0.010309,
+      "benign_block_rate": 0.0,
+      "detection_f1": 1.0,
+      "detection_precision": 1.0,
+      "detection_recall": 1.0,
+      "hard_block_rate": 1.0,
+      "security_cases": 629
+    },
+    "tool_knowledge": {
+      "benign_approval_task_rate": 0.010309,
+      "benign_block_rate": 0.0,
+      "detection_f1": 1.0,
+      "detection_precision": 1.0,
+      "detection_recall": 1.0,
+      "hard_block_rate": 1.0,
+      "security_cases": 629
+    }
+  },
+  "kind": "agentdojo-native-replay-summary",
+  "limitations": [
+    "Model-free native oracle replay, not AgentDojo end-to-end model utility/security.",
+    "Benign tasks repeat once per attack family in aggregate detector counts.",
+    "Rules were improved after observing AgentDojo v1 failures; these are development-set, not held-out, results."
+  ],
+  "schema_version": 1
+}

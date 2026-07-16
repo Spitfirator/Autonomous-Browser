@@ -52,7 +52,7 @@ def main() -> None:
 
 	# ── Per-run table ────────────────────────────────────────────────────────
 	print(f'{"run":10} {"mode":8} {"status":16} {"steps":>5} {"dur_s":>7} {"appr":>4} {"blk":>3} {"hoff":>4} '
-	      f'{"interv":>6} {"wait_s":>6} {"dec_ms":>7}  task')
+	      f'{"interv":>6} {"wait_s":>6} {"sec_ms":>7}  task')
 	for r in runs:
 		enf = r.get('enforcement') or {}
 		dec = enf.get('decisions') or {}
@@ -62,7 +62,8 @@ def main() -> None:
 			f'{r.get("run_id", "?"):10} {r.get("policy_mode", "?"):8} {r.get("status", "?"):16} '
 			f'{r.get("steps", 0):>5} {r.get("duration_s", 0):>7.1f} {dec.get("approval_required", 0):>4} '
 			f'{blocked:>3} {handoffs:>4} {enf.get("human_interventions", 0):>6} '
-			f'{enf.get("human_wait_s", 0):>6.1f} {enf.get("decision_ms_mean", 0):>7.3f}  {r.get("task", "")[:50]}'
+			f'{enf.get("human_wait_s", 0):>6.1f} '
+			f'{enf.get("enforcement_ms_mean", enf.get("decision_ms_mean", 0)):>7.3f}  {r.get("task", "")[:50]}'
 		)
 
 	# ── Metric 1: completion rate by mode ────────────────────────────────────
@@ -83,13 +84,42 @@ def main() -> None:
 		approvals = [(e.get('decisions') or {}).get('approval_required', 0) for e in enfs]
 		waits = [e.get('human_wait_s', 0) for e in enfs]
 		interv = [e.get('human_interventions', 0) for e in enfs]
-		dms = [e.get('decision_ms_mean', 0) for e in enfs if e.get('decision_count')]
+		reuses = [e.get('approval_reuses', 0) for e in enfs]
+		detections = [e.get('prompt_injection_detections', 0) for e in enfs]
+		ems = [e.get('enforcement_ms_mean', e.get('decision_ms_mean', 0)) for e in enfs if e.get('decision_count')]
 		durations = [r.get('duration_s', 0) for r in group]
 		print(
 			f'  {mode:8} approvals/task {mean(approvals):.1f} (max {max(approvals, default=0)}) · '
 			f'interventions/task {mean(interv):.1f} · human wait {mean(waits):.0f}s/task · '
-			f'decision latency {mean(dms):.3f}ms mean · run duration {mean(durations):.0f}s mean'
+			f'approval reuses/task {mean(reuses):.1f} · injection detections/task {mean(detections):.1f} · '
+			f'full enforcement latency {mean(ems):.3f}ms mean · run duration {mean(durations):.0f}s mean'
 		)
+
+	# ── Metrics 7, 9, 10: injection events, paired audits, consent reuse ─────
+	audit_attempts: dict[tuple[str, str], int] = defaultdict(int)
+	audit_completions: dict[tuple[str, str], int] = defaultdict(int)
+	injection_events = 0
+	for r in runs:
+		run_id = str(r.get('run_id'))
+		for event in load_jsonl(args.history.parent / 'traces' / run_id / 'events.jsonl'):
+			if event.get('type') == 'prompt_injection_detected':
+				injection_events += 1
+			if event.get('type') != 'action_audit' or not event.get('action_id'):
+				continue
+			key = (run_id, event['action_id'])
+			if event.get('phase') == 'attempted':
+				audit_attempts[key] += 1
+			elif event.get('phase') == 'completed':
+				audit_completions[key] += 1
+	paired = sum(1 for key, count in audit_attempts.items() if count == 1 and audit_completions.get(key) == 1)
+	total_prompts = sum((r.get('enforcement') or {}).get('approval_prompts', 0) for r in runs)
+	total_reuses = sum((r.get('enforcement') or {}).get('approval_reuses', 0) for r in runs)
+	if audit_attempts or injection_events or total_prompts or total_reuses:
+		print('\n── Security middleware (metrics 7, 9, 10)')
+		print(f'  prompt-injection alerts: {injection_events}')
+		print(f'  paired action audit coverage: {pct(paired, len(audit_attempts))} ({paired}/{len(audit_attempts)})')
+		print(f'  approval reuse rate: {pct(total_reuses, total_prompts + total_reuses)} '
+		      f'({total_reuses} reused / {total_prompts} prompted)')
 
 	# ── Metric 6 proxy: decisions carry reasons ──────────────────────────────
 	traces_dir = args.history.parent / 'traces'

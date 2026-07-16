@@ -12,7 +12,8 @@ Chrome (dedicated profile, launched by the backend)
  └─ driven over CDP by
 Python backend (aiohttp)
  └─ AgentRunner → Agent(llm=GovernedLLM(ThrottledLLM(Chat*)), tools=GovernedTools)
-                   └─ PolicyEngine + ApprovalManager   ← the enforcement middleware
+                   └─ prompt boundary + taint/risk engine + PolicyEngine
+                      + bounded ApprovalManager        ← the enforcement middleware
 ```
 
 ## Run it
@@ -44,12 +45,13 @@ for the extension build, Google Chrome. API keys live in `../browser-use/.env`
 | `server/runner.py` | one Agent at a time; pause/resume/stop; step callbacks → events |
 | `server/browser.py` | dedicated Chrome launch, reconnect, extension install ladder |
 | `server/governance/` | **the middleware**: `governed_llm` (every model call), `governed_tools` (every action), `policy` (decision point), `approvals` (human gate), `handover` (human takeover), `throttle` (free-tier pacing) |
-| `server/traces.py` | per-run audit traces: `data/traces/<run_id>/` (events.jsonl + screenshots + meta) |
+| `server/traces.py` | per-run audit traces: redacted events + meta; screenshot/reasoning retention is opt-in |
 | `server/config.py` | pydantic config + `data/config.json` store; paths |
 | `server/events.py` | WS event models + fan-out hub (mirrored in `extension/src/shared/types.ts`) |
 | `extension/` | MV3 extension, React + Vite + TS; `dist/` is the unpacked bundle |
 | `data/` | runtime state: config, history, traces, the persistent Chrome profile |
 | `POLICY.md` / `policies/` | the policy schema + a shareable reference policy |
+| `THREAT-MODEL.md` | trust boundaries, invariants, control mapping and residual risks |
 | `EVALS.md` / `evals/` | evaluation metric definitions + `aggregate.py` |
 | `demo/` | `run_scenarios.py`: scripted allowed/blocked/approval/handoff demo runs |
 | `share/` | generated share pack: traces, decision logs, screenshots |
@@ -70,14 +72,32 @@ Schema + decision order: **[POLICY.md](POLICY.md)**. Metrics: **[EVALS.md](EVALS
 - **Sensitive domains → forced handoff** - first touch of a listed domain freezes the run
   and hands the browser to the human (same flow as `request_human_control`, but initiated
   by policy). After the human hands back, the agent may act there for the rest of the run.
+- **Prompt-injection containment** - browser/read state is an explicit untrusted-data
+  boundary. Multi-signal findings are origin-scoped, payload-free, reinforced at the
+  system boundary and propagated into downstream action risk. High-confidence injection
+  into navigation/input/upload/code/file sinks blocks; ambiguous side effects are held
+  while read-only recovery stays available.
+- **Sensitive-data flow control** - credentials, secret placeholders, API/access tokens,
+  JWTs, private keys and payment data are labelled recursively. Password/OTP/payment
+  input fields are recognized from live DOM metadata. Disclosure outside
+  `data_flow.trusted_domains` fails closed by default; approval UI and traces see only
+  redacted values and per-run keyed digests.
+- **Fatigue-resistant approval** - ordinary clicks do not prompt. Consequential target
+  semantics and other risk factors can hold an action. The operator chooses Allow once,
+  a narrow/time-and-use-bounded Allow similar scope, or Deny. A per-run prompt budget
+  collapses repeated cards into one direct handoff (or a hard block).
 - **Modes** - `enforce` (default), `shadow` (log would-be verdicts, allow everything -
-  for false-block evals), `off` (no evaluation - the overhead baseline).
+  and do not modify model input, for false-block/attack-success evals), `off`
+  (no prompt boundary or verdict enforcement; redacted auditing remains).
 - **Budgets** - max steps, max LLM calls per task (graceful stop at the limit, hard
   backstop two calls later), approval + takeover timeouts.
 - **Full audit stream** - every decision is a WS `enforcement_decision` event (with
-  `decision_ms` policy latency); every model call a `llm_call` event with latency +
-  tokens; every run is persisted to `data/traces/<run_id>/` (events + step screenshots +
-  meta with per-run enforcement metrics).
+  policy-only `decision_ms` and full pre-action `enforcement_ms`); every model call a `llm_call` event with latency +
+  tokens; every run is persisted to `data/traces/<run_id>/` (redacted events + meta
+  with per-run enforcement metrics; screenshots/reasoning are omitted at rest by default).
+- **Paired action audit** - every attempted action, including a policy refusal, timeout,
+  exception or cancellation, emits start and completion records under one action ID with
+  capabilities, taint, risk, verdict, outcome and duration—never raw secrets.
 
 ## The chat
 
@@ -135,7 +155,7 @@ header) so your own browsing doesn't show the control pill. After rebuilding the
 ## API (localhost only, Origin-checked)
 
 `GET /api/status` · `POST /api/task {task, max_steps?}` · `POST /api/agent/{pause|resume|stop}`
-· `GET|PUT /api/config` · `GET|PUT /api/keys` · `POST /api/approvals/{id} {approve}`
+· `GET|PUT /api/config` · `GET|PUT /api/keys` · `POST /api/approvals/{id} {approve, scope}`
 · `GET /api/history` · `GET /api/actions` · `GET /ws` (events; first frame is a snapshot)
 
 ## Development
@@ -144,6 +164,9 @@ header) so your own browsing doesn't show the control pill. After rebuilding the
 - Extension watch build: `cd extension && npm run dev`, then reload in `chrome://extensions`
 - Allow non-extension origins (e.g. previewing `dist/` over http): `SENTINEL_DEV_ALLOW_ANY_ORIGIN=1`
 - Port: `SENTINEL_PORT=…` (default 8765)
+- Security/unit suite: `PYTHONPATH=sentinel:browser-use browser-use/.venv/bin/pytest -q sentinel/tests`
+- Offline benchmark smoke run: `PYTHONPATH=sentinel:browser-use browser-use/.venv/bin/python sentinel/evals/security_benchmark.py sentinel/evals/fixtures/security-smoke.jsonl --pretty`
+- Full AgentDojo v1 component/native replay: see [EVALS.md](EVALS.md#agentdojo-v1-full-tier-1-component-run); the compact reproducible result is `evals/agentdojo-v1-summary.json`.
 
 Known quirks: `pause` takes effect after the in-flight step completes (upstream behavior,
 it also prints a cosmetic "Press Enter" line in the server log). Profile persistence

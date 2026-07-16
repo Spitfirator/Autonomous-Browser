@@ -1,0 +1,11 @@
+{
+  "policies": {
+    "mode": "off",
+    "domain_allowlist": null,
+    "domain_blocklist": [],
+    "blocked_actions": [],
+    "approval_required_actions": [],
+    "approval_required_domains": [],
+    "sensitive_domains": []
+  }
+}
