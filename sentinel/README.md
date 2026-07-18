@@ -34,8 +34,10 @@ icon). Stop the server with `Ctrl-C` - the Chrome window intentionally stays ope
 (`keep_alive`); the next `./start.sh` reconnects to it instead of launching a new one.
 
 Requirements: `uv` (uses `../browser-use`'s venv - zero extra Python deps), `node`/`npm`
-for the extension build, Google Chrome. API keys live in `../browser-use/.env`
-(`GEMINI_API_KEY`, `GROQ_API_KEY`, …) and can also be set from the dashboard.
+for the extension build, Google Chrome, and a running Ollama server with the default
+`qwen3.5-agentdojo:4b` profile (see `EVALS.md`). Gemini remains an optional governed
+fallback. API keys live in `../browser-use/.env` (`GEMINI_API_KEY`, `GROQ_API_KEY`, …)
+and can also be set from the dashboard.
 
 ## What's where
 

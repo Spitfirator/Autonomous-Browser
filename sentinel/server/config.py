@@ -40,7 +40,7 @@ KNOWN_API_KEYS = [
 	'OPENROUTER_API_KEY',
 ]
 
-Provider = Literal['gemini', 'groq', 'openai', 'anthropic', 'openrouter']
+Provider = Literal['ollama', 'gemini', 'groq', 'openai', 'anthropic', 'openrouter']
 
 # enforce: decisions are applied. shadow: everything is allowed but would-be
 # verdicts are still evaluated + logged (for measuring false blocks / missed
@@ -72,19 +72,23 @@ class ThrottleConfig(BaseModel):
 class ModelConfig(BaseModel):
 	model_config = ConfigDict(extra='forbid')
 
-	provider: Provider = 'gemini'
-	model: str = 'gemini-3.1-flash-lite'
+	provider: Provider = 'ollama'
+	model: str = 'qwen3.5-agentdojo:4b'
 	temperature: float | None = None
-	throttle: ThrottleConfig | None = Field(default_factory=ThrottleConfig)
+	throttle: ThrottleConfig | None = None
 	fallback: 'ModelConfig | None' = None
 
 
 def default_model_config() -> ModelConfig:
 	return ModelConfig(
+		provider='ollama',
+		model='qwen3.5-agentdojo:4b',
+		temperature=0.7,
+		throttle=None,
 		fallback=ModelConfig(
-			provider='groq',
-			model='meta-llama/llama-4-scout-17b-16e-instruct',
-			throttle=ThrottleConfig(min_interval_s=2.0),
+			provider='gemini',
+			model='gemini-3.1-flash-lite',
+			throttle=ThrottleConfig(),
 			fallback=None,
 		)
 	)

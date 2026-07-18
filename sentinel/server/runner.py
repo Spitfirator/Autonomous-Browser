@@ -276,6 +276,7 @@ class AgentRunner:
 			browser_session=self._browser_manager.session,
 			tools=tools,
 			use_vision=True,
+			use_thinking=config.model.provider != 'ollama',
 			fallback_llm=fallback,
 			register_new_step_callback=self._make_step_callback(ctx),
 			use_judge=config.use_judge,
@@ -284,6 +285,7 @@ class AgentRunner:
 				HANDOVER_GUIDANCE + (SECURITY_GUIDANCE if config.policies.mode == 'enforce' else '')
 			),
 			step_timeout=step_timeout,
+			llm_timeout=180 if config.model.provider == 'ollama' else None,
 			enable_signal_handler=False,    # the server owns SIGINT
 		)
 

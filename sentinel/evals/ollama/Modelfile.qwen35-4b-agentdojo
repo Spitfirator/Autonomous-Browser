@@ -1,0 +1,5 @@
+FROM qwen3.5:4b
+
+# Pin the context because Ollama's OpenAI-compatible endpoint does not accept
+# context size as a standard per-request field.
+PARAMETER num_ctx 8192

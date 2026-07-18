@@ -14,7 +14,7 @@ export type Verdict =
   | 'shadow_blocked'
   | 'shadow_approval_required'
   | 'shadow_handoff_required';
-export type Provider = 'gemini' | 'groq' | 'openai' | 'anthropic' | 'openrouter';
+export type Provider = 'ollama' | 'gemini' | 'groq' | 'openai' | 'anthropic' | 'openrouter';
 export type PolicyMode = 'enforce' | 'shadow' | 'off';
 
 interface EventBase {

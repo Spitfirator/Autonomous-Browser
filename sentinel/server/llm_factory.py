@@ -22,6 +22,7 @@ _PROVIDERS: dict[str, tuple[str, list[str]]] = {
 	'openai': ('ChatOpenAI', ['OPENAI_API_KEY']),
 	'anthropic': ('ChatAnthropic', ['ANTHROPIC_API_KEY']),
 	'openrouter': ('ChatOpenRouter', ['OPENROUTER_API_KEY']),
+	'ollama': ('SentinelChatOllama', []),
 }
 
 
@@ -40,6 +41,23 @@ def resolve_api_key(provider: str) -> str | None:
 def build_chat(cfg: ModelConfig) -> BaseChatModel:
 	"""Instantiate the raw provider chat model (no wrappers)."""
 	class_name, env_names = _PROVIDERS[cfg.provider]
+	if cfg.provider == 'ollama':
+		from server.ollama_chat import SentinelChatOllama
+
+		return SentinelChatOllama(
+			model=cfg.model,
+			host=os.getenv('OLLAMA_HOST') or None,
+			timeout=180,
+			ollama_options={
+				'num_ctx': 8192,
+				'num_predict': 1024,
+				'temperature': cfg.temperature if cfg.temperature is not None else 0.7,
+				'top_k': 20,
+				'top_p': 0.8,
+				'presence_penalty': 1.5,
+				'seed': 0,
+			},
+		)
 	api_key = resolve_api_key(cfg.provider)
 	if not api_key:
 		raise MissingApiKeyError(

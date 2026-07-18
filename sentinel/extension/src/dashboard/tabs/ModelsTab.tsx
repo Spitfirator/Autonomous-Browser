@@ -4,7 +4,8 @@ import { Toast, useToast } from '../../shared/components/Toast';
 import { useStore } from '../../shared/store';
 import type { ModelConfig, Provider } from '../../shared/types';
 
-const PROVIDERS: { id: Provider; label: string; keyName: string; suggestions: string[] }[] = [
+const PROVIDERS: { id: Provider; label: string; keyName: string | null; suggestions: string[] }[] = [
+  { id: 'ollama', label: 'Ollama (local)', keyName: null, suggestions: ['qwen3.5-agentdojo:4b', 'qwen3.5:4b'] },
   { id: 'gemini', label: 'Google Gemini', keyName: 'GEMINI_API_KEY', suggestions: ['gemini-3.1-flash-lite', 'gemini-3.1-flash'] },
   { id: 'groq', label: 'Groq', keyName: 'GROQ_API_KEY', suggestions: ['meta-llama/llama-4-scout-17b-16e-instruct', 'meta-llama/llama-4-maverick-17b-128e-instruct', 'llama-3.3-70b-versatile'] },
   { id: 'openai', label: 'OpenAI', keyName: 'OPENAI_API_KEY', suggestions: ['gpt-4o', 'gpt-4.1-mini'] },
@@ -14,14 +15,15 @@ const PROVIDERS: { id: Provider; label: string; keyName: string; suggestions: st
 
 function hasKey(value: ModelConfig, keys: Record<string, boolean>): boolean {
   const provider = PROVIDERS.find((p) => p.id === value.provider)!;
-  return !!(keys[provider.keyName] || (value.provider === 'gemini' && keys['GOOGLE_API_KEY']));
+  return provider.keyName === null || !!(keys[provider.keyName] || (value.provider === 'gemini' && keys['GOOGLE_API_KEY']));
 }
 
 function KeyChip({ value, keys }: { value: ModelConfig; keys: Record<string, boolean> }) {
   const present = hasKey(value, keys);
+  const local = value.provider === 'ollama';
   return (
     <span className={`chip ${present ? 'allowed' : 'blocked'}`}>
-      {present ? 'Key present' : 'Key missing'}
+      {local ? 'Local' : present ? 'Key present' : 'Key missing'}
     </span>
   );
 }
@@ -44,7 +46,16 @@ function ModelFields({
           <span>Provider</span>
           <select
             value={value.provider}
-            onChange={(e) => onChange({ ...value, provider: e.target.value as Provider })}
+            onChange={(e) => {
+              const nextProvider = PROVIDERS.find((p) => p.id === (e.target.value as Provider))!;
+              onChange({
+                ...value,
+                provider: nextProvider.id,
+                model: nextProvider.suggestions[0] ?? value.model,
+                temperature: nextProvider.id === 'ollama' ? 0.7 : null,
+                throttle: nextProvider.id === 'ollama' ? null : value.throttle,
+              });
+            }}
           >
             {PROVIDERS.map((p) => (
               <option key={p.id} value={p.id}>
@@ -210,17 +221,17 @@ export function ModelsTab() {
                   ...model,
                   fallback: e.target.checked
                     ? {
-                        provider: 'groq',
-                        model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+                        provider: 'gemini',
+                        model: 'gemini-3.1-flash-lite',
                         temperature: null,
-                        throttle: { min_interval_s: 2, backoff_s: 30, max_retries: 2 },
+                        throttle: { min_interval_s: 5, backoff_s: 30, max_retries: 2 },
                         fallback: null,
                       }
                     : null,
                 })
               }
             />
-            <span className="check-label">Switch automatically when the primary hits rate limits</span>
+            <span className="check-label">Switch automatically when the primary is unavailable</span>
           </div>
         </div>
         {model.fallback && (
@@ -238,17 +249,17 @@ export function ModelsTab() {
           <span className="help-text">Stored in browser-use/.env - never shown back</span>
         </div>
         <div className="keys-grid">
-          {PROVIDERS.map((p) => (
+          {PROVIDERS.filter((p) => p.keyName !== null).map((p) => (
             <div key={p.keyName} className="key-row">
-              <span className={`dot ${keys[p.keyName] ? 'running' : 'idle'}`} style={{ animation: 'none' }} />
+              <span className={`dot ${keys[p.keyName!] ? 'running' : 'idle'}`} style={{ animation: 'none' }} />
               <span className="key-name">{p.keyName}</span>
               <input
                 type="password"
-                placeholder={keys[p.keyName] ? '••••••••  (set - paste to replace)' : 'Paste key…'}
-                value={keyDrafts[p.keyName] ?? ''}
-                onChange={(e) => setKeyDrafts({ ...keyDrafts, [p.keyName]: e.target.value })}
+                placeholder={keys[p.keyName!] ? '••••••••  (set - paste to replace)' : 'Paste key…'}
+                value={keyDrafts[p.keyName!] ?? ''}
+                onChange={(e) => setKeyDrafts({ ...keyDrafts, [p.keyName!]: e.target.value })}
               />
-              <button disabled={!keyDrafts[p.keyName]?.trim()} onClick={() => saveKey(p.keyName)}>
+              <button disabled={!keyDrafts[p.keyName!]?.trim()} onClick={() => saveKey(p.keyName!)}>
                 Save
               </button>
             </div>
