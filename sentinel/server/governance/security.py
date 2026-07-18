@@ -181,6 +181,12 @@ _RESERVED_BOUNDARY_RE = re.compile(
 	r'<\/?(?:user_request|agent_history|agent_state|browser_state|read_state|page_specific_actions|step_info|system|developer|assistant|tool)(?:\s[^>]*)?>',
 	re.I,
 )
+_STRUCTURED_INSTRUCTION_BLOCK_RE = re.compile(
+	r'<(?P<tag>information|instructions?|system|developer|assistant|tool|message|notice|task|command)\b[^>]*>'
+	r'(?P<body>.*?)</(?P=tag)\s*>',
+	re.I | re.S,
+)
+_REMOVED_UNTRUSTED_INSTRUCTION = '[SENTINEL REMOVED UNTRUSTED INSTRUCTION-LIKE CONTENT]'
 
 
 def extract_untrusted_regions(messages: Iterable[Any]) -> tuple[str, str | None]:
@@ -312,6 +318,31 @@ def detect_prompt_injection(
 		content_hash=_content_hash(text),
 		url=url,
 	)
+
+
+def sanitize_detected_untrusted_text(
+	text: str,
+	policy: PromptInjectionPolicy,
+	url: str | None = None,
+) -> str:
+	"""Redact detected instruction blocks while retaining adjacent facts.
+
+	If no safe structural separation is available, redact the whole value. This
+	uses only content structure and detector output—never task IDs, expected
+	answers, benchmark oracles, or payload-specific values.
+	"""
+
+	changed = False
+
+	def replace(match: re.Match[str]) -> str:
+		nonlocal changed
+		if not detect_prompt_injection(match.group('body'), policy, url).detected:
+			return match.group(0)
+		changed = True
+		return _REMOVED_UNTRUSTED_INSTRUCTION
+
+	redacted = _STRUCTURED_INSTRUCTION_BLOCK_RE.sub(replace, text)
+	return redacted if changed else _REMOVED_UNTRUSTED_INSTRUCTION
 
 
 def url_origin(url: str | None) -> str | None:
