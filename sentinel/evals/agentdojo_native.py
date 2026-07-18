@@ -56,7 +56,12 @@ try:
 		_merge_tool_result_messages,
 		chat_completion_request,
 	)
-	from agentdojo.agent_pipeline.llms.openai_llm import OpenAILLM
+	from agentdojo.agent_pipeline.llms.openai_llm import (
+		OpenAILLM,
+		_function_to_openai,
+		_message_to_openai,
+		_openai_to_assistant_message,
+	)
 	from agentdojo.agent_pipeline.tool_execution import ToolsExecutionLoop, is_string_list, tool_result_to_str
 	from agentdojo.attacks.attack_registry import load_attack
 	from agentdojo.functions_runtime import EmptyEnv, Env, FunctionsRuntime
@@ -84,11 +89,22 @@ from server.governance.security import (  # noqa: E402
 	RiskAssessment,
 	assess_action,
 	detect_prompt_injection,
+	sanitize_detected_untrusted_text,
 )
 
 load_dotenv(BROWSER_USE_DIR / '.env')
 
 ApprovalMode = Literal['deny', 'execute']
+
+OLLAMA_DRIVER_SETTINGS: dict[str, Any] = {
+	'context_tokens': 8192,
+	'max_output_tokens': 1024,
+	'reasoning_effort': 'none',
+	'temperature': 0.7,
+	'top_p': 0.8,
+	'presence_penalty': 1.5,
+	'seed': 0,
+}
 
 PUBLIC_ATTACKS = (
 	'direct',
@@ -149,6 +165,7 @@ class NativeAction:
 @dataclass
 class NativeRunState:
 	finding: PromptInjectionFinding | None = None
+	content_sanitized: bool = False
 	audits: list[dict[str, Any]] = field(default_factory=list)
 	blocked: int = 0
 	approvals: int = 0
@@ -228,7 +245,7 @@ def sanitize_tool_result(value: Any, config: SentinelConfig, url: str) -> Any:
 	if isinstance(value, str):
 		finding = detect_prompt_injection(value, config.policies.prompt_injection, url)
 		if finding.detected:
-			return '[SENTINEL REMOVED UNTRUSTED INSTRUCTION-LIKE CONTENT]'
+			return sanitize_detected_untrusted_text(value, config.policies.prompt_injection, url)
 	return value
 
 
@@ -248,7 +265,7 @@ def evaluate_native_action(
 		native.action,
 		native.params,
 		url,
-		state.finding,
+		None if state.content_sanitized else state.finding,
 		config.policies.prompt_injection,
 		config.policies.data_flow,
 		config.policies.adaptive_approvals,
@@ -331,6 +348,9 @@ class SentinelToolsExecutor(BasePipelineElement):
 						sort_keys=True,
 						default=str,
 					)
+					# The detector finding remains available for metrics and audit,
+					# while successfully removed content no longer taints later calls.
+					state.content_sanitized = True
 
 			state.audits.append(
 				{
@@ -378,7 +398,15 @@ class RateLimitedLLM(BasePipelineElement):
 		self.delegate = delegate
 		self.min_interval_s = min_interval_s
 		self.last_call = 0.0
+		self.calls_started = 0
 		self.name = delegate.name
+
+	@property
+	def completion_events(self) -> list[dict[str, Any]]:
+		"""Return privacy-safe provider metadata for completed model turns."""
+
+		events = getattr(self.delegate, 'completion_events', None)
+		return events if isinstance(events, list) else []
 
 	def query(
 		self,
@@ -391,10 +419,60 @@ class RateLimitedLLM(BasePipelineElement):
 		remaining = self.min_interval_s - (time.monotonic() - self.last_call)
 		if remaining > 0:
 			time.sleep(remaining)
+		self.calls_started += 1
 		try:
 			return self.delegate.query(query, runtime, env, messages, extra_args)
 		finally:
 			self.last_call = time.monotonic()
+
+
+class OllamaLLM(OpenAILLM):
+	"""Bounded, deterministic Ollama adapter for local AgentDojo runs.
+
+	Qwen's default reasoning mode can spend thousands of tokens before a tool
+	call. The benchmark needs the same finite action loop on every case, so local
+	responses disable hidden thinking and cap each model turn.
+	"""
+
+	def __init__(self, model: str, base_url: str, max_tokens: int = 1024) -> None:
+		super().__init__(openai.OpenAI(api_key='ollama', base_url=f'{base_url.rstrip("/")}/v1'), model)
+		self.max_tokens = max_tokens
+		self.completion_events: list[dict[str, Any]] = []
+
+	def query(
+		self,
+		query: str,
+		runtime: FunctionsRuntime,
+		env: Env = EmptyEnv(),
+		messages: Sequence[ChatMessage] = (),
+		extra_args: dict = {},
+	) -> tuple[str, FunctionsRuntime, Env, Sequence[ChatMessage], dict]:
+		openai_messages = [_message_to_openai(message, self.model) for message in messages]
+		openai_tools = [_function_to_openai(tool) for tool in runtime.functions.values()]
+		completion = self.client.chat.completions.create(
+			model=self.model,
+			messages=openai_messages,
+			tools=openai_tools,
+			tool_choice='auto',
+			temperature=OLLAMA_DRIVER_SETTINGS['temperature'],
+			top_p=OLLAMA_DRIVER_SETTINGS['top_p'],
+			presence_penalty=OLLAMA_DRIVER_SETTINGS['presence_penalty'],
+			seed=OLLAMA_DRIVER_SETTINGS['seed'],
+			reasoning_effort='none',
+			max_tokens=self.max_tokens,
+		)
+		choice = completion.choices[0]
+		usage = completion.usage
+		self.completion_events.append(
+			{
+				'finish_reason': choice.finish_reason,
+				'prompt_tokens': usage.prompt_tokens if usage else None,
+				'completion_tokens': usage.completion_tokens if usage else None,
+				'truncated': choice.finish_reason == 'length',
+			}
+		)
+		output = _openai_to_assistant_message(choice.message)
+		return query, runtime, env, [*messages, output], extra_args
 
 
 class SignedGoogleLLM(GoogleLLM):
@@ -639,7 +717,10 @@ def build_agent_pipeline(
 	approval_mode: ApprovalMode,
 	min_interval_s: float,
 ) -> FreshRunAgentPipeline:
-	if provider == 'groq':
+	if provider == 'ollama':
+		base_url = os.getenv('OLLAMA_BASE_URL', 'http://127.0.0.1:11434').rstrip('/')
+		llm: BasePipelineElement = OllamaLLM(model, base_url)
+	elif provider == 'groq':
 		if not os.getenv('GROQ_API_KEY'):
 			raise ValueError('GROQ_API_KEY is not configured')
 		llm: BasePipelineElement = OpenAILLM(
@@ -651,8 +732,8 @@ def build_agent_pipeline(
 	else:
 		model_enum = ModelsEnum(model)
 		llm = get_llm(MODEL_PROVIDERS[model_enum], model, model_id, 'tool')
-	if min_interval_s > 0:
-		llm = RateLimitedLLM(llm, min_interval_s)
+	metered_llm = RateLimitedLLM(llm, min_interval_s)
+	llm = metered_llm
 	system = load_system_message(None)
 	if config.policies.mode == 'enforce':
 		system = f'{system}\n\n{SECURITY_GUIDANCE}'
@@ -667,12 +748,15 @@ def build_agent_pipeline(
 	)
 	# AgentDojo 0.1.35 recognizes a fixed model-name registry when rendering
 	# attacks. Preserve the correct provider prose for newer Gemini ids.
-	if provider == 'groq':
+	if provider == 'ollama':
+		attack_model_alias = 'local'
+	elif provider == 'groq':
 		attack_model_alias = 'meta-llama/Llama-3-70b-chat-hf'
 	else:
 		attack_model_alias = 'gemini-2.0-flash-001' if model.startswith('gemini-') else model
 	pipeline.name = f'{attack_model_alias}-sentinel-{model}'
 	pipeline.sentinel_executor = executor  # type: ignore[attr-defined]
+	pipeline.llm_meter = metered_llm  # type: ignore[attr-defined]
 	return pipeline
 
 
@@ -688,6 +772,7 @@ def run_agent(
 	injection_tasks: list[str] | None,
 	min_interval_s: float,
 	suite_names: list[str] | None,
+	run_injection_utility: bool = True,
 ) -> dict[str, Any]:
 	all_utility: dict[str, bool] = {}
 	all_attack_success: dict[str, bool] = {}
@@ -715,7 +800,7 @@ def run_agent(
 		# AgentDojo's native injection-task utility check is retained, but we call
 		# TaskSuite directly to avoid TraceLogger writing raw injected payloads and
 		# secrets to disk. The utility/security oracle implementation is unchanged.
-		if not attack.is_dos_attack:
+		if run_injection_utility and not attack.is_dos_attack:
 			for injection_task in selected_injections:
 				passed, _ = suite.run_task_with_pipeline(pipeline, injection_task, None, {})
 				all_injection_utility[f'{suite_name}/{injection_task.ID}'] = passed
@@ -726,7 +811,10 @@ def run_agent(
 			for injection_task in selected_injections:
 				injections = attack.attack(user_task, injection_task)
 				executor = pipeline.sentinel_executor  # type: ignore[attr-defined]
+				meter = pipeline.llm_meter  # type: ignore[attr-defined]
 				state_offset = len(executor.states)
+				call_offset = meter.calls_started
+				completion_offset = len(meter.completion_events)
 				utility, attack_succeeded = suite.run_task_with_pipeline(
 					pipeline, user_task, injection_task, injections
 				)
@@ -734,7 +822,11 @@ def run_agent(
 				all_utility[key] = utility
 				all_attack_success[key] = attack_succeeded
 				states = executor.states[state_offset:]
+				completion_events = meter.completion_events[completion_offset:]
 				all_enforcement[key] = {
+					'llm_requests': meter.calls_started - call_offset,
+					'model_completions': completion_events,
+					'truncated_responses': sum(event['truncated'] for event in completion_events),
 					'detections': sum(bool(state.finding and state.finding.detected) for state in states),
 					'blocked_actions': sum(state.blocked for state in states),
 					'approval_actions': sum(state.approvals for state in states),
@@ -759,7 +851,9 @@ def run_agent(
 			'attack': attack_name,
 			'model': model,
 			'provider': provider,
+			'model_settings': OLLAMA_DRIVER_SETTINGS if provider == 'ollama' else None,
 			'approval_mode': approval_mode,
+			'injection_task_utility_checked': run_injection_utility,
 			'policy': config.policies.model_dump(mode='json'),
 		},
 		'metrics': {
@@ -855,7 +949,7 @@ def main() -> int:
 	parser.add_argument('--output', type=Path)
 	parser.add_argument('--pretty', action='store_true')
 	parser.add_argument('--model', help='AgentDojo model enum or an AI Studio gemini-* model id')
-	parser.add_argument('--provider', choices=('auto', 'gemini', 'groq'), default='auto')
+	parser.add_argument('--provider', choices=('auto', 'gemini', 'groq', 'ollama'), default='auto')
 	parser.add_argument('--model-id')
 	parser.add_argument('--approval-mode', choices=('deny', 'execute'), default='deny')
 	parser.add_argument('--user-task', action='append', dest='user_tasks')
@@ -863,6 +957,11 @@ def main() -> int:
 	parser.add_argument('--suite', action='append', dest='suites')
 	parser.add_argument('--reports-dir', type=Path, default=SENTINEL_DIR / 'evals' / 'fixtures')
 	parser.add_argument('--min-interval-s', type=float, default=5.0, help='pace model calls (default 5s for free tier)')
+	parser.add_argument(
+		'--skip-injection-utility',
+		action='store_true',
+		help='skip the standalone injection-goal utility check (useful for one-case resumable campaigns)',
+	)
 	args = parser.parse_args()
 	config = load_config(args.policy)
 	if args.mode == 'summarize':
@@ -884,6 +983,7 @@ def main() -> int:
 			args.injection_tasks,
 			args.min_interval_s,
 			args.suites,
+			not args.skip_injection_utility,
 		)
 	payload = json.dumps(report, indent=2 if args.pretty else None, sort_keys=args.pretty)
 	if args.output:

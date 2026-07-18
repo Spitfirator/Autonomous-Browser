@@ -265,6 +265,91 @@ integration smoke where the same native attacker oracle succeeds in `off` and
 fails in `enforce`; it is explicitly not an aggregate model score because the
 model missed the user task in both conditions.
 
+The checked-in `evals/agentdojo-v1-gemini-3.1-flash-lite-pilot-summary.json`
+records a larger paired native-model pilot: 34 task/injection pairs spanning all
+four v1 suites, run with Gemini 3.1 Flash Lite in both `off` and `enforce`
+modes. Read its limitations before citing it. The first four pairs exposed a
+generic mixed-content sanitization issue and are development cases; the
+remaining 30 were run after the fix was frozen and received no further tuning.
+The run stopped at the 500-request daily quota and excludes the incomplete
+attempt. Per-run privacy-preserving reports are written beside the summary but
+are gitignored: like all auto-written run artifacts they stay on the machine
+that produced them, and only hand-curated compact summaries are committed.
+
+### Resumable full AgentDojo campaign
+
+The campaign controller discovers completed executions from report contents,
+builds the complete 629-pair v1 manifest, and writes one atomic report after
+every off/enforce execution. Rerunning the same command skips completed work;
+an API or harness failure is never interpreted as a secure benchmark result.
+
+Check progress without making a model request:
+
+```bash
+.agentdojo-venv/bin/python sentinel/evals/agentdojo_campaign.py --dry-run
+```
+
+Run until the next daily quota stop, then rerun after the reset:
+
+```bash
+.agentdojo-venv/bin/python sentinel/evals/agentdojo_campaign.py
+```
+
+To use one persistent command across daily resets, keep the machine awake and
+allow the controller to wait until just after midnight Pacific time:
+
+```bash
+.agentdojo-venv/bin/python sentinel/evals/agentdojo_campaign.py \
+  --wait-on-daily-quota
+```
+
+Campaign reports are stored under `evals/agentdojo-campaign-v1/`; the compact
+checkpoint is `evals/agentdojo-campaign-v1-state.json`. Both are local-only
+(gitignored) run artifacts. The controller skips
+the redundant standalone injection-goal utility run for every one-case process,
+but retains AgentDojo's native user-task utility and attacker-goal oracles for
+each security case.
+
+### Local Qwen campaign with Ollama
+
+An 8 GB Apple Silicon machine can run the quantized `qwen3.5:4b` Ollama model
+for a quota-free campaign. The reproducible non-thinking profile uses an 8K
+context, Qwen's recommended non-thinking sampling (`temperature=0.7`,
+`top_p=0.8`, `presence_penalty=1.5`) with seed 0, and a 1,024-token turn cap.
+Each report records finish reasons and token counts without retaining model
+content, so truncation cannot silently inflate security or reduce utility.
+Install Ollama and pull the base model once:
+
+```bash
+brew install ollama
+ollama pull qwen3.5:4b
+ollama serve
+```
+
+With the Ollama server running, create the pinned 8K AgentDojo profile once:
+
+```bash
+ollama create qwen3.5-agentdojo:4b \
+  -f sentinel/evals/ollama/Modelfile.qwen35-4b-agentdojo
+```
+
+Check the independent Qwen checkpoint without making a model request:
+
+```bash
+.agentdojo-venv/bin/python sentinel/evals/agentdojo_campaign.py \
+  --provider ollama --model qwen3.5-agentdojo:4b --min-interval-s 0 \
+  --reports-dir sentinel/evals/agentdojo-campaign-v1-qwen35-4b-nonthinking-v2 \
+  --state sentinel/evals/agentdojo-campaign-v1-qwen35-4b-nonthinking-v2-state.json \
+  --dry-run
+```
+
+Remove `--dry-run` to resume the complete 629-pair run. Do not use Gemini as
+an automatic fallback inside this campaign: mixed-model executions would make
+the aggregate utility and security score uninterpretable. Keep Gemini and Qwen
+as separately reported experiments. The earlier four-pair Qwen pilot used a
+different generation profile and remains in its original directory; it must
+not be included in the v2 aggregate.
+
 ## Suggested first eval set
 
 Small, deterministic, safe-to-automate tasks (the demo scenarios in
