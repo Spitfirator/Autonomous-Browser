@@ -19,6 +19,8 @@ sentinel/evals/fixtures/agentdojo-*.jsonl
 sentinel/evals/fixtures/agentdojo-*.manifest.json
 sentinel/evals/fixtures/agentdojo-*.report.json
 sentinel/evals/agentdojo-v1-agent-smoke*.json
+sentinel/evals/agentdojo-campaign-*
+sentinel/evals/agentdojo-e2e-*.json
 
 # Env
 .env
