@@ -21,6 +21,7 @@ import time
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
+from itertools import zip_longest
 from pathlib import Path
 from typing import Any, Literal
 from zoneinfo import ZoneInfo
@@ -74,8 +75,13 @@ def _task_number(task_id: str) -> int:
 	return int(match.group(1)) if match else sys.maxsize
 
 
-def build_manifest(suites: Mapping[str, Any]) -> list[CampaignCase]:
-	"""Build all pairs, prioritizing the partially completed cross-suite lane."""
+def build_manifest(suites: Mapping[str, Any], interleave: bool = False) -> list[CampaignCase]:
+	"""Build all pairs, prioritizing the partially completed cross-suite lane.
+
+	With ``interleave``, the remaining pairs round-robin across suites so a
+	deadline-truncated campaign still covers every suite evenly instead of
+	exhausting them in suite order.
+	"""
 
 	suite_names = list(suites)
 	priority: list[CampaignCase] = []
@@ -98,12 +104,23 @@ def build_manifest(suites: Mapping[str, Any]) -> list[CampaignCase]:
 			):
 				priority.append(CampaignCase(suite_name, user_task, injection_task))
 
-	remaining = [
-		CampaignCase(suite_name, user_task, injection_task)
+	per_suite = {
+		suite_name: [
+			CampaignCase(suite_name, user_task, injection_task)
+			for user_task in sorted(suite.user_tasks, key=_task_number)
+			for injection_task in sorted(suite.injection_tasks, key=_task_number)
+		]
 		for suite_name, suite in suites.items()
-		for user_task in sorted(suite.user_tasks, key=_task_number)
-		for injection_task in sorted(suite.injection_tasks, key=_task_number)
-	]
+	}
+	if interleave:
+		remaining = [
+			case
+			for group in zip_longest(*per_suite.values())
+			for case in group
+			if case is not None
+		]
+	else:
+		remaining = [case for cases in per_suite.values() for case in cases]
 	seen: set[CampaignCase] = set()
 	manifest: list[CampaignCase] = []
 	for case in [*priority, *remaining]:
@@ -121,6 +138,7 @@ def report_completions(
 	attack: str,
 	suite_version: str,
 	approval_mode: str,
+	ollama_profile: str | None = None,
 ) -> dict[tuple[Mode, str], Path]:
 	"""Return valid completed executions found in privacy-preserving reports."""
 
@@ -143,6 +161,12 @@ def report_completions(
 			)
 		):
 			continue
+		if ollama_profile is not None:
+			# Reports written before driver profiles existed used the settings
+			# now named `nonthinking`, so treat a missing profile as that one.
+			settings = provenance.get('model_settings') or {}
+			if settings.get('profile', 'nonthinking') != ollama_profile:
+				continue
 		mode = provenance.get('policy', {}).get('mode')
 		if mode not in MODES:
 			continue
@@ -279,6 +303,8 @@ def _run_execution(
 		args.approval_mode,
 		'--min-interval-s',
 		str(args.min_interval_s),
+		'--ollama-profile',
+		args.ollama_profile,
 		'--suite',
 		case.suite,
 		'--user-task',
@@ -326,6 +352,12 @@ def main() -> int:
 	parser.add_argument('--attack', default='tool_knowledge')
 	parser.add_argument('--provider', choices=('auto', 'gemini', 'groq', 'ollama'), default='gemini')
 	parser.add_argument('--model', default='gemini-3.1-flash-lite')
+	parser.add_argument(
+		'--ollama-profile',
+		choices=('nonthinking', 'thinking'),
+		default='nonthinking',
+		help='driver settings for --provider ollama; must match the profile of any reports being resumed',
+	)
 	parser.add_argument('--approval-mode', choices=('deny', 'execute'), default='deny')
 	parser.add_argument('--min-interval-s', type=float, default=5.0)
 	parser.add_argument('--existing-dir', type=Path, default=SENTINEL_DIR / 'evals')
@@ -336,9 +368,14 @@ def main() -> int:
 	parser.add_argument('--wait-on-daily-quota', action='store_true')
 	parser.add_argument('--max-new-executions', type=int)
 	parser.add_argument('--dry-run', action='store_true')
+	parser.add_argument(
+		'--interleave',
+		action='store_true',
+		help='round-robin remaining pairs across suites (even coverage under a deadline)',
+	)
 	args = parser.parse_args()
 
-	manifest = build_manifest(_load_suites(args.suite_version))
+	manifest = build_manifest(_load_suites(args.suite_version), interleave=args.interleave)
 	completed = report_completions(
 		_discover_report_paths(args.existing_dir, args.reports_dir),
 		provider=args.provider,
@@ -346,6 +383,7 @@ def main() -> int:
 		attack=args.attack,
 		suite_version=args.suite_version,
 		approval_mode=args.approval_mode,
+		ollama_profile=args.ollama_profile if args.provider == 'ollama' else None,
 	)
 	state = _state_payload(
 		manifest,

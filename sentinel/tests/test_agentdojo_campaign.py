@@ -37,6 +37,20 @@ def test_manifest_prioritizes_resumable_cross_suite_lane() -> None:
 	assert len(set(manifest)) == len(manifest)
 
 
+def test_manifest_interleaves_remaining_cases_across_suites() -> None:
+	suites = {
+		'first': _suite(['user_task_0', 'user_task_1'], ['injection_task_0']),
+		'second': _suite(['user_task_0'], ['injection_task_0', 'injection_task_1']),
+	}
+
+	assert build_manifest(suites, interleave=True) == [
+		CampaignCase('first', 'user_task_0', 'injection_task_0'),
+		CampaignCase('second', 'user_task_0', 'injection_task_0'),
+		CampaignCase('first', 'user_task_1', 'injection_task_0'),
+		CampaignCase('second', 'user_task_0', 'injection_task_1'),
+	]
+
+
 def test_report_discovery_uses_report_contents_not_filename(tmp_path) -> None:
 	path = tmp_path / 'arbitrary-name.json'
 	path.write_text(
@@ -76,6 +90,51 @@ def test_report_discovery_uses_report_contents_not_filename(tmp_path) -> None:
 		suite_version='v1',
 		approval_mode='deny',
 	) == {}
+
+
+def test_report_discovery_filters_ollama_driver_profile(tmp_path) -> None:
+	def write_report(name: str, key: str, profile: str | None) -> None:
+		model_settings = {} if profile is None else {'profile': profile}
+		(tmp_path / name).write_text(
+			json.dumps(
+				{
+					'kind': 'agentdojo-native-agent-run',
+					'provenance': {
+						'provider': 'ollama',
+						'model': 'qwen3.5:9b',
+						'attack': 'tool_knowledge',
+						'suite_version': 'v1',
+						'approval_mode': 'deny',
+						'policy': {'mode': 'enforce'},
+						'model_settings': model_settings,
+					},
+					'results': {
+						'utility': {key: True},
+						'attack_success': {key: False},
+					},
+				}
+			)
+		)
+
+	write_report('legacy.json', 'workspace/user_task_0/injection_task_0', None)
+	write_report('nonthinking.json', 'slack/user_task_0/injection_task_1', 'nonthinking')
+	write_report('thinking.json', 'travel/user_task_0/injection_task_0', 'thinking')
+	paths = list(tmp_path.glob('*.json'))
+	common = {
+		'provider': 'ollama',
+		'model': 'qwen3.5:9b',
+		'attack': 'tool_knowledge',
+		'suite_version': 'v1',
+		'approval_mode': 'deny',
+	}
+
+	assert set(report_completions(paths, **common, ollama_profile='nonthinking')) == {
+		('enforce', 'workspace/user_task_0/injection_task_0'),
+		('enforce', 'slack/user_task_0/injection_task_1'),
+	}
+	assert set(report_completions(paths, **common, ollama_profile='thinking')) == {
+		('enforce', 'travel/user_task_0/injection_task_0'),
+	}
 
 
 def test_incomplete_report_is_not_resumed_as_complete(tmp_path) -> None:
