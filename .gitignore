@@ -21,6 +21,12 @@ sentinel/evals/fixtures/agentdojo-*.report.json
 sentinel/evals/agentdojo-v1-agent-smoke*.json
 sentinel/evals/agentdojo-campaign-*
 sentinel/evals/agentdojo-e2e-*.json
+sentinel/evals/agentdojo-baseline-*-clean-*.json
+sentinel/evals/agentdojo-baseline-*-queue.log
+
+# Local GPU access and one-off orchestration (never publish host/user details)
+sentinel/evals/ollama/gpu.local.env
+sentinel/evals/ollama/queue-4b-clean.sh
 
 # Env
 .env

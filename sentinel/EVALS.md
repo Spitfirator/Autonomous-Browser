@@ -350,6 +350,122 @@ as separately reported experiments. The earlier four-pair Qwen pilot used a
 different generation profile and remains in its original directory; it must
 not be included in the v2 aggregate.
 
+### GPU campaigns with larger Qwen models
+
+The 4B non-thinking campaign measured a model-capability ceiling, not an
+enforcement cost: 313 of 629 pairs fail utility in both modes, enforcement
+blocked only 9 actions total, and enforce utility (42.0%) exceeds off
+(37.7%). The GPU workflow relaxes the three self-imposed handicaps — model
+size, thinking, and context — while keeping the same finite action loop.
+
+Driver profiles (`--ollama-profile` on both the native runner and the
+campaign controller):
+
+| profile       | context | output cap | reasoning | sampling                                  |
+| ------------- | ------- | ---------- | --------- | ----------------------------------------- |
+| `nonthinking` | 8,192   | 1,024      | none      | temp 0.7, top_p 0.8, presence 1.5, seed 0 |
+| `thinking`    | 32,768  | 4,096      | medium    | temp 0.6, top_p 0.95, seed 0              |
+
+Reports record the profile in `provenance.model_settings.profile`, and the
+campaign controller refuses to count reports from a different profile as
+completed (missing profile = `nonthinking`, so the existing v2 campaign
+stays resumable).
+
+Keep site-specific usernames, hosts, and remote paths out of Git. Copy the
+example configuration and edit the ignored local copy:
+
+```bash
+cp sentinel/evals/ollama/gpu.local.env.example \
+  sentinel/evals/ollama/gpu.local.env
+set -a
+. sentinel/evals/ollama/gpu.local.env
+set +a
+```
+
+One-time setup, from the laptop (establish the control master interactively
+when the SSH provider requires it):
+
+```bash
+# 1. Establish the jump + control master
+ssh -fN -M -S "$SOCKET" -o ControlPersist=12h \
+  -o ServerAliveInterval=30 -o ServerAliveCountMax=6 \
+  -o StrictHostKeyChecking=accept-new \
+  ${GPU_JUMP_HOST:+-J "$GPU_JUMP_HOST"} "$GPU_HOST"
+
+# 2. Install/start Ollama on the GPU host and build the pinned 32K model
+ssh -S "$SOCKET" "$GPU_HOST" \
+  'bash -s' < sentinel/evals/ollama/setup-gpu-host.sh
+
+# 3. Forward the Ollama port over the same socket
+ssh -S "$SOCKET" -O forward -L 11434:127.0.0.1:11434 "$GPU_HOST"
+```
+
+The setup script selects 27B only on cards with approximately 24 GB or more,
+9B on cards with at least 12 GB, and 4B otherwise (override with
+`MODEL_TAG=...`). It creates `qwen3.5-agentdojo:<size>` with `num_ctx 32768`.
+The harness needs no configuration when the forward uses local port 11434:
+`OLLAMA_BASE_URL` defaults to `http://127.0.0.1:11434`.
+
+Run the experiments in this order, changing one variable at a time:
+
+```bash
+# A. Clean-utility ceiling (no injections, 97 user tasks): both models
+.agentdojo-venv/bin/python sentinel/evals/agentdojo_native.py agent \
+  --provider ollama --model qwen3.5-agentdojo:27b --ollama-profile thinking \
+  --attack none --min-interval-s 0 --pretty \
+  --output sentinel/evals/agentdojo-baseline-qwen35-27b-thinking-clean.json
+
+# B. Controlled model swap on suite v1 / tool_knowledge (comparable with the
+#    629-pair 4B campaign; resumable):
+.agentdojo-venv/bin/python sentinel/evals/agentdojo_campaign.py \
+  --provider ollama --model qwen3.5-agentdojo:27b --ollama-profile thinking \
+  --min-interval-s 0 \
+  --reports-dir sentinel/evals/agentdojo-campaign-v1-qwen35-27b-thinking \
+  --state sentinel/evals/agentdojo-campaign-v1-qwen35-27b-thinking-state.json
+```
+
+Suite pinning: the installed `agentdojo` 0.1.35 is the newest release and
+ships benchmark suites `v1` through `v1.2.2` (same 97 user tasks; `v1.2.2`
+fixes some task checks and adds 8 workspace injection tasks). Keep `v1` for
+anything compared against the existing campaigns; move to `--suite-version
+v1.2.2` (in a fresh reports dir) for externally comparable write-ups, and
+never mix suite versions in one aggregate.
+
+#### Model/run separation and publication status
+
+Every model/profile combination has its own run tag. The tag determines
+separate clean-baseline files, paired-report directory, checkpoint, and log.
+The campaign controller also checks the model and Ollama profile recorded
+inside every report before treating it as resumable. A report produced for
+4B, 9B, or 27B therefore cannot silently count toward another model's run.
+
+Current run identities:
+
+| model | profile | run tag |
+| ----- | ------- | ------- |
+| Qwen 3.5 4B | `nonthinking` (8K context) | `qwen35-4b-nonthinking-v2` |
+| Qwen 3.5 9B | `thinking` (32K context) | `qwen35-9b-thinking` |
+| Qwen 3.5 27B | `thinking` (32K context) | `qwen35-27b-thinking` |
+
+All three paired campaigns completed 629 pairs / 1,258 executions. Keep their
+raw reports, state, logs, and per-suite clean reports local; Git should contain
+only compact, reviewed summaries with provenance.
+
+The existing three-point result is not a parameter-count-only ablation because
+the 4B run used a different context/reasoning profile. It supports a broader
+capability-versus-security comparison. A strictly controlled scaling claim
+requires rerunning both off and enforce for 4B with the same `thinking` 32K
+profile as 9B and 27B.
+
+The prompt-injection normalization fix was introduced after the earlier 4B and
+27B campaigns. Their off-mode executions remain comparable because off mode
+bypasses enforcement. Before the final thesis aggregate, rerun enforce mode for
+4B and 27B with the fixed middleware; the completed 9B campaign already used
+the fixed code. Do not combine the pre-fix and post-fix enforce results in one
+headline table. For this pipeline-uniformity rerun, retain the original 4B
+`nonthinking` profile so its new enforce results remain paired with the existing
+off results. Treat a future 4B `thinking` run as a new, fully paired experiment.
+
 ## Suggested first eval set
 
 Small, deterministic, safe-to-automate tasks (the demo scenarios in
