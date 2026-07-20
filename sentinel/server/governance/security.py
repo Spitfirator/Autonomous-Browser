@@ -277,6 +277,26 @@ def _neutralize_state_text(text: str) -> str:
 	return text[:open_end] + inner + '</browser_state>' + after
 
 
+_DETECTION_ESCAPE_NOISE_RE = re.compile(r'\\+[ \t]*')
+_DETECTION_WHITESPACE_RE = re.compile(r'\s+')
+
+
+def _normalize_for_detection(text: str) -> str:
+	"""Strip serialization noise that splits injected phrases mid-sentence.
+
+	When an untrusted payload is embedded in a returned document (a CSV cell, a
+	YAML/JSON string), the serializer wraps long lines with backslash + newline +
+	indentation continuations — e.g. ``"do the\\\n    \\ following first"``. Those
+	escape+wrap runs break the contiguous phrases the signature regexes match, so
+	an injection that scores 1.0 on its own drops below threshold once embedded.
+	Collapsing backslash-escape runs and whitespace to single spaces restores the
+	original phrasing for scoring only; the raw text is still what gets hashed,
+	sanitized, and shown.
+	"""
+
+	return _DETECTION_WHITESPACE_RE.sub(' ', _DETECTION_ESCAPE_NOISE_RE.sub(' ', text))
+
+
 def detect_prompt_injection(
 	text: str,
 	policy: PromptInjectionPolicy,
@@ -287,16 +307,25 @@ def detect_prompt_injection(
 	if not policy.enabled or not text:
 		return PromptInjectionFinding(content_hash=_content_hash(text), url=url)
 
+	# Scan the raw text and an escape-normalized copy, taking the union of
+	# signals. Normalization only ever reveals phrases the wrapping hid, so a
+	# score can rise but never fall relative to scanning the raw text alone.
+	normalized = _normalize_for_detection(text)
+	variants = (text, normalized) if normalized != text else (text,)
+
 	signals: list[str] = []
 	score = 0.0
 	for name, pattern, weight in _INJECTION_SIGNATURES:
-		if pattern.search(text):
+		if any(pattern.search(variant) for variant in variants):
 			signals.append(name)
 			score += weight
 
 	# Imperative language addressed to the agent is a weak signal on its own,
 	# but meaningfully strengthens authority/secret/exfiltration combinations.
-	if re.search(r'\b(?:assistant|agent|AI|browser)\s*[:,]\s*(?:you must|must|do|open|click|send|ignore)\b', text, re.I):
+	directive_re = re.compile(
+		r'\b(?:assistant|agent|AI|browser)\s*[:,]\s*(?:you must|must|do|open|click|send|ignore)\b', re.I
+	)
+	if any(directive_re.search(variant) for variant in variants):
 		signals.append('agent_directive')
 		score += 0.18
 
