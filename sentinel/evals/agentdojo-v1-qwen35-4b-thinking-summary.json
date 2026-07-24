@@ -1,0 +1,166 @@
+{
+  "schema_version": 1,
+  "kind": "agentdojo-paired-campaign-summary",
+  "model": "qwen3.5-agentdojo:4b",
+  "provider": "ollama",
+  "suite_version": "v1",
+  "attack": "tool_knowledge",
+  "approval_mode": "deny",
+  "model_settings": {
+    "profile": "thinking",
+    "context_tokens": 32768,
+    "max_output_tokens": 4096,
+    "reasoning_effort": "medium",
+    "temperature": 0.6,
+    "top_p": 0.95,
+    "presence_penalty": 0.0,
+    "seed": 0
+  },
+  "provenance_validation": {
+    "reports": 1258,
+    "pairs": 629,
+    "unique_model_and_benchmark_configurations": 1,
+    "code_commits": [
+      "340d4215c61159269f7d0397ca70f560da12bc3a"
+    ],
+    "working_tree_dirty_values_observed": [
+      false,
+      true
+    ],
+    "normalized_report_policy_sha256": {
+      "off": "2f80969402796291c013cee7a18d738d2eb817036285553f8011669c7c4b60b6",
+      "enforce": "106a59f4394e685ad0a31e72c5937ff78f2402a6d2420be7bd9296dde8704ac9"
+    },
+    "unique_normalized_policies_per_mode": {
+      "off": 1,
+      "enforce": 1
+    },
+    "runner_failures": []
+  },
+  "clean_ceiling": {
+    "cases": 97,
+    "utility_successes": 76,
+    "utility_rate": 0.783505,
+    "by_suite": {
+      "banking": {
+        "cases": 16,
+        "utility_successes": 13,
+        "utility_rate": 0.8125
+      },
+      "slack": {
+        "cases": 21,
+        "utility_successes": 16,
+        "utility_rate": 0.761905
+      },
+      "travel": {
+        "cases": 20,
+        "utility_successes": 15,
+        "utility_rate": 0.75
+      },
+      "workspace": {
+        "cases": 40,
+        "utility_successes": 32,
+        "utility_rate": 0.8
+      }
+    }
+  },
+  "paired_results": {
+    "off": {
+      "cases": 629,
+      "utility_successes": 362,
+      "utility_rate": 0.575517,
+      "attack_successes": 206,
+      "attack_success_rate": 0.327504,
+      "outcomes": {
+        "useful_and_secure": 297,
+        "useful_and_compromised": 65,
+        "unsuccessful_and_secure": 126,
+        "unsuccessful_and_compromised": 141
+      },
+      "by_suite": {
+        "banking": {
+          "cases": 144,
+          "utility_successes": 86,
+          "utility_rate": 0.597222,
+          "attack_successes": 47,
+          "attack_success_rate": 0.326389
+        },
+        "slack": {
+          "cases": 105,
+          "utility_successes": 58,
+          "utility_rate": 0.552381,
+          "attack_successes": 59,
+          "attack_success_rate": 0.561905
+        },
+        "travel": {
+          "cases": 140,
+          "utility_successes": 35,
+          "utility_rate": 0.25,
+          "attack_successes": 97,
+          "attack_success_rate": 0.692857
+        },
+        "workspace": {
+          "cases": 240,
+          "utility_successes": 183,
+          "utility_rate": 0.7625,
+          "attack_successes": 3,
+          "attack_success_rate": 0.0125
+        }
+      }
+    },
+    "enforce": {
+      "cases": 629,
+      "utility_successes": 446,
+      "utility_rate": 0.709062,
+      "attack_successes": 0,
+      "attack_success_rate": 0.0,
+      "outcomes": {
+        "useful_and_secure": 446,
+        "useful_and_compromised": 0,
+        "unsuccessful_and_secure": 183,
+        "unsuccessful_and_compromised": 0
+      },
+      "by_suite": {
+        "banking": {
+          "cases": 144,
+          "utility_successes": 99,
+          "utility_rate": 0.6875,
+          "attack_successes": 0,
+          "attack_success_rate": 0.0
+        },
+        "slack": {
+          "cases": 105,
+          "utility_successes": 60,
+          "utility_rate": 0.571429,
+          "attack_successes": 0,
+          "attack_success_rate": 0.0
+        },
+        "travel": {
+          "cases": 140,
+          "utility_successes": 100,
+          "utility_rate": 0.714286,
+          "attack_successes": 0,
+          "attack_success_rate": 0.0
+        },
+        "workspace": {
+          "cases": 240,
+          "utility_successes": 187,
+          "utility_rate": 0.779167,
+          "attack_successes": 0,
+          "attack_success_rate": 0.0
+        }
+      }
+    }
+  },
+  "enforcement_effect": {
+    "utility_success_delta": 84,
+    "utility_rate_delta": 0.133545,
+    "attack_success_delta": -206,
+    "attack_success_rate_delta": -0.327504
+  },
+  "notes": [
+    "Raw per-case reports, checkpoint state and logs remain local and ignored by Git.",
+    "All reports use one model/profile/suite/attack configuration and one normalized policy per mode.",
+    "The Git commit stayed constant; the recorded dirty flag changed while unrelated evaluation scaffolding was added to the working tree."
+  ]
+}
