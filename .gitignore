@@ -9,6 +9,8 @@ __pycache__/
 *.pyc
 .venv/
 .agentdojo-venv/
+.wasp/
+screenlog.*
 
 # Node
 node_modules/
@@ -23,6 +25,9 @@ sentinel/evals/agentdojo-campaign-*
 sentinel/evals/agentdojo-e2e-*.json
 sentinel/evals/agentdojo-baseline-*-clean-*.json
 sentinel/evals/agentdojo-baseline-*-queue.log
+sentinel/evals/wasp-runs/
+sentinel/evals/wasp/*.local.env
+sentinel/evals/wasp-queue-*.log
 
 # Local GPU access and one-off orchestration (never publish host/user details)
 sentinel/evals/ollama/gpu.local.env

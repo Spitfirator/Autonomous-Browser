@@ -54,7 +54,7 @@ and can also be set from the dashboard.
 | `data/` | runtime state: config, history, traces, the persistent Chrome profile |
 | `POLICY.md` / `policies/` | the policy schema + a shareable reference policy |
 | `THREAT-MODEL.md` | trust boundaries, invariants, control mapping and residual risks |
-| `EVALS.md` / `evals/` | evaluation metric definitions + `aggregate.py` |
+| `EVALS.md` / `evals/` | evaluation protocol, AgentDojo scaling campaign and WASP browser-native adapter |
 | `demo/` | `run_scenarios.py`: scripted allowed/blocked/approval/handoff demo runs |
 | `share/` | generated share pack: traces, decision logs, screenshots |
 
@@ -93,6 +93,10 @@ Schema + decision order: **[POLICY.md](POLICY.md)**. Metrics: **[EVALS.md](EVALS
   (no prompt boundary or verdict enforcement; redacted auditing remains).
 - **Budgets** - max steps, max LLM calls per task (graceful stop at the limit, hard
   backstop two calls later), approval + takeover timeouts.
+- **Agent-internal planning** - BrowserUse's structured planning/replanning loop
+  is enabled. This is distinct from the proposed plan-authority feature, where a
+  human reviews a compact task contract before execution; that remains a
+  separately evaluated thesis ablation.
 - **Full audit stream** - every decision is a WS `enforcement_decision` event (with
   policy-only `decision_ms` and full pre-action `enforcement_ms`); every model call a `llm_call` event with latency +
   tokens; every run is persisted to `data/traces/<run_id>/` (redacted events + meta
@@ -169,6 +173,10 @@ header) so your own browsing doesn't show the control pill. After rebuilding the
 - Security/unit suite: `PYTHONPATH=sentinel:browser-use browser-use/.venv/bin/pytest -q sentinel/tests`
 - Offline benchmark smoke run: `PYTHONPATH=sentinel:browser-use browser-use/.venv/bin/python sentinel/evals/security_benchmark.py sentinel/evals/fixtures/security-smoke.jsonl --pretty`
 - Full AgentDojo v1 component/native replay: see [EVALS.md](EVALS.md#agentdojo-v1-full-tier-1-component-run); the compact reproducible result is `evals/agentdojo-v1-summary.json`.
+- Browser-native WASP setup and resumable paired campaign: see
+  [evals/wasp/README.md](evals/wasp/README.md). Its contract tests need no
+  browser, Docker or GPU:
+  `PYTHONPATH=sentinel:browser-use browser-use/.venv/bin/pytest -q sentinel/tests/test_wasp_campaign.py`.
 
 Known quirks: `pause` takes effect after the in-flight step completes (upstream behavior,
 it also prints a cosmetic "Press Enter" line in the server log). Profile persistence
