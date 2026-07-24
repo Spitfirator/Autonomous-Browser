@@ -74,7 +74,7 @@ export interface PromptInjectionDetected extends EventBase {
   severity: 'low' | 'medium' | 'high' | 'critical';
   signals: string[];
   content_hash: string;
-  action_taken: 'model_warned' | 'shadow_monitored';
+  action_taken: 'model_warned' | 'model_sanitized' | 'shadow_monitored';
 }
 
 export interface EnforcementDecision extends EventBase {

@@ -54,7 +54,11 @@ Edits apply to the agent's **very next action**, even mid-run.
     "prompt_injection": {
       "enabled": true,
       "detection_threshold": 0.55,
-      "block_threshold": 0.85
+      "block_threshold": 0.85,
+      // Optional browser-path intervention. When true in enforce mode,
+      // detected page/read-state regions are removed before the model sees
+      // them. The default false preserves warn-only and historical runs.
+      "browser_sanitize": false
     },
 
     // Credentials, access tokens, payment details, private keys and secret

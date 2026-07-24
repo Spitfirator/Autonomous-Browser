@@ -93,7 +93,7 @@ class PromptInjectionDetected(SentinelEvent):
 	severity: Literal['low', 'medium', 'high', 'critical']
 	signals: list[str] = Field(default_factory=list)
 	content_hash: str
-	action_taken: Literal['model_warned', 'shadow_monitored']
+	action_taken: Literal['model_warned', 'model_sanitized', 'shadow_monitored']
 
 
 class EnforcementDecision(SentinelEvent):

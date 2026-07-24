@@ -12,6 +12,7 @@ import hashlib
 import json
 import os
 import tempfile
+from collections.abc import Iterable
 from pathlib import Path
 from typing import Any, Literal
 
@@ -28,6 +29,7 @@ INJECTION_FORMATS = (
 )
 TASK_IDS = tuple(range(1000, 1000 + WASP_TASK_COUNT_PER_BATCH))
 PolicyMode = Literal['off', 'enforce']
+ParticipantMode = Literal['none', 'oracle']
 CellStatus = Literal['pending', 'prepared', 'running', 'evaluated', 'cleaned', 'cleanup_failed']
 
 
@@ -88,6 +90,13 @@ class Provenance(BaseModel):
 	policy_mode: PolicyMode
 	policy_sha256: str
 	model_settings: ModelSettings
+	participant: ParticipantMode = 'none'
+	attacker_task_sha256: str | None = None
+	injection_config_sha256: str | None = None
+	# Content hash of the enforcement middleware itself. The Git commit does not
+	# cover uncommitted edits, and a detector change silently alters what every
+	# later execution measures.
+	enforcement_sha256: str | None = None
 
 
 class TaskResult(BaseModel):
@@ -157,6 +166,8 @@ class CellState(BaseModel):
 	output_dir: str
 	native_scores_file: str | None = None
 	last_error: str | None = None
+	input_manifest_sha256: str | None = None
+	restart_count: int = Field(default=0, ge=0)
 
 
 class CampaignState(BaseModel):
@@ -167,6 +178,8 @@ class CampaignState(BaseModel):
 	benchmark_commit: str = WASP_COMMIT
 	model_settings: ModelSettings
 	policy_sha256: str
+	participant: ParticipantMode = 'none'
+	enforcement_sha256: str | None = None
 	cells: dict[str, CellState] = Field(default_factory=dict)
 
 
@@ -200,6 +213,9 @@ class CampaignSummary(BaseModel):
 	model_settings: ModelSettings
 	policy_sha256: str
 	cells: list[AggregateCell]
+	participant: ParticipantMode = 'none'
+	enforcement_sha256: str | None = None
+	input_manifests: dict[str, str] = Field(default_factory=dict)
 
 
 def cell_id(batch: WaspBatch, mode: PolicyMode) -> str:
@@ -208,6 +224,52 @@ def cell_id(batch: WaspBatch, mode: PolicyMode) -> str:
 
 def sha256_file(path: Path) -> str:
 	return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+# The middleware whose behavior defines what a run measures. A change to any of
+# these files makes earlier checkpoints incomparable, so it is hashed into run
+# provenance and rechecked on resume.
+ENFORCEMENT_SOURCES = (
+	# The harness that wires the middleware into BrowserUse is part of what a
+	# run measures: approval/handover timeouts and the oracle live here.
+	Path('evals') / 'wasp' / 'runner.py',
+	Path('server') / 'config.py',
+	Path('server') / 'governance' / 'security.py',
+	Path('server') / 'governance' / 'governed_llm.py',
+	Path('server') / 'governance' / 'governed_tools.py',
+	Path('server') / 'governance' / 'policy.py',
+	Path('server') / 'governance' / 'approvals.py',
+	Path('server') / 'governance' / 'handover.py',
+	Path('server') / 'governance' / 'throttle.py',
+)
+
+
+def enforcement_source_sha256(sentinel_root: Path) -> str:
+	"""Hash the enforcement middleware's actual contents, not its commit."""
+
+	hasher = hashlib.sha256()
+	for relative in ENFORCEMENT_SOURCES:
+		path = sentinel_root / relative
+		if not path.is_file():
+			raise FileNotFoundError(f'enforcement source is missing: {path}')
+		hasher.update(relative.as_posix().encode('utf-8'))
+		hasher.update(b'\0')
+		hasher.update(path.read_bytes())
+		hasher.update(b'\0')
+	return hasher.hexdigest()
+
+
+def sha256_manifest(root: Path, paths: Iterable[Path]) -> str:
+	"""Hash a stable set of generated benchmark inputs independent of run path."""
+
+	hasher = hashlib.sha256()
+	for path in sorted((candidate.resolve() for candidate in paths), key=lambda item: item.as_posix()):
+		relative = path.relative_to(root.resolve()).as_posix()
+		hasher.update(relative.encode('utf-8'))
+		hasher.update(b'\0')
+		hasher.update(path.read_bytes())
+		hasher.update(b'\0')
+	return hasher.hexdigest()
 
 
 def sha256_text(value: str | None) -> str | None:

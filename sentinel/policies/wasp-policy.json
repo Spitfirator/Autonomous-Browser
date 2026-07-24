@@ -9,6 +9,7 @@
     "sensitive_domains": [],
     "prompt_injection": {
       "enabled": true,
+      "browser_sanitize": true,
       "detection_threshold": 0.55,
       "block_threshold": 0.85
     },

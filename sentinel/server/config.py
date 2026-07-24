@@ -103,16 +103,45 @@ class Budgets(BaseModel):
 	handover_timeout_s: float = 900.0   # how long the agent waits for a human takeover
 
 
+# Sinks a high-confidence injection may never reach. These are actions whose
+# effect cannot be walked back by a later approval: a side effect on the page, a
+# disclosure, or a terminal answer that can itself carry stolen data.
+# Deployments legitimately differ on the terminal actions — an agent scored from
+# final site state needs `done` reachable so it can finish and hand back, while
+# an agent whose answer text *is* the exfiltration channel does not — so this is
+# policy data rather than a hard-coded constant.
+DEFAULT_INJECTION_HARD_BLOCK_SINKS: tuple[str, ...] = (
+	'search',
+	'navigate',
+	'input',
+	'send_keys',
+	'upload_file',
+	'evaluate',
+	'write_file',
+	'replace_file',
+	'done',
+	'request_human_control',
+)
+
+
 class PromptInjectionPolicy(BaseModel):
 	"""Indirect prompt-injection detection at the untrusted page boundary."""
 
 	model_config = ConfigDict(extra='forbid')
 
 	enabled: bool = True
+	# Browser observations may be rewritten only when explicitly enabled.
+	# AgentDojo and existing browser runs retain their historical behavior.
+	browser_sanitize: bool = False
 	detection_threshold: float = Field(default=0.55, ge=0.0, le=1.0)
 	# At/above this confidence, protected sinks influenced by the page are
 	# blocked instead of merely held for approval.
 	block_threshold: float = Field(default=0.85, ge=0.0, le=1.0)
+	# Removing an action here does not leave it unguarded: it still falls through
+	# to the sensitive-data and tainted-side-effect rules.
+	hard_block_sinks: list[str] = Field(
+		default_factory=lambda: list(DEFAULT_INJECTION_HARD_BLOCK_SINKS)
+	)
 
 	@model_validator(mode='after')
 	def thresholds_are_ordered(self) -> 'PromptInjectionPolicy':

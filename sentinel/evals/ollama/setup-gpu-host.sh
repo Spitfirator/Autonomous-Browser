@@ -12,14 +12,27 @@
 #
 # Optional overrides:
 #   MODEL_TAG=qwen3.5:14b   force a specific base tag (skips VRAM auto-pick)
+#   OLLAMA_DIR=/scratch/... install Ollama outside an ephemeral home quota
 #   OLLAMA_MODELS=/path     store model weights outside $HOME (quota relief)
+#   OLLAMA_VERSION=v0.30.8  pinned Ollama release
+#   OLLAMA_SHA256=...       required when overriding OLLAMA_VERSION
 #   NUM_CTX=32768           context length pinned into the campaign model
 set -euo pipefail
 
 OLLAMA_DIR="${OLLAMA_DIR:-$HOME/.local/ollama}"
+OLLAMA_VERSION="${OLLAMA_VERSION:-v0.30.8}"
+if [ -z "${OLLAMA_SHA256:-}" ]; then
+	if [ "$OLLAMA_VERSION" = "v0.30.8" ]; then
+		OLLAMA_SHA256="ffe2b2c2f2f5f5b30c081ec353c2e0bb2d9ead516064a8e22663b24b8fd8dca0"
+	else
+		echo "Set OLLAMA_SHA256 when overriding OLLAMA_VERSION=$OLLAMA_VERSION" >&2
+		exit 1
+	fi
+fi
+OLLAMA_ASSET_URL="https://github.com/ollama/ollama/releases/download/$OLLAMA_VERSION/ollama-linux-amd64.tar.zst"
 OLLAMA_HOST_ADDR="127.0.0.1:11434"
 NUM_CTX="${NUM_CTX:-32768}"
-LOG_FILE="$HOME/.local/ollama-server.log"
+LOG_FILE="${OLLAMA_LOG_FILE:-$OLLAMA_DIR/ollama-server.log}"
 
 say() { printf '\n== %s\n' "$*"; }
 
@@ -31,11 +44,25 @@ elif [ -x "$OLLAMA_DIR/bin/ollama" ]; then
 else
 	say "Installing Ollama into $OLLAMA_DIR (user-space, no sudo)"
 	mkdir -p "$OLLAMA_DIR"
-	curl -fL --progress-bar https://ollama.com/download/ollama-linux-amd64.tgz \
-		| tar -xz -C "$OLLAMA_DIR"
+	OLLAMA_ARCHIVE="$(mktemp "${TMPDIR:-/tmp}/ollama-linux-amd64.XXXXXX.tar.zst")"
+	trap 'rm -f "$OLLAMA_ARCHIVE"' EXIT
+	curl -fL --progress-bar "$OLLAMA_ASSET_URL" -o "$OLLAMA_ARCHIVE"
+	printf '%s  %s\n' "$OLLAMA_SHA256" "$OLLAMA_ARCHIVE" | sha256sum -c -
+	if command -v zstd >/dev/null 2>&1; then
+		zstd -dc "$OLLAMA_ARCHIVE" | tar -xf - -C "$OLLAMA_DIR"
+	elif tar --help 2>/dev/null | grep -q -- '--zstd'; then
+		tar --zstd -xf "$OLLAMA_ARCHIVE" -C "$OLLAMA_DIR"
+	else
+		echo "Ollama's .tar.zst archive requires zstd or tar with --zstd support" >&2
+		exit 1
+	fi
+	rm -f "$OLLAMA_ARCHIVE"
+	trap - EXIT
 	OLLAMA_BIN="$OLLAMA_DIR/bin/ollama"
 fi
+[ -x "$OLLAMA_BIN" ] || { echo "Ollama binary was not installed at $OLLAMA_BIN" >&2; exit 1; }
 say "Using ollama binary: $OLLAMA_BIN"
+mkdir -p "$OLLAMA_DIR"
 
 # --- 2. Start the server bound to localhost if it is not running ----------
 export OLLAMA_HOST="$OLLAMA_HOST_ADDR"

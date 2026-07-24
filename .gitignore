@@ -20,6 +20,12 @@ dist/
 sentinel/evals/fixtures/agentdojo-*.jsonl
 sentinel/evals/fixtures/agentdojo-*.manifest.json
 sentinel/evals/fixtures/agentdojo-*.report.json
+# WASP corpus: raw captured page text and instantiated payloads stay local; the
+# curated manifest and the compact detector metrics are tracked.
+sentinel/evals/fixtures/wasp-pages.json
+sentinel/evals/fixtures/wasp-security.jsonl
+sentinel/evals/fixtures/wasp-security.report.json
+sentinel/evals/fixtures/wasp-security.detector-v2.report.json
 sentinel/evals/agentdojo-v1-agent-smoke*.json
 sentinel/evals/agentdojo-campaign-*
 sentinel/evals/agentdojo-e2e-*.json

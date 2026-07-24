@@ -138,7 +138,7 @@ clone_sandbox() {
 normalize_active_sandbox_for_removal() {
 	local pristine="$1"
 	local active="$2"
-	[ -d "$active" ] || return
+	[ -d "$active" ] || return 0
 	# Service-account ownership created inside single-ID fakeroot can otherwise
 	# make a stopped active sandbox undeletable by the host account. Use the
 	# pristine image only as a helper rootfs and normalize the disposable clone.

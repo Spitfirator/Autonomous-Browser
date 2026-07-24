@@ -21,6 +21,7 @@ from evals.wasp.contract import (
 	ModelSettings,
 	NativeBatchScores,
 	NativeTaskScore,
+	ParticipantMode,
 	PolicyMode,
 	TASK_IDS,
 	TaskResult,
@@ -33,6 +34,8 @@ from evals.wasp.contract import (
 	cell_id,
 	load_json,
 	sha256_file,
+	enforcement_source_sha256,
+	sha256_manifest,
 	validate_generated_tasks,
 )
 from evals.wasp.runner import git_revision, run_task, validate_completed_execution
@@ -40,12 +43,18 @@ from evals.wasp.runner import git_revision, run_task, validate_completed_executi
 WORKSPACE_ROOT = Path(__file__).resolve().parents[3]
 SENTINEL_ROOT = WORKSPACE_ROOT / 'sentinel'
 DEFAULT_EXTERNAL_ROOT = WORKSPACE_ROOT / '.wasp'
-DEFAULT_POLICY = SENTINEL_ROOT / 'policies' / 'wasp-policy.json'
+DEFAULT_POLICY = Path(
+	os.environ.get(
+		'WASP_POLICY',
+		str(SENTINEL_ROOT / 'policies' / 'wasp-policy.json'),
+	)
+)
 DEFAULT_RUN_TAG = os.environ.get(
 	'WASP_RUN_TAG',
 	'wasp-qwen35-9b-browser32k-30step-v1',
 )
 DEFAULT_MAX_STEPS = int(os.environ.get('WASP_MAX_STEPS', '30'))
+DEFAULT_PARTICIPANT = os.environ.get('WASP_PARTICIPANT', 'none')
 
 
 def _environment_flag(name: str, default: bool = False) -> bool:
@@ -152,7 +161,9 @@ class WaspCampaign:
 			ollama_host=args.ollama_host,
 			max_steps=args.max_steps,
 		)
+		self.participant: ParticipantMode = args.participant
 		self.policy_sha = sha256_file(self.policy_path)
+		self.enforcement_sha = enforcement_source_sha256(SENTINEL_ROOT)
 		self.env = _subprocess_env(self.wasp_root, self.external_root)
 		self.env['GITLAB'] = args.gitlab
 		self.env['REDDIT'] = args.reddit
@@ -222,6 +233,8 @@ class WaspCampaign:
 			run_tag=self.args.run_tag,
 			model_settings=self.settings,
 			policy_sha256=self.policy_sha,
+			participant=self.participant,
+			enforcement_sha256=self.enforcement_sha,
 			cells=cells,
 		)
 
@@ -237,6 +250,21 @@ class WaspCampaign:
 			raise ValueError('campaign state uses different model settings; choose a new --run-tag')
 		if state.policy_sha256 != self.policy_sha:
 			raise ValueError('campaign state uses a different policy; choose a new --run-tag')
+		if state.participant != self.participant:
+			raise ValueError('campaign state uses a different participant mode; choose a new --run-tag')
+		if state.enforcement_sha256 is None:
+			# Checkpoints written before enforcement fingerprinting cannot prove
+			# which middleware produced them. Adopt the current hash only when the
+			# run is already finished, so a frozen row stays readable.
+			if any(cell.status not in ('evaluated', 'cleaned', 'cleanup_failed') for cell in state.cells.values()):
+				raise ValueError(
+					'campaign state predates enforcement fingerprinting and is unfinished; '
+					'choose a new --run-tag rather than resuming it'
+				)
+		elif state.enforcement_sha256 != self.enforcement_sha:
+			raise ValueError(
+				'campaign state was produced by different enforcement middleware; choose a new --run-tag'
+			)
 		return state
 
 	def save_state(self, state: CampaignState) -> None:
@@ -251,6 +279,72 @@ class WaspCampaign:
 		key = cell_id(batch, mode)
 		cell = state.cells[key]
 		return key, cell, Path(cell.output_dir)
+
+	def _cell_from_key(
+		self,
+		state: CampaignState,
+		key: str,
+	) -> tuple[WaspBatch, PolicyMode, CellState, Path]:
+		if key not in state.cells:
+			known = ', '.join(sorted(state.cells))
+			raise ValueError(f'unknown cell {key!r}; choose one of: {known}')
+		batch_id, raw_mode = key.rsplit('/', 1)
+		if raw_mode not in ('off', 'enforce'):
+			raise ValueError(f'invalid cell policy mode in {key!r}')
+		mode: PolicyMode = raw_mode  # type: ignore[assignment]
+		batch = next((candidate for candidate in all_batches() if candidate.batch_id == batch_id), None)
+		if batch is None:
+			raise ValueError(f'invalid WASP batch in {key!r}')
+		cell = state.cells[key]
+		return batch, mode, cell, Path(cell.output_dir)
+
+	def _validate_task_provenance(
+		self,
+		result: TaskResult,
+		batch: WaspBatch,
+		mode: PolicyMode,
+		task_id: int,
+	) -> None:
+		if (
+			result.case_id != batch.case_id(task_id)
+			or result.batch_id != batch.batch_id
+			or result.task_id != task_id
+			or result.policy_mode != mode
+			or result.provenance.policy_mode != mode
+		):
+			raise ValueError(f'{batch.case_id(task_id)}: task checkpoint cell provenance mismatch')
+		if result.provenance.policy_sha256 != self.policy_sha:
+			raise ValueError(f'{batch.case_id(task_id)}: task checkpoint policy mismatch')
+		if result.provenance.model_settings != self.settings:
+			raise ValueError(f'{batch.case_id(task_id)}: task checkpoint model settings mismatch')
+		if result.provenance.participant != self.participant:
+			raise ValueError(f'{batch.case_id(task_id)}: task checkpoint participant mismatch')
+		if (
+			result.provenance.enforcement_sha256 is not None
+			and result.provenance.enforcement_sha256 != self.enforcement_sha
+		):
+			raise ValueError(f'{batch.case_id(task_id)}: task checkpoint enforcement middleware mismatch')
+
+	def _validate_task_checkpoint(
+		self,
+		result: TaskResult,
+		batch: WaspBatch,
+		mode: PolicyMode,
+		task_id: int,
+	) -> None:
+		self._validate_task_provenance(result, batch, mode, task_id)
+		validate_completed_execution(result)
+
+	@staticmethod
+	def _generated_input_manifest(cell_dir: Path) -> str:
+		paths = [
+			*(cell_dir / 'webarena_tasks' / f'{task_id}.json' for task_id in TASK_IDS),
+			*(cell_dir / 'webarena_tasks_attacker' / f'{task_id}.json' for task_id in TASK_IDS),
+			cell_dir / 'instantiated_prompt_injections_config.json',
+		]
+		if any(not path.is_file() for path in paths):
+			raise ValueError(f'{cell_dir}: generated WASP input manifest is incomplete')
+		return sha256_manifest(cell_dir, paths)
 
 	def _refresh_auth(self) -> None:
 		visual_root = self.wasp_root / 'visualwebarena'
@@ -303,6 +397,13 @@ class WaspCampaign:
 		_, cell, cell_dir = self._cell(state, batch, mode)
 		if cell.status != 'pending':
 			validate_generated_tasks(cell_dir / 'webarena_tasks', batch)
+			validate_generated_tasks(cell_dir / 'webarena_tasks_attacker', batch)
+			manifest = self._generated_input_manifest(cell_dir)
+			if cell.input_manifest_sha256 is not None and cell.input_manifest_sha256 != manifest:
+				raise ValueError(f'{cell_dir}: generated WASP input manifest changed after preparation')
+			if cell.input_manifest_sha256 is None:
+				cell.input_manifest_sha256 = manifest
+				self.save_state(state)
 			return cell, cell_dir
 		if cell_dir.exists() and any(cell_dir.iterdir()):
 			raise RuntimeError(
@@ -338,6 +439,7 @@ class WaspCampaign:
 		)
 		validate_generated_tasks(cell_dir / 'webarena_tasks', batch)
 		validate_generated_tasks(cell_dir / 'webarena_tasks_attacker', batch)
+		cell.input_manifest_sha256 = self._generated_input_manifest(cell_dir)
 		self._refresh_auth()
 		cell.status = 'prepared'
 		cell.last_error = None
@@ -361,7 +463,7 @@ class WaspCampaign:
 			result_path = task_dir / 'task-result.json'
 			if task_id in cell.completed_task_ids:
 				result = TaskResult.model_validate(load_json(result_path))
-				validate_completed_execution(result)
+				self._validate_task_checkpoint(result, batch, mode, task_id)
 				continue
 			try:
 				await run_task(
@@ -373,6 +475,9 @@ class WaspCampaign:
 					policy_path=self.policy_path,
 					wasp_root=self.wasp_root,
 					workspace_root=WORKSPACE_ROOT,
+					participant=self.participant,
+					attacker_task_path=cell_dir / 'webarena_tasks_attacker' / f'{task_id}.json',
+					injection_config_path=cell_dir / 'instantiated_prompt_injections_config.json',
 				)
 				source_log = task_dir / 'agent-logs' / f'{task_id}.jsonl'
 				shutil.copy2(source_log, log_dir / source_log.name)
@@ -555,6 +660,194 @@ class WaspCampaign:
 		self.save_state(state)
 		print(f'Recovered {key}; completed task and native-score evidence was preserved.', flush=True)
 
+	def recover_cell_after_environment_loss(self, key: str) -> None:
+		"""Recover one cell after its remote mutable websites were destroyed.
+
+		Native scores make an evaluated cell portable, so it can be finalized
+		without touching the lost websites. A prepared/running cell is not
+		portable: its local evidence is archived and the entire 21-task cell is
+		reset to pending for a pristine rerun on the replacement host.
+		"""
+
+		state = self.load_state()
+		batch, mode, cell, cell_dir = self._cell_from_key(state, key)
+
+		if cell.status == 'cleaned':
+			print(f'{key} is already cleaned; its scored evidence is portable.')
+			return
+		if cell.status in ('evaluated', 'cleanup_failed'):
+			if cell.completed_task_ids != list(TASK_IDS):
+				raise RuntimeError(f'{key}: cannot preserve evaluated cell with incomplete task checkpoints')
+			if not cell.native_scores_file:
+				raise RuntimeError(f'{key}: cannot preserve evaluated cell without native scores')
+			native_path = Path(cell.native_scores_file)
+			native = NativeBatchScores.model_validate(load_json(native_path))
+			if native.batch_id != batch.batch_id or native.policy_mode != mode:
+				raise RuntimeError(f'{key}: native-score provenance mismatch')
+			for task_id in TASK_IDS:
+				result = TaskResult.model_validate(
+					load_json(cell_dir / 'tasks' / f'task-{task_id}' / 'task-result.json')
+				)
+				self._validate_task_checkpoint(result, batch, mode, task_id)
+			previous_status = cell.status
+			cell.status = 'cleaned'
+			cell.last_error = None
+			self.save_state(state)
+			self._append_jsonl(
+				self.environment_events_path,
+				{
+					'type': 'evaluated_cell_preserved_after_environment_loss',
+					'observed_at': datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
+					'cell_id': key,
+					'previous_status': previous_status,
+					'native_scores_file': str(native_path),
+				},
+			)
+			print(f'{key} was already scored; marked cleaned without rerunning it.')
+			return
+
+		if cell.status not in ('pending', 'prepared', 'running'):
+			raise RuntimeError(f'{key}: unsupported recovery state {cell.status!r}')
+		if cell.status == 'pending' and (not cell_dir.exists() or not any(cell_dir.iterdir())):
+			print(f'{key} is already pending with no local attempt to archive.')
+			return
+
+		stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')
+		archive_dir = self.run_root / 'abandoned-cells' / stamp / batch.batch_id / mode
+		if archive_dir.exists():
+			raise FileExistsError(f'recovery archive already exists: {archive_dir}')
+		archived_manifest = cell.input_manifest_sha256
+		if archived_manifest is None and cell_dir.exists():
+			try:
+				archived_manifest = self._generated_input_manifest(cell_dir)
+			except ValueError:
+				# Recovery must preserve even a partially-written attempt. The
+				# archive itself remains available for forensic inspection.
+				archived_manifest = None
+		if cell_dir.exists():
+			archive_dir.parent.mkdir(parents=True, exist_ok=True)
+			shutil.move(str(cell_dir), str(archive_dir))
+			archived = str(archive_dir)
+		else:
+			archived = ''
+		previous_status = cell.status
+		previous_completed = list(cell.completed_task_ids)
+		state.cells[key] = CellState(
+			output_dir=str(cell_dir),
+			restart_count=cell.restart_count + 1,
+		)
+		self.save_state(state)
+		self._append_jsonl(
+			self.environment_events_path,
+			{
+				'type': 'incomplete_cell_archived_after_environment_loss',
+				'observed_at': datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
+				'cell_id': key,
+				'previous_status': previous_status,
+				'completed_task_ids': previous_completed,
+				'archive_dir': archived,
+				'input_manifest_sha256': archived_manifest,
+				'restart_count': cell.restart_count + 1,
+			},
+		)
+		print(
+			f'{key} reset to pending after remote environment loss; '
+			f'previous local evidence archived at {archived or "(no directory existed)"}.'
+		)
+
+	async def finish_cell_before_environment_loss(self, key: str) -> None:
+		"""Finish and native-score one cell on its original mutable websites.
+
+		The command never advances to another cell. Zero-model checkpoints that
+		performed only the runner's initial navigation are archived and retried;
+		any checkpoint that could have made a model-directed mutation is kept and
+		must validate normally.
+		"""
+
+		state = self.load_state()
+		batch, mode, cell, cell_dir = self._cell_from_key(state, key)
+		if cell.status in ('evaluated', 'cleaned', 'cleanup_failed'):
+			if not cell.native_scores_file:
+				raise RuntimeError(f'{key}: scored checkpoint has no native-score file')
+			native = NativeBatchScores.model_validate(load_json(Path(cell.native_scores_file)))
+			if native.batch_id != batch.batch_id or native.policy_mode != mode:
+				raise RuntimeError(f'{key}: native-score provenance mismatch')
+			print(f'{key} already has native-scored evidence; no scoring rerun is needed.')
+			return
+		if cell.status not in ('prepared', 'running'):
+			raise RuntimeError(f'{key}: finish-cell requires a prepared or running checkpoint')
+
+		for line in self.preflight(require_services=True):
+			print(f'✓ {line}')
+		cell, cell_dir = self._prepare_cell(state, batch, mode)
+
+		retry_task_ids: list[int] = []
+		for task_id in list(cell.completed_task_ids):
+			result_path = cell_dir / 'tasks' / f'task-{task_id}' / 'task-result.json'
+			result = TaskResult.model_validate(load_json(result_path))
+			self._validate_task_provenance(result, batch, mode, task_id)
+			try:
+				validate_completed_execution(result)
+			except ValueError:
+				if (
+					result.status == 'completed'
+					and int(result.event_counts.get('llm_call', 0)) == 0
+					and set(result.action_names).issubset({'navigate'})
+				):
+					retry_task_ids.append(task_id)
+					continue
+				raise
+
+		if retry_task_ids:
+			stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')
+			archive_root = (
+				self.run_root
+				/ 'abandoned-task-checkpoints'
+				/ stamp
+				/ batch.batch_id
+				/ mode
+			)
+			for task_id in retry_task_ids:
+				task_dir = cell_dir / 'tasks' / f'task-{task_id}'
+				archive_task_dir = archive_root / f'task-{task_id}'
+				archive_task_dir.parent.mkdir(parents=True, exist_ok=True)
+				shutil.move(str(task_dir), str(archive_task_dir))
+				aggregate_log = cell_dir / 'agent_logs' / f'{task_id}.jsonl'
+				if aggregate_log.is_file():
+					shutil.move(str(aggregate_log), str(archive_task_dir / 'aggregate-agent-log.jsonl'))
+			cell.completed_task_ids = [
+				task_id for task_id in cell.completed_task_ids if task_id not in retry_task_ids
+			]
+			cell.last_error = None
+			self.save_state(state)
+			self._append_jsonl(
+				self.environment_events_path,
+				{
+					'type': 'zero_model_task_checkpoints_archived_for_same_environment_retry',
+					'observed_at': datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
+					'cell_id': key,
+					'task_ids': retry_task_ids,
+					'archive_dir': str(archive_root),
+				},
+			)
+			print(
+				f'Archived zero-model navigation-only checkpoints for {retry_task_ids}; '
+				'retrying them on the same environment.',
+				flush=True,
+			)
+
+		await self._run_tasks(state, batch, mode, cell, cell_dir)
+		if cell.completed_task_ids != list(TASK_IDS):
+			raise RuntimeError(f'{key}: finish-cell did not complete all task checkpoints')
+		for task_id in TASK_IDS:
+			log_path = cell_dir / 'agent_logs' / f'{task_id}.jsonl'
+			if not log_path.is_file():
+				raise FileNotFoundError(f'{key}: native scoring log is missing: {log_path}')
+		print(f'Native-scoring {key} against its original GitLab/Reddit final state.', flush=True)
+		self._native_evaluate(state, batch, mode, cell, cell_dir)
+		self._cleanup(state, batch, mode, cell, cell_dir)
+		print(f'{key} is native-scored and portable to a replacement GPU.', flush=True)
+
 	async def run(self, modes: list[PolicyMode]) -> None:
 		for line in self.preflight(require_services=True):
 			print(f'✓ {line}')
@@ -575,59 +868,113 @@ class WaspCampaign:
 					self._native_evaluate(state, batch, mode, cell, cell_dir)
 				if cell.status == 'evaluated':
 					self._cleanup(state, batch, mode, cell, cell_dir)
-		self.summarize()
+		self.summarize(modes)
 
-	def summarize(self) -> CampaignSummary:
+	def summarize(self, modes: list[PolicyMode] | None = None) -> CampaignSummary:
 		state = self.load_state()
+		selected_modes = modes or ['off', 'enforce']
 		cells = []
-		for mode in ('off', 'enforce'):
+		input_manifests: dict[str, str] = {}
+		for mode in selected_modes:
 			task_results: list[TaskResult] = []
 			native_scores: list[NativeTaskScore] = []
 			for batch in all_batches():
-				_, cell, cell_dir = self._cell(state, batch, mode)
+				key, cell, cell_dir = self._cell(state, batch, mode)
 				if cell.status not in ('evaluated', 'cleaned'):
 					raise RuntimeError(f'{batch.batch_id}/{mode} is not evaluated')
+				manifest = cell.input_manifest_sha256 or self._generated_input_manifest(cell_dir)
+				input_manifests[key] = manifest
 				native = NativeBatchScores.model_validate(load_json(Path(cell.native_scores_file or '')))
 				for score in native.scores:
 					result = TaskResult.model_validate(
 						load_json(cell_dir / 'tasks' / f'task-{score.task_id}' / 'task-result.json')
 					)
-					validate_completed_execution(result)
+					self._validate_task_checkpoint(result, batch, mode, score.task_id)
 					task_results.append(result)
 					native_scores.append(score)
 			cells.append(aggregate_cell(mode, task_results, native_scores))
+		if len(selected_modes) > 1:
+			for batch in all_batches():
+				batch_manifests = {
+					input_manifests[cell_id(batch, mode)]
+					for mode in selected_modes
+				}
+				if len(batch_manifests) != 1:
+					raise RuntimeError(
+						f'{batch.batch_id}: generated inputs differ across policy modes'
+					)
 		summary = CampaignSummary(
 			run_tag=state.run_tag,
 			model_settings=state.model_settings,
 			policy_sha256=state.policy_sha256,
 			cells=cells,
+			participant=state.participant,
+			enforcement_sha256=state.enforcement_sha256,
+			input_manifests=input_manifests,
 		)
 		atomic_write_json(self.summary_path, summary)
 		print(summary.model_dump_json(indent=2))
 		return summary
 
-	def status(self) -> None:
+	def status(self, modes: list[PolicyMode] | None = None) -> None:
 		state = self.load_state()
-		print(f'WASP campaign [{state.run_tag}] — model {state.model_settings.model}')
+		selected_modes = modes or ['off', 'enforce']
+		print(
+			f'WASP campaign [{state.run_tag}] — model {state.model_settings.model} '
+			f'participant={state.participant}'
+		)
 		print(f'benchmark {state.benchmark_commit[:12]}  policy {state.policy_sha256[:12]}')
 		print(
 			'cell isolation: '
 			+ ('pristine reset before pending cells' if self.args.reset_between_cells else 'manual')
 		)
 		print()
+		valid_total = 0
+		portable_total = 0
 		for batch in all_batches():
-			for mode in ('off', 'enforce'):
-				_, cell, _ = self._cell(state, batch, mode)
+			for mode in selected_modes:
+				_, cell, cell_dir = self._cell(state, batch, mode)
+				valid_count = 0
+				for task_id in cell.completed_task_ids:
+					try:
+						result = TaskResult.model_validate(
+							load_json(cell_dir / 'tasks' / f'task-{task_id}' / 'task-result.json')
+						)
+						self._validate_task_checkpoint(result, batch, mode, task_id)
+						valid_count += 1
+					except (OSError, ValueError):
+						pass
+				invalid_count = len(cell.completed_task_ids) - valid_count
+				valid_total += valid_count
+				is_portable = False
+				if (
+					cell.status in ('evaluated', 'cleaned', 'cleanup_failed')
+					and valid_count == len(TASK_IDS)
+					and cell.native_scores_file
+				):
+					try:
+						native = NativeBatchScores.model_validate(
+							load_json(Path(cell.native_scores_file))
+						)
+						is_portable = (
+							native.batch_id == batch.batch_id
+							and native.policy_mode == mode
+						)
+					except (OSError, ValueError):
+						pass
+				if is_portable:
+					portable_total += len(TASK_IDS)
 				print(
 					f'{batch.batch_id:25} {mode:7} {cell.status:14} '
-					f'{len(cell.completed_task_ids):2}/{len(TASK_IDS)} tasks'
+					f'{valid_count:2}/{len(TASK_IDS)} valid'
+					+ (f'  invalid={invalid_count}' if invalid_count else '')
+					+ ('  portable' if is_portable else '')
+					+ (f'  restarts={cell.restart_count}' if cell.restart_count else '')
 					+ (f'  error={cell.last_error}' if cell.last_error else '')
 				)
-		completed = sum(
-			len(cell.completed_task_ids)
-			for cell in state.cells.values()
-		)
-		print(f'\nexecutions checkpointed: {completed}/{len(TASK_IDS) * len(all_batches()) * 2}')
+		expected = len(TASK_IDS) * len(all_batches()) * len(selected_modes)
+		print(f'\nvalid task checkpoints: {valid_total}/{expected}')
+		print(f'portable native-scored executions: {portable_total}/{expected}')
 
 
 def _common_parser(parser: argparse.ArgumentParser) -> None:
@@ -637,6 +984,7 @@ def _common_parser(parser: argparse.ArgumentParser) -> None:
 	parser.add_argument('--run-root', type=Path)
 	parser.add_argument('--run-tag', default=DEFAULT_RUN_TAG)
 	parser.add_argument('--policy', type=Path, default=DEFAULT_POLICY)
+	parser.add_argument('--participant', choices=('none', 'oracle'), default=DEFAULT_PARTICIPANT)
 	parser.add_argument('--model', default=os.environ.get('WASP_MODEL', 'qwen3.5-agentdojo:9b'))
 	parser.add_argument('--ollama-host', default=os.environ.get('WASP_OLLAMA_HOST', 'http://127.0.0.1:11435'))
 	parser.add_argument('--gitlab', default=os.environ.get('GITLAB', 'http://127.0.0.1:18023'))
@@ -657,7 +1005,7 @@ def _common_parser(parser: argparse.ArgumentParser) -> None:
 def _parse_args() -> argparse.Namespace:
 	parser = argparse.ArgumentParser(description=__doc__)
 	subparsers = parser.add_subparsers(dest='command', required=True)
-	for command in ('preflight', 'run', 'status', 'summarize'):
+	for command in ('preflight', 'run', 'status', 'summarize', 'finish-cell', 'recover-cell'):
 		subparser = subparsers.add_parser(command)
 		_common_parser(subparser)
 		if command == 'preflight':
@@ -668,7 +1016,35 @@ def _parse_args() -> argparse.Namespace:
 				default='off,enforce',
 				help='comma-separated policy modes (default: off,enforce)',
 			)
+		elif command == 'summarize':
+			subparser.add_argument(
+				'--modes',
+				default='off,enforce',
+				help='comma-separated evaluated policy modes to aggregate',
+			)
+		elif command == 'status':
+			subparser.add_argument(
+				'--modes',
+				default='off,enforce',
+				help='comma-separated policy modes to display',
+			)
+		elif command in ('finish-cell', 'recover-cell'):
+			subparser.add_argument(
+				'--cell',
+				required=True,
+				help=(
+					'exact cell ID to finish or recover '
+					'(for example user-goal-0-plain/enforce)'
+				),
+			)
 	return parser.parse_args()
+
+
+def _parse_modes(value: str) -> list[PolicyMode]:
+	modes = [mode.strip() for mode in value.split(',') if mode.strip()]
+	if not modes or any(mode not in ('off', 'enforce') for mode in modes):
+		raise ValueError('--modes must contain off, enforce, or both')
+	return modes  # type: ignore[return-value]
 
 
 def main() -> None:
@@ -678,14 +1054,15 @@ def main() -> None:
 		for check in campaign.preflight(require_services=not args.offline):
 			print(f'✓ {check}')
 	elif args.command == 'run':
-		modes = [mode.strip() for mode in args.modes.split(',') if mode.strip()]
-		if not modes or any(mode not in ('off', 'enforce') for mode in modes):
-			raise ValueError('--modes must contain off, enforce, or both')
-		asyncio.run(campaign.run(modes))  # type: ignore[arg-type]
+		asyncio.run(campaign.run(_parse_modes(args.modes)))
 	elif args.command == 'status':
-		campaign.status()
+		campaign.status(_parse_modes(args.modes))
 	elif args.command == 'summarize':
-		campaign.summarize()
+		campaign.summarize(_parse_modes(args.modes))
+	elif args.command == 'finish-cell':
+		asyncio.run(campaign.finish_cell_before_environment_loss(args.cell))
+	elif args.command == 'recover-cell':
+		campaign.recover_cell_after_environment_loss(args.cell)
 
 
 if __name__ == '__main__':

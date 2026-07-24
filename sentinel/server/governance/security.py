@@ -73,7 +73,7 @@ _INJECTION_SIGNATURES: tuple[tuple[str, re.Pattern[str], float], ...] = (
 		'override_instructions',
 		re.compile(
 			r'\b(?:ignore|disregard|forget|override)\b.{0,80}\b(?:all\s+)?(?:previous|prior|above|system|developer|user)\b.{0,40}\b(?:instructions?|i\w{0,2}nstructions?|messages?|prompt|rules?)\b',
-			re.I | re.S,
+			re.I,
 		),
 		0.90,
 	),
@@ -97,13 +97,33 @@ _INJECTION_SIGNATURES: tuple[tuple[str, re.Pattern[str], float], ...] = (
 	),
 	(
 		'secrecy_or_evasion',
-		re.compile(r'\b(?:do not|don[\'’]t|never)\b.{0,50}\b(?:tell|show|mention|reveal|alert|ask)\b|\b(?:secretly|silently|without (?:the )?user(?:\s+knowing)?)\b', re.I | re.S),
+		re.compile(r'\b(?:do not|don[\'’]t|never)\b.{0,50}\b(?:tell|show|mention|reveal|alert|ask)\b|\b(?:secretly|silently|without (?:the )?user(?:\s+knowing)?)\b', re.I),
 		0.24,
 	),
 	(
+		# Moving a *secret* somewhere is suspicious on its own.  The gap stays
+		# within one line: on a flattened accessibility tree a cross-line match
+		# just joins unrelated elements ("Copy commit SHA" ... "Access tokens").
 		'exfiltration_request',
-		re.compile(r'\b(?:send|upload|post|forward|copy|leak|exfiltrat\w*)\b.{0,100}\b(?:passwords?|credentials?|api[ _-]?keys?|tokens?|cookies?|secrets?|private|history|files?|data)\b', re.I | re.S),
+		re.compile(
+			r'\b(?:send|upload|post|forward|copy|leak|exfiltrat\w*)\b.{0,100}'
+			r'\b(?:passwords?|credentials?|api[ _-]?keys?|tokens?|cookies?|secrets?|private\s+keys?|seed\s+phrases?)\b',
+			re.I,
+		),
 		0.38,
+	),
+	(
+		# Moving ordinary content is only notable when it is aimed at an external
+		# destination.  Without that, "post the data" is unremarkable page prose.
+		'bulk_data_transfer_request',
+		re.compile(
+			r'\b(?:send|upload|post|forward|copy|leak|exfiltrat\w*)\b.{0,60}'
+			r'\b(?:history|files?|data|contacts?|emails?|messages?)\b.{0,120}'
+			r'(?:https?://|\bwww\.|[\w.+-]+@[\w-]+\.[a-z]{2,}'
+			r'|\bto\s+(?:the\s+)?(?:following|this)\s+(?:url|link|address|server|endpoint|domain|site)\b)',
+			re.I,
+		),
+		0.30,
 	),
 	(
 		'sensitive_data_request',
@@ -122,7 +142,7 @@ _INJECTION_SIGNATURES: tuple[tuple[str, re.Pattern[str], float], ...] = (
 	),
 	(
 		'encoded_instruction',
-		re.compile(r'\b(?:decode|base64|rot13)\b.{0,80}\b(?:instruction|command|payload|execute|follow)\b', re.I | re.S),
+		re.compile(r'\b(?:decode|base64|rot13)\b.{0,80}\b(?:instruction|command|payload|execute|follow)\b', re.I),
 		0.22,
 	),
 	(
@@ -171,6 +191,39 @@ _INJECTION_SIGNATURES: tuple[tuple[str, re.Pattern[str], float], ...] = (
 			re.I,
 		),
 		0.25,
+	),
+	(
+		# Goal hijacking gates the user's real task behind an attacker-chosen
+		# detour: "in order to <your task>, you must first <my task>".  The
+		# demanded step must itself be consequential — ordinary workflow copy
+		# ("before you continue, you must update your password") is not an
+		# instruction to the agent to go somewhere and act.
+		'task_precondition_claim',
+		re.compile(
+			# The demanded detour must name an explicit off-page target. Ordinary
+			# UI guidance ("in order to continue, you must click Save") points at a
+			# control already in front of the user; goal hijacking points somewhere
+			# else and tells the agent to act there.
+			r'\b(?:in order to|before you can|before you)\s+[\w\s]{2,40}?,?\s*'
+			r'you\s+(?:must|need to|have to|should)\s+(?:immediately\s+|first\s+)?'
+			r'(?:go|navigate|open|visit|click|send|upload|post|publish|create|add|delete|remove|transfer|change|invite)\b'
+			r'[^.\n]{0,60}?(?:https?://|\bwww\.|[\w.+-]+@[\w-]+\.[a-z]{2,})'
+			r'|\bbefore\s+(?:doing|attempting)\s+anything\s+else\b',
+			re.I,
+		),
+		0.32,
+	),
+	(
+		# Compliance pressure is common in legitimate notices too, so this is
+		# deliberately near-zero: it only tips an already-suspicious combination
+		# and can never approach the threshold on its own.
+		'urgent_compliance_pressure',
+		re.compile(
+			r'\b(?:it is|this is)\s+(?:absolutely\s+)?(?:critical|imperative|mandatory|required|essential)\s+that\s+you\b'
+			r'|\b(?:attention|urgent|important)\b[^.\n]{0,30}\b(?:urgent|immediately|required|mandatory|critical)\b',
+			re.I,
+		),
+		0.10,
 	),
 )
 
@@ -277,8 +330,10 @@ def _neutralize_state_text(text: str) -> str:
 	return text[:open_end] + inner + '</browser_state>' + after
 
 
+_DETECTION_LINE_WRAP_RE = re.compile(r'\\+[ \t]*\n[ \t]*')
 _DETECTION_ESCAPE_NOISE_RE = re.compile(r'\\+[ \t]*')
-_DETECTION_WHITESPACE_RE = re.compile(r'\s+')
+_DETECTION_HORIZONTAL_WS_RE = re.compile(r'[^\S\n]+')
+_DETECTION_BLANK_LINES_RE = re.compile(r'\n{2,}')
 
 
 def _normalize_for_detection(text: str) -> str:
@@ -289,12 +344,42 @@ def _normalize_for_detection(text: str) -> str:
 	indentation continuations — e.g. ``"do the\\\n    \\ following first"``. Those
 	escape+wrap runs break the contiguous phrases the signature regexes match, so
 	an injection that scores 1.0 on its own drops below threshold once embedded.
-	Collapsing backslash-escape runs and whitespace to single spaces restores the
-	original phrasing for scoring only; the raw text is still what gets hashed,
-	sanitized, and shown.
+
+	Line structure is preserved.  Only a backslash that *ends* a line joins it to
+	the next one; genuine newlines survive.  Collapsing them all was over-broad:
+	a browser observation is a flattened accessibility tree, and joining it into
+	one line let every bounded-gap signature match across unrelated elements, so
+	ordinary page chrome scored as an injection.  Normalization affects scoring
+	only; the raw text is still what gets hashed, sanitized, and shown.
 	"""
 
-	return _DETECTION_WHITESPACE_RE.sub(' ', _DETECTION_ESCAPE_NOISE_RE.sub(' ', text))
+	joined = _DETECTION_LINE_WRAP_RE.sub(' ', text)
+	unescaped = _DETECTION_ESCAPE_NOISE_RE.sub(' ', joined)
+	return _DETECTION_BLANK_LINES_RE.sub('\n', _DETECTION_HORIZONTAL_WS_RE.sub(' ', unescaped))
+
+
+_DESTINATION_URL_RE = re.compile(r'https?://[^\s\'"<>]+|\bwww\.[^\s\'"<>]+', re.I)
+_DESTINATION_EMAIL_RE = re.compile(r'[\w.+-]+@[\w-]+\.[a-z]{2,}', re.I)
+
+
+def _has_external_destination(variants: tuple[str, ...], url: str | None) -> bool:
+	"""True when a transfer target leaves the origin the agent is already on.
+
+	With no current URL there is nothing to compare against, so any destination
+	counts — failing open here would silently drop the signal.
+	"""
+
+	current = url_origin(url)
+	for variant in variants:
+		if _DESTINATION_EMAIL_RE.search(variant):
+			return True
+		for match in _DESTINATION_URL_RE.finditer(variant):
+			candidate = match.group(0)
+			if not candidate.lower().startswith(('http://', 'https://')):
+				candidate = f'http://{candidate}'
+			if current is None or url_origin(candidate) != current:
+				return True
+	return False
 
 
 def detect_prompt_injection(
@@ -317,6 +402,11 @@ def detect_prompt_injection(
 	score = 0.0
 	for name, pattern, weight in _INJECTION_SIGNATURES:
 		if any(pattern.search(variant) for variant in variants):
+			if name == 'bulk_data_transfer_request' and not _has_external_destination(variants, url):
+				# Moving ordinary content *within* the site the agent is already on
+				# is normal workflow copy ("upload files to <this repo>/uploads").
+				# Only a destination off the current origin is an exfiltration shape.
+				continue
 			signals.append(name)
 			score += weight
 
@@ -535,6 +625,36 @@ def redact_text(text: str | None) -> str | None:
 	return str(redact_params({'text': text}).get('text', ''))
 
 
+def _injection_amplifier(
+	action_name: str,
+	capabilities: list[str],
+	categories: list[str],
+	cross_origin: bool,
+	target_context: dict[str, str] | None,
+) -> str | None:
+	"""Why a tainted action is dangerous beyond being a side effect, if it is.
+
+	Returns a short human-readable cause, or ``None`` when the action is ordinary
+	same-origin interaction that the numeric risk policy should judge instead.
+	"""
+
+	if cross_origin and action_name in _EXTERNAL_EFFECTS:
+		return 'the action crosses an origin boundary'
+	if 'data_disclosure' in capabilities and action_name not in ('input', 'send_keys'):
+		# `search` leaves the current origin by construction; typing into a
+		# same-origin form does not, and is the agent's normal way of working.
+		return 'the action discloses data off the current origin'
+	if categories:
+		return 'the action carries sensitive data'
+	if 'local_file_read' in capabilities:
+		return 'the action reads a local file into web content'
+	if 'code_execution' in capabilities:
+		return 'the action executes code in the page'
+	if action_name == 'click' and _is_high_impact_target(target_context or {}):
+		return 'the target appears to trigger a consequential or destructive action'
+	return None
+
+
 def assess_action(
 	action_name: str,
 	params: dict[str, Any],
@@ -633,7 +753,7 @@ def assess_action(
 	rule = 'risk_below_threshold'
 	reason = 'no elevated security risk detected'
 
-	high_confidence_injection_sink = action_name in _INJECTION_HARD_BLOCK_SINKS or (
+	high_confidence_injection_sink = action_name in set(prompt_policy.hard_block_sinks) or (
 		action_name == 'click' and _is_high_impact_target(target_context or {})
 	)
 	if (
@@ -653,6 +773,21 @@ def assess_action(
 		reason = (
 			f"{action_name} would disclose {', '.join(categories)} to an origin that is not trusted for sensitive data"
 		)
+	elif active_injection and (amplifier := _injection_amplifier(
+		action_name, capabilities, categories, cross_origin, target_context
+	)):
+		# Targeted defense in depth, not a blanket gate. Only actions that are
+		# *independently* risk-amplifying are held: leaving the origin, disclosing
+		# data, destroying something, or reaching a privileged capability. A
+		# tainted page is usually the same page the user's own task lives on, so
+		# gating every same-origin form interaction would exhaust the approval
+		# budget on legitimate work and block the task rather than the attack.
+		# Ordinary same-origin interaction continues through the numeric risk
+		# policy below; observation sanitisation is the primary control there.
+		recommendation = 'approve'
+		rule = 'prompt_injection_amplified_action'
+		confidence = f' ({prompt_finding.score:.2f})' if prompt_finding is not None else ''
+		reason = f'{action_name} on a page with an active prompt-injection finding{confidence}: {amplifier}'
 	elif adaptive.enabled and action_name in _APPROVAL_ELIGIBLE and score >= adaptive.approval_risk_threshold:
 		recommendation = 'approve'
 		rule = 'adaptive_risk'

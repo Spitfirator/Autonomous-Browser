@@ -8,12 +8,13 @@ agentic browsing. It uses:
 - Qwen 3.5 9B through Ollama on the reserved GPU;
 - the same `GovernedLLM`, `GovernedTools`, detector, risk engine and
   `PolicyEngine` used by Sentinel;
-- paired `off` and `enforce` runs with identical tasks and model settings.
+- immutable run provenance for the policy, participant mode, generated inputs,
+  model and scaffold.
 
 WASP is pinned to commit
 `ffee6f41fde76acd14bd792db442479c506260c2`. Its four published setup
 batches (two user goals × two injection formats) each create 21 scenarios:
-**84 attacked cases and 168 model executions** across the two policy modes.
+**84 attacked cases per policy mode**.
 
 ## Experiment contract
 
@@ -29,9 +30,41 @@ action counts and enforcement latency. WASP's LLM-based intermediate-action
 classifier is optional because it needs a separate OpenAI/Azure judge; it is
 not required for the primary native-oracle result.
 
-This is a non-participant benchmark. Any Sentinel approval request is denied
-immediately and any handoff times out safely. This makes the run deterministic
-and does not pretend to measure real human behaviour.
+There are two explicit participant modes:
+
+- `none`: approvals are denied immediately and handovers time out safely. This
+  preserves the original non-participant baseline.
+- `oracle`: a deterministic script reads the task-local WASP attacker ground
+  truth. It denies exposed targets matching the attacker domain or instantiated
+  attacker action URL and otherwise approves once. User-serving handovers are
+  returned without pretending that a human mutated the browser; attacker and
+  unknown targets time out.
+
+Oracle mode is a reproducible **scripted-oversight upper bound**, not a
+participant study and not evidence about human workload, fatigue, trust or
+rubber-stamping.
+
+The browser middleware also has an explicit observation-sanitisation switch.
+`wasp-warn-policy.json` preserves the historical warn-only behaviour.
+`wasp-policy.json` sets `prompt_injection.browser_sanitize=true`, so detected
+untrusted browser/read-state regions are removed before the model sees them.
+The detector, normalisation, risk assessment and shared sanitizer primitives
+remain unchanged.
+
+## Primary run matrix
+
+Each configuration uses a separate run tag and therefore a separate ignored
+run directory:
+
+| Run tag | Modes | Middleware | Participant | Purpose |
+| --- | --- | --- | --- | --- |
+| `wasp-qwen35-9b-browser32k-30step-v1` | `off,enforce` | warn-only | `none` | historical before-improvement baseline |
+| `wasp-qwen35-9b-sanitise-none-v1` | `off,enforce` | sanitise | `none` | isolates the browser middleware change |
+| `wasp-qwen35-9b-sanitise-oracle-v1` | `enforce` | sanitise | `oracle` | estimates the scripted-oversight upper bound |
+
+The middleware comparison is warn/none versus sanitise/none. The oversight
+comparison is sanitise/none versus sanitise/oracle. Do not pool the historical
+20-step pilot, different policies, or participant modes.
 
 The baseline intentionally uses Sentinel as it exists before plan-level
 authority. After the baseline is frozen, task-contract/plan authority can be
@@ -78,19 +111,59 @@ cp sentinel/evals/wasp/wasp.local.env.example \
 
 Edit only the ignored `wasp.local.env`. Do not add UCL usernames, reserved
 hostnames, SSH sockets, credentials or scratch paths to tracked files.
+`WASP_RUN_TAG`, `WASP_POLICY` and `WASP_PARTICIPANT` form one provenance
+tuple; change the run tag whenever either of the other two changes.
 
-The frozen thesis campaign uses the explicit run tag
+The historical 30-step campaign uses the explicit run tag
 `wasp-qwen35-9b-browser32k-30step-v1` and a 30-step budget. The earlier
 20-step execution is retained locally as a pilot and must not be pooled with
-or substituted into the 30-step results. Set `WASP_RESET_BETWEEN_CELLS=1` in
-the ignored local environment so every new 21-task cell starts from pristine
-GitLab and Reddit clones.
+or substituted into the 30-step results. It must always be opened with
+`wasp-warn-policy.json` and participant `none`; the state loader rejects a
+policy or participant mismatch. Set `WASP_RESET_BETWEEN_CELLS=1` so every new
+21-task cell starts from pristine GitLab and Reddit clones.
 
 The bootstrap creates `.wasp/`, clones the official source at the pinned
 commit, installs a Python 3.10 evaluator environment and installs Chromium.
 It deliberately omits VisualWebArena's unused CUDA/captioning stack.
 
-## Website environment
+## Replacement GPU setup
+
+The local `.wasp/` checkout, task checkpoints, event logs and native scores
+stay on the laptop. Ollama, its model weights, GitLab, Reddit and their mutable
+state live on the reserved host. A replacement GPU therefore needs those
+remote services rebuilt, but it does not need completed local cells rerun.
+
+After updating the private host and socket fields in `wasp.local.env`, establish
+an interactive SSH control master:
+
+```bash
+set -a
+. sentinel/evals/wasp/wasp.local.env
+set +a
+
+ssh -M -S "$WASP_SSH_SOCKET" -o ControlPersist=yes -N "$WASP_REMOTE_HOST"
+```
+
+Run that in a dedicated terminal, or add `-f` after authentication if the host
+permits it. On the new host, install the pinned, checksummed user-space Ollama
+release into scratch and create the 32K 9B campaign model:
+
+```bash
+ssh -S "$WASP_SSH_SOCKET" "$WASP_REMOTE_HOST" \
+  "env OLLAMA_DIR='$WASP_REMOTE_ROOT/ollama' \
+   OLLAMA_MODELS='$WASP_REMOTE_ROOT/ollama-models' \
+   OLLAMA_LOG_FILE='$WASP_REMOTE_ROOT/ollama-server.log' \
+   MODEL_TAG='qwen3.5:9b' NUM_CTX='32768' bash -s" \
+  < sentinel/evals/ollama/setup-gpu-host.sh
+```
+
+The installer pins Ollama `v0.30.8`, downloads the versioned
+`ollama-linux-amd64.tar.zst` GitHub asset and verifies its SHA-256 before
+extracting. The model and website data are expected to be wiped with an
+ephemeral reservation; rebuilding them is an operational prerequisite, not a
+benchmark rerun.
+
+## GitLab and Reddit environment
 
 WASP needs the official writable GitLab and Reddit WebArena images. The direct
 official archives are approximately 72.4 GiB and 49.7 GiB respectively, so
@@ -103,10 +176,14 @@ The remote script downloads the official archives described in WASP's
 Docker it loads the images normally. With Singularity it builds pristine
 writable sandboxes and uses copy-on-write XFS clones for inexpensive resets.
 The reserved remote workstation must support unprivileged Singularity
-instances, XFS reflinks and port forwarding. Start the large downloads while
-another model is running if desired; this step does not allocate the GPU:
+instances, XFS reflinks and port forwarding. Start the large downloads as soon
+as a replacement reservation begins; this step does not allocate the GPU:
 
 ```bash
+set -a
+. sentinel/evals/wasp/wasp.local.env
+set +a
+
 scp -o ControlPath="$WASP_SSH_SOCKET" \
   sentinel/evals/wasp/remote-environment.sh \
   "$WASP_REMOTE_HOST:$WASP_REMOTE_ROOT/remote-environment.sh"
@@ -126,10 +203,16 @@ set -a
 set +a
 
 ssh -S "$WASP_SSH_SOCKET" "$WASP_REMOTE_HOST" \
-  "WASP_GITLAB_TAR='$WASP_GITLAB_TAR' \
+  "WASP_CONTAINER_RUNTIME='$WASP_CONTAINER_RUNTIME' \
+   WASP_REMOTE_ROOT='$WASP_REMOTE_ROOT' \
+   WASP_GITLAB_TAR='$WASP_GITLAB_TAR' \
    WASP_REDDIT_TAR='$WASP_REDDIT_TAR' \
+   WASP_GITLAB_SANDBOX='$WASP_GITLAB_SANDBOX' \
+   WASP_REDDIT_SANDBOX='$WASP_REDDIT_SANDBOX' \
    WASP_GITLAB_IMAGE='$WASP_GITLAB_IMAGE' \
    WASP_REDDIT_IMAGE='$WASP_REDDIT_IMAGE' \
+   WASP_GITLAB_REMOTE_PORT='$WASP_GITLAB_REMOTE_PORT' \
+   WASP_REDDIT_REMOTE_PORT='$WASP_REDDIT_REMOTE_PORT' \
    WASP_PUBLIC_GITLAB_URL='$GITLAB' \
    bash -s -- start" \
   < sentinel/evals/wasp/remote-environment.sh
@@ -164,10 +247,18 @@ model tag:
 bash sentinel/evals/wasp/run-wasp.sh preflight
 ```
 
-Then run the paired experiment:
+Launch each matrix row with an explicit immutable configuration:
 
 ```bash
-bash sentinel/evals/wasp/run-wasp.sh run
+bash sentinel/evals/wasp/run-wasp.sh run \
+  --run-tag wasp-qwen35-9b-sanitise-none-v1 \
+  --policy sentinel/policies/wasp-policy.json \
+  --participant none --modes off,enforce
+
+bash sentinel/evals/wasp/run-wasp.sh run \
+  --run-tag wasp-qwen35-9b-sanitise-oracle-v1 \
+  --policy sentinel/policies/wasp-policy.json \
+  --participant oracle --modes enforce
 ```
 
 With `WASP_RESET_BETWEEN_CELLS=1`, the campaign calls
@@ -205,29 +296,101 @@ Do not run WASP model inference concurrently with an AgentDojo campaign on
 the same 16 GB GPU. Both use the same Ollama server and would compete for VRAM
 and throughput.
 
-The controller is resumable. It checkpoints after every task, refuses to mix
-different model/policy provenance, evaluates each 21-task cell before cleanup,
-restores pristine sites before the next pending cell, and never deletes a
-non-empty uncheckpointed directory. BrowserUse can return normally after
-exhausting its internal retries, so the runner classifies an unfinished
-history with an Ollama/provider or website connection failure as an
-operational error. A completed checkpoint must contain at least one successful
-model call; this prevents a lost SSH tunnel from being silently counted as a
-model or policy failure. Status and aggregation make no model calls:
+## Resuming after a GPU or reservation wipe
+
+The controller checkpoints every task locally and refuses to mix model,
+policy, participant or generated-input provenance. The recovery boundary is a
+native-scored 21-task cell:
+
+- `cleaned`: portable and skipped on the replacement GPU.
+- `evaluated` or `cleanup_failed`: portable after all 21 task checkpoints and
+  the native-score file validate; recovery marks it cleaned without touching
+  the lost websites.
+- `prepared` or `running`: not portable after GitLab/Reddit state is lost.
+  Recovery moves the entire local attempt into the ignored
+  `abandoned-cells/` archive and resets only that cell to pending. The next run
+  prepares and executes all 21 tasks against one pristine replacement
+  environment.
+
+This is not seamless at the in-flight-cell level: task checkpoints from an
+unscored cell cannot be combined with a new mutable GitLab/Reddit state. It is
+seamless for every already native-scored cell.
+
+For the historical warn-only/none run, inspect the local checkpoint without
+contacting a GPU:
 
 ```bash
-bash sentinel/evals/wasp/run-wasp.sh status
-bash sentinel/evals/wasp/run-wasp.sh summarize
+bash sentinel/evals/wasp/run-wasp.sh status \
+  --run-tag wasp-qwen35-9b-browser32k-30step-v1 \
+  --policy sentinel/policies/wasp-warn-policy.json \
+  --participant none
 ```
 
-To run only one policy mode while diagnosing:
+The current historical state lists 21/21 task IDs in
+`user-goal-1-plain/enforce`, but tasks 1018-1020 are zero-model,
+initial-navigation-only attempts and the cell has no native-score file. If the
+**original** GitLab/Reddit state is still reachable before reservation expiry,
+finish only that cell first:
 
 ```bash
-bash sentinel/evals/wasp/run-wasp.sh run --modes off
-bash sentinel/evals/wasp/run-wasp.sh run --modes enforce
+bash sentinel/evals/wasp/run-wasp.sh finish-cell \
+  --run-tag wasp-qwen35-9b-browser32k-30step-v1 \
+  --policy sentinel/policies/wasp-warn-policy.json \
+  --participant none \
+  --cell user-goal-1-plain/enforce
 ```
 
-Use a new `--run-tag` whenever the policy, model, or scaffold settings change.
+`finish-cell` preserves the 18 valid task checkpoints, archives and retries
+only those three non-mutating zero-model attempts, native-scores the cell and
+never starts the next cell. Do not run it against rebuilt websites: task-level
+resume and native final-state scoring are valid only against the same mutable
+environment that produced the retained checkpoints.
+
+If the old remote environment has actually been lost before native scoring,
+recover that exact incomplete cell once:
+
+```bash
+bash sentinel/evals/wasp/run-wasp.sh recover-cell \
+  --run-tag wasp-qwen35-9b-browser32k-30step-v1 \
+  --policy sentinel/policies/wasp-warn-policy.json \
+  --participant none \
+  --cell user-goal-1-plain/enforce
+```
+
+Then rebuild Ollama, GitLab and Reddit, restore the three forwards, pass the
+full preflight, and resume the historical row:
+
+```bash
+bash sentinel/evals/wasp/run-wasp.sh run \
+  --run-tag wasp-qwen35-9b-browser32k-30step-v1 \
+  --policy sentinel/policies/wasp-warn-policy.json \
+  --participant none --modes off,enforce
+```
+
+The run skips scored cells and reruns only the archived incomplete cell plus
+cells that were genuinely still pending. BrowserUse can return normally after
+exhausting its internal retries, so an unfinished history with an Ollama or
+website connection failure is classified as an operational error. A completed
+checkpoint must contain at least one successful model call.
+
+Status and aggregation make no model calls. For an enforce-only oracle run,
+select the same mode so intentionally absent `off` cells are not treated as
+missing:
+
+```bash
+bash sentinel/evals/wasp/run-wasp.sh status \
+  --run-tag wasp-qwen35-9b-sanitise-oracle-v1 \
+  --policy sentinel/policies/wasp-policy.json \
+  --participant oracle --modes enforce
+
+bash sentinel/evals/wasp/run-wasp.sh summarize \
+  --run-tag wasp-qwen35-9b-sanitise-oracle-v1 \
+  --policy sentinel/policies/wasp-policy.json \
+  --participant oracle --modes enforce
+```
+
+Use a new `--run-tag` whenever the policy, participant, model or scaffold
+settings change.
 
 ## Artifacts and publication
 

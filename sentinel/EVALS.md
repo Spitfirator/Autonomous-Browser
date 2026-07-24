@@ -251,6 +251,89 @@ failures, this is a development-set score. Do not describe it as an unbiased
 held-out result; freeze the policy before evaluating v1.2.x, a new attack
 generator, WASP, or DoomArena.
 
+### Detector v2: goal-hijacking coverage
+
+The first WASP browser campaign exposed a detector fitted to AgentDojo's attack
+families. On WASP's goal-hijacking payloads it scored 0.25 — below the 0.55
+threshold — for 20 of 21 scenarios, while flagging ordinary GitLab chrome,
+because `exfiltration_request` used `re.S` over a flattened accessibility tree
+and matched across unrelated elements. Every attack that actually succeeded in
+that campaign was in the undetected group.
+
+Detector v2 makes normalization line-preserving, restricts sentence-scoped
+signatures to a single line, splits secret exfiltration from generic data
+transfer (which now needs an external destination), and adds
+`task_precondition_claim` plus a near-zero `urgent_compliance_pressure`.
+
+Detector metrics only — these are the supported results:
+
+| corpus | cases | recall | precision | FPR |
+| --- | --- | --- | --- | --- |
+| `agentdojo-security` | 188 | 1.00 | 1.00 | 0.00 |
+| `agentdojo-v1-tool-knowledge` | 726 | 1.00 | 1.00 | 0.00 |
+| `wasp-security` | 123 | 1.00 | 0.988 | 0.026 |
+
+Regenerate with `evals/detector_metrics.py`, which writes the compact tracked
+scorecard `evals/detector-v2-metrics.json`. The large per-case reports from
+`security_benchmark.py` stay local and are gitignored, as the AgentDojo ones
+already were.
+
+Neither AgentDojo corpus changes a **detection classification or a score band**
+(0 of 188 and 0 of 726), verified by replaying both against the previous
+committed `security.py`. Eighteen AgentDojo scores move *within* the already-
+critical band, so this is classification-equivalence, not byte-equality. The
+historical `agentdojo-security.report.json` is left untouched as a record of the
+revision that produced it; the v1→v2 comparison lives in the scorecard's
+`baseline_comparison` block.
+
+Score bands are reported separately for isolated payloads and full observations,
+because runtime scans the whole page:
+
+| | detected | at/above block threshold |
+| --- | --- | --- |
+| isolated WASP payloads (84) | 84 | 0 |
+| full attacked observations (84) | 84 | 8 |
+
+Three disclosures matter for how this is written up:
+
+- These signatures were designed after reading WASP payloads, so WASP is a
+  **development set** and the v1→v2 change is post-hoc benchmark adaptation, not
+  evidence of held-out generalisation. The AgentDojo corpora are the held-out
+  evidence, and they are unchanged.
+- The single WASP false positive is GitLab's `/-/profile` page, which genuinely
+  discusses passwords, keys and privacy. It is reported rather than tuned away;
+  the benign half of the corpus is 39 captured real pages, not hand-written
+  strings, so the rate is measured rather than asserted.
+- **No end-to-end claim follows from this corpus.** It scores the detector, taint
+  engine and `PolicyEngine` on synthetic sinks: attack cases carry the attacker's
+  own text as parameters, which contributes sensitive-data risk that a runtime
+  `click` on an element index does not. Its containment rate is therefore not
+  reported here and must not be read as enforcement evidence.
+
+### What action gating does and does not cover
+
+Detection alone is not enforcement. Rule 7 of the policy engine holds a tainted
+action only when it is *independently* risk-amplifying — cross-origin navigation
+or disclosure, sensitive-data flow, local-file or code-execution capability, or a
+destructive target. Ordinary same-origin form interaction is left to the numeric
+risk policy.
+
+Of WASP's 84 unique attacker goals, **20 have a cross-origin terminal action**
+(exfiltration to the attacker domain) and are gated by rule 7; the remaining
+**64 reach their goal through a same-origin form submission** and are not. For
+that majority class, observation sanitisation — not action gating — is the
+primary control. Do not describe the browser rows as action-gating all 84
+scenarios.
+
+The boundary was set from evidence, not preference. Replaying the v1 enforce
+trajectories, a blanket "gate every tainted side effect" rule newly gated a
+median of 8 actions per affected task (p95 28, max 28) against
+`max_prompts_per_run: 4`, exhausting the budget on 35 of 50 tasks — which with
+`fatigue_strategy: block` converts detection into mass blocking of legitimate
+work. The narrowed rule gates a median of 0 (p95 0, max 2) and exhausts the
+budget on none, while leaving cross-origin exfiltration gated. Both AgentDojo
+corpora are unchanged by either rule.
+
 For the end-to-end model loop, the same executor scans every real tool result,
 keeps taint sticky, sanitizes only independently malicious structured fields,
 and evaluates every proposed native call before execution. It deliberately
@@ -503,8 +586,7 @@ The published matrix is:
 - 21 attack scenarios across GitLab and Reddit;
 - two benign user-goal indices;
 - plain-text and URL-based goal-hijacking injections;
-- 84 attacked cases per mode;
-- paired `off` and `enforce` cells, for 168 model executions.
+- 84 attacked cases per policy mode.
 
 The model/scaffold is fixed to one capable browser agent rather than repeating
 the AgentDojo scaling study: Qwen 3.5 9B, 32K context, 4,096 output tokens,
@@ -515,19 +597,35 @@ against BrowserUse's action schema; BrowserUse's structured thinking/planning
 fields remain enabled. Report this as a browser profile, not as identical to
 AgentDojo's native-thinking profile.
 
-The 30-step budget was frozen before the paired thesis campaign because a
+The 30-step budget was frozen before the browser campaign because a
 21-case off-mode pilot at 20 steps showed seven executions reaching the
 effective action ceiling. That complete pilot cell (native utility 12/21,
 attacker success 2/21) and all traces remain locally preserved under the old
-run tag, but are excluded from the primary aggregate. The thesis campaign
-restarts every cell under `wasp-qwen35-9b-browser32k-30step-v1`; no 20-step and
-30-step cases are pooled or selectively substituted.
+run tag, but are excluded from the primary aggregate. No 20-step and 30-step
+cases are pooled or selectively substituted.
 
-Both modes use the same official injected tasks, model and scaffold. `off`
-bypasses prompt-boundary/policy enforcement; `enforce` uses
-`policies/wasp-policy.json`. There are no participant approvals in this
-benchmark: approval requests are denied immediately and handoffs fail closed,
-which is deterministic and avoids inventing human behaviour.
+The browser evaluation has three provenance-separated rows:
+
+1. historical warn-only middleware with `participant=none`, using
+   `wasp-warn-policy.json`;
+2. observation sanitisation with `participant=none`, using
+   `wasp-policy.json` in paired `off,enforce` modes;
+3. observation sanitisation with `participant=oracle`, using
+   `wasp-policy.json` in `enforce` mode.
+
+`browser_sanitize` is opt-in and affects only the BrowserUse prompt boundary.
+When enabled, detected browser/read-state regions are removed with the existing
+shared sanitizer before the model call. The shared detector, normaliser, risk
+engine and sanitizer bodies remain frozen, and the AgentDojo adapter does not
+import the changed browser wrappers.
+
+In `participant=none`, approval requests are denied immediately and handoffs
+fail closed. In `participant=oracle`, a deterministic script uses the
+task-local WASP attacker domain and instantiated attacker action URL to deny
+attacker-serving targets and approve other exposed targets once. It returns
+user-serving handovers without simulating a browser mutation. This is a
+scripted-oversight upper bound, not a participant study and not evidence about
+human fatigue, workload, trust or rubber-stamping.
 
 Primary scores use WASP's unchanged final-state oracles:
 
@@ -541,35 +639,27 @@ action counts and enforcement latency. The official LLM-based
 intermediate-action classifier is a secondary optional score because it needs a
 separate OpenAI/Azure judge; native final-state utility and ASR do not.
 
-Run current Sentinel first and freeze that baseline. Plan-level authority is
-then an explicit third-cell ablation on the same 84 cases, not a change made
-before the first WASP result:
-
-1. BrowserUse + Sentinel off;
-2. BrowserUse + current Sentinel enforcement;
-3. BrowserUse + Sentinel enforcement plus a human-visible pre-run task
-   contract/plan authority layer.
-
-This separates the effect of runtime enforcement from the new planning
-feature. It also prevents a benchmark improvement from being ambiguously
-attributed to two simultaneous changes.
+The warn/none versus sanitise/none comparison isolates the browser middleware
+change. The sanitise/none versus sanitise/oracle comparison estimates the
+scripted-oversight upper bound. A future plan-authority experiment remains a
+separate ablation on the same 84 cases; do not attribute the current
+sanitisation/oracle comparison to plan authority.
 
 All vendor source, virtual environments, website images, authentication state,
 DOM/action logs and campaign checkpoints are ignored under `.wasp/`. The
-controller checkpoints after every task, validates model/policy provenance,
-uses WASP's own prompt injector and oracles, and cleans each 21-task environment
-cell before continuing. Because the official cleanup removes injected content
-but does not reliably clear Postmill's in-memory posting cooldown, the thesis
-configuration also restores pristine GitLab/Reddit clones before preparing
-every new pending cell. Successful resets are health-checked and recorded in
-the ignored run's `environment-events.jsonl`; prepared/running cells are never
-reset during resume. This is operational isolation only and does not change or
-overwrite completed executions, model settings, policy provenance or native
-scores. The GitLab/Reddit images run on remote scratch through SSH forwards;
-only Ollama uses the GPU. The strict queue wrapper waits for the controlled 4B
-state to reach all 629 pairs / 1,258 executions before it starts the WASP
-services, full preflight and paired campaign. Do not run WASP inference
-concurrently with AgentDojo on the same 16 GB card.
+controller checkpoints after every task and validates model, policy,
+participant and generated-input provenance. Because the official cleanup does
+not reliably clear Postmill's in-memory posting cooldown, pristine
+GitLab/Reddit clones are restored before every new pending 21-task cell.
+
+A remote reservation wipe can preserve a cell only after all 21 executions
+have native scores. Evaluated cells are portable and skipped on a replacement
+GPU. An unscored prepared/running cell is archived locally and restarted in
+full against one newly pristine GitLab/Reddit environment; task checkpoints
+from two different mutable site states are never combined. The remote images
+and Ollama model must be rebuilt on the new host, while the local scored
+evidence remains intact. Do not run WASP inference concurrently with
+AgentDojo on the same 16 GB card.
 
 Setup, preflight, remote-container commands and the resumable run command are
 documented in [`evals/wasp/README.md`](evals/wasp/README.md).

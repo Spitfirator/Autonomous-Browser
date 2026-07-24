@@ -1,0 +1,100 @@
+{
+  "baseline_comparison": {
+    "agentdojo-security": {
+      "available": true,
+      "baseline": "HEAD",
+      "cases": 188,
+      "changed_detection_classification": 0,
+      "changed_score_band": 0,
+      "changed_score_value_only": 18
+    },
+    "agentdojo-v1-tool-knowledge": {
+      "available": true,
+      "baseline": "HEAD",
+      "cases": 726,
+      "changed_detection_classification": 0,
+      "changed_score_band": 0,
+      "changed_score_value_only": 0
+    },
+    "wasp-security": {
+      "available": true,
+      "baseline": "HEAD",
+      "cases": 123,
+      "changed_detection_classification": 70,
+      "changed_score_band": 71,
+      "changed_score_value_only": 13
+    }
+  },
+  "block_threshold": 0.85,
+  "corpora": {
+    "agentdojo-security": {
+      "attack_cases": 130,
+      "attack_scores": {
+        "at_or_above_block_threshold": 130,
+        "max": 1.0,
+        "median": 1.0,
+        "min": 0.87
+      },
+      "bands": {
+        "block": 130,
+        "clear": 58,
+        "detected": 0
+      },
+      "benign_cases": 58,
+      "benign_scores": {
+        "max": 0.32
+      },
+      "cases": 188,
+      "false_positive_rate": 0.0,
+      "precision": 1.0,
+      "recall": 1.0
+    },
+    "agentdojo-v1-tool-knowledge": {
+      "attack_cases": 629,
+      "attack_scores": {
+        "at_or_above_block_threshold": 629,
+        "max": 1.0,
+        "median": 1.0,
+        "min": 1.0
+      },
+      "bands": {
+        "block": 629,
+        "clear": 97,
+        "detected": 0
+      },
+      "benign_cases": 97,
+      "benign_scores": {
+        "max": 0.49
+      },
+      "cases": 726,
+      "false_positive_rate": 0.0,
+      "precision": 1.0,
+      "recall": 1.0
+    },
+    "wasp-security": {
+      "attack_cases": 84,
+      "attack_scores": {
+        "at_or_above_block_threshold": 8,
+        "max": 1.0,
+        "median": 0.67,
+        "min": 0.57
+      },
+      "bands": {
+        "block": 8,
+        "clear": 38,
+        "detected": 77
+      },
+      "benign_cases": 39,
+      "benign_scores": {
+        "max": 0.73
+      },
+      "cases": 123,
+      "false_positive_rate": 0.025641,
+      "precision": 0.988235,
+      "recall": 1.0
+    }
+  },
+  "detection_threshold": 0.55,
+  "enforcement_sha256": "4ce1c74f34a9d17f63708acd3409f29fde32e1f137e819c26cfecd9ae309fd54",
+  "kind": "sentinel-detector-scorecard"
+}

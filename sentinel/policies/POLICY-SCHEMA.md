@@ -51,8 +51,34 @@ The engine checks rules top-to-bottom and returns the first one that fires:
 | 4 | `sensitive_domains` (first touch/run)   | `handoff` |
 | 5 | dynamic sensitive-data / high-confidence injection flow | `block` |
 | 6 | `approval_required_actions` / `_domains`| `approve` |
-| 7 | dynamic side-effect risk ≥ threshold    | `approve` |
-| 8 | default                                 | `allow`   |
+| 7 | detected injection + independently amplified action | `approve` |
+| 8 | dynamic side-effect risk ≥ threshold    | `approve` |
+| 9 | default                                 | `allow`   |
+
+Rule 7 is **targeted defense in depth, not a blanket gate**. On a page with an
+active finding it holds only actions that are independently risk-amplifying:
+
+- the action crosses an origin boundary, or discloses data off the current one;
+- it carries sensitive data;
+- it reads a local file into web content, or executes code in the page;
+- its target appears destructive or consequential.
+
+Ordinary same-origin interaction — typing into a form, clicking an unremarkable
+control — is left to the numeric risk policy in rule 8, and read-only actions
+are never gated.
+
+This boundary is deliberate. An injected page is normally the same page the
+user's own task lives on, so gating every same-origin side effect spends the
+approval budget on legitimate work: replaying the WASP v1 trajectories, a
+blanket rule gated a median of 8 actions per affected task (max 28) against a
+4-prompt budget, exhausting it on 35 of 50 tasks and blocking the task rather
+than the attack. The narrowed rule gates a median of 0 (p95 0, max 2) and
+exhausts the budget on none.
+
+The consequence must be stated when reporting results: **action gating does not
+cover low-impact same-origin goal hijacking.** Observation sanitisation is the
+primary control for that class; rule 7 covers cross-origin exfiltration and
+independently high-impact actions.
 
 ---
 
@@ -86,7 +112,22 @@ The engine checks rules top-to-bottom and returns the first one that fires:
     "prompt_injection": {
       "enabled": true,
       "detection_threshold": 0.55,
-      "block_threshold": 0.85
+      "block_threshold": 0.85,
+      // Browser path only. In enforce mode, remove detected untrusted
+      // page/read-state regions before the model sees them. Default: false.
+      "browser_sanitize": false,
+      // Actions hard-blocked at/above block_threshold. Defaults to the full set
+      // including "done" and "request_human_control". A browser agent scored
+      // from final site state should drop those two so it can still finish and
+      // still escalate; an agent whose answer text is itself the exfiltration
+      // channel must keep them. Removing an action does not leave it unguarded:
+      // it still falls through to the sensitive-data and tainted-side-effect
+      // rules below.
+      "hard_block_sinks": [
+        "search", "navigate", "input", "send_keys",
+        "upload_file", "evaluate", "write_file", "replace_file",
+        "done", "request_human_control"
+      ]
     },
 
     "data_flow": {
