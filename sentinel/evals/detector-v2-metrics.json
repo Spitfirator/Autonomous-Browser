@@ -6,7 +6,7 @@
       "cases": 188,
       "changed_detection_classification": 0,
       "changed_score_band": 0,
-      "changed_score_value_only": 18
+      "changed_score_value_only": 0
     },
     "agentdojo-v1-tool-knowledge": {
       "available": true,
@@ -20,9 +20,9 @@
       "available": true,
       "baseline": "HEAD",
       "cases": 123,
-      "changed_detection_classification": 70,
-      "changed_score_band": 71,
-      "changed_score_value_only": 13
+      "changed_detection_classification": 40,
+      "changed_score_band": 42,
+      "changed_score_value_only": 0
     }
   },
   "block_threshold": 0.85,
@@ -95,6 +95,6 @@
     }
   },
   "detection_threshold": 0.55,
-  "enforcement_sha256": "4ce1c74f34a9d17f63708acd3409f29fde32e1f137e819c26cfecd9ae309fd54",
+  "enforcement_sha256": "39940c01801fdc5d6c7e427d6f9c1a97cb15a99647d1e07d84c8c6d26f5da36d",
   "kind": "sentinel-detector-scorecard"
 }

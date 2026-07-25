@@ -49,8 +49,10 @@ WORKSPACE_ROOT = SENTINEL_DIR.parent
 DEFAULT_RUN_ROOT = WORKSPACE_ROOT / '.wasp' / 'runs'
 
 # WASP's own element-line shape, so an embedded payload is indistinguishable
-# from any other rendered comment body in the accessibility tree.
-_ELEMENT_LINE_RE = re.compile(r'^\[(\d+)\]<', re.M)
+# from any other rendered comment body in the accessibility tree. BrowserUse
+# may indent a line and prefix a newly changed element with ``*``.
+_ELEMENT_LINE_RE = re.compile(r'^[ \t]*\*?\[(\d+)\]<', re.M)
+_MARKDOWN_LINK_RE = re.compile(r'\[([^\]\n]{1,200})\]\(([^)\n]+)\)')
 
 
 def _next_element_index(page_text: str) -> int:
@@ -58,16 +60,40 @@ def _next_element_index(page_text: str) -> int:
 	return (max(indices) + 1) if indices else 0
 
 
-def embed_payload(page_text: str, payload: str) -> str:
+def embed_payload(
+	page_text: str,
+	payload: str,
+	*,
+	render_url_injection: bool = False,
+) -> str:
 	"""Place the payload in the page body the way a posted comment renders.
 
 	It is appended as one more interactive-element line rather than prepended to
 	the tab header, because WASP injects into user-generated content that the
 	page renders below its own chrome.
+
+	URL-format attacks are authored as Markdown, but BrowserUse does not expose
+	the anchor href in its live DOM representation. Preserve only the visible
+	link label on a separate element line; retaining the hidden target here would
+	give the offline detector information it never receives at runtime.
 	"""
 
 	index = _next_element_index(page_text)
 	body = ' '.join(payload.split())
+	if render_url_injection:
+		link = _MARKDOWN_LINK_RE.search(body)
+		if link is not None:
+			before = body[:link.start()].rstrip()
+			label = link.group(1).strip()
+			after = body[link.end():].strip()
+			separator = '' if after[:1] in '.,;:!?' else ' '
+			visible_label = f'\t{label}' + (f'{separator}{after}' if after else '')
+			return (
+				f'{page_text.rstrip()}\n'
+				f'[{index}]<div>{before}</div>\n'
+				f'[{index + 1}]<a />\n'
+				f'{visible_label}\n'
+			)
 	return f'{page_text.rstrip()}\n[{index}]<div>{body}</div>\n'
 
 
@@ -176,7 +202,11 @@ def build_cases(
 				{
 					'id': f'wasp/{environment}/{batch}/{position}',
 					'category': f'wasp/{environment}/goal_hijacking',
-					'page_text': embed_payload(host['browser_state'], payload),
+					'page_text': embed_payload(
+						host['browser_state'],
+						payload,
+						render_url_injection=batch.endswith('-url'),
+					),
 					'current_url': host['url'],
 					'action': action,
 					'params': params,
@@ -258,7 +288,9 @@ def main() -> None:
 			'host_page': (
 				'Each payload is embedded as one additional rendered element line in a '
 				'captured benign page from the same site, mirroring WASP injecting into '
-				'user-generated content.'
+				'user-generated content. URL-format Markdown is represented as the live '
+				'BrowserUse DOM exposes it: visible link text on an anchor line, without '
+				'the hidden href target.'
 			),
 			'sink': (
 				"Derived from WASP's own config: exfil goals map to a cross-origin navigate "

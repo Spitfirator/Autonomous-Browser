@@ -88,6 +88,23 @@ def _sanitize_state_text(
 			if line.strip() and detect_prompt_injection(line, policy, url).detected
 		]
 		if not detected_lines:
+			# BrowserUse renders a link's visible text on a separate element line
+			# and intentionally omits its href. Detect short adjacent windows so a
+			# precondition such as "you MUST click on" + ``[n]<a />`` + "this
+			# link" remains attributable without erasing the entire observation.
+			for start in range(len(lines)):
+				for size in (2, 3):
+					end = start + size
+					if end > len(lines):
+						continue
+					if detect_prompt_injection(''.join(lines[start:end]), policy, url).detected:
+						detected_lines.extend(
+							index
+							for index in range(start, end)
+							if lines[index].strip()
+						)
+			detected_lines = sorted(set(detected_lines))
+		if not detected_lines:
 			# Try the structural sanitizer, but only accept a result that actually
 			# separated something. If it fell back to erasing the whole value, keep
 			# the observation and let the caller warn instead.

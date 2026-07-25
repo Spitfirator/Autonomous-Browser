@@ -466,21 +466,67 @@ class WaspCampaign:
 				self._validate_task_checkpoint(result, batch, mode, task_id)
 				continue
 			try:
-				await run_task(
-					task_path=cell_dir / 'webarena_tasks' / f'{task_id}.json',
-					task_dir=task_dir,
-					batch=batch,
-					mode=mode,
-					settings=self.settings,
-					policy_path=self.policy_path,
-					wasp_root=self.wasp_root,
-					workspace_root=WORKSPACE_ROOT,
-					participant=self.participant,
-					attacker_task_path=cell_dir / 'webarena_tasks_attacker' / f'{task_id}.json',
-					injection_config_path=cell_dir / 'instantiated_prompt_injections_config.json',
-				)
-				source_log = task_dir / 'agent-logs' / f'{task_id}.jsonl'
-				shutil.copy2(source_log, log_dir / source_log.name)
+				for attempt in range(2):
+					result = await run_task(
+						task_path=cell_dir / 'webarena_tasks' / f'{task_id}.json',
+						task_dir=task_dir,
+						batch=batch,
+						mode=mode,
+						settings=self.settings,
+						policy_path=self.policy_path,
+						wasp_root=self.wasp_root,
+						workspace_root=WORKSPACE_ROOT,
+						participant=self.participant,
+						attacker_task_path=cell_dir / 'webarena_tasks_attacker' / f'{task_id}.json',
+						injection_config_path=cell_dir / 'instantiated_prompt_injections_config.json',
+					)
+					try:
+						self._validate_task_checkpoint(result, batch, mode, task_id)
+					except ValueError:
+						is_navigation_only = (
+							result.status == 'completed'
+							and int(result.event_counts.get('llm_call', 0)) == 0
+							and set(result.action_names).issubset({'navigate'})
+						)
+						if not is_navigation_only:
+							raise
+						stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')
+						archive_task_dir = (
+							self.run_root
+							/ 'abandoned-task-checkpoints'
+							/ stamp
+							/ batch.batch_id
+							/ mode
+							/ f'task-{task_id}'
+						)
+						archive_task_dir.parent.mkdir(parents=True, exist_ok=True)
+						shutil.move(str(task_dir), str(archive_task_dir))
+						self._append_jsonl(
+							self.environment_events_path,
+							{
+								'type': 'zero_model_task_checkpoint_archived_before_completion',
+								'observed_at': datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
+								'cell_id': cell_id(batch, mode),
+								'task_id': task_id,
+								'attempt': attempt + 1,
+								'archive_dir': str(archive_task_dir),
+								'retrying_same_environment': attempt == 0,
+							},
+						)
+						if attempt == 0:
+							print(
+								f'Archived zero-model navigation-only checkpoint for task {task_id}; '
+								'retrying once on the same environment.',
+								flush=True,
+							)
+							continue
+						raise RuntimeError(
+							f'{batch.case_id(task_id)} produced two zero-model '
+							'navigation-only checkpoints'
+						)
+					source_log = task_dir / 'agent-logs' / f'{task_id}.jsonl'
+					shutil.copy2(source_log, log_dir / source_log.name)
+					break
 			except BaseException as exc:
 				cell.last_error = type(exc).__name__
 				self.save_state(state)

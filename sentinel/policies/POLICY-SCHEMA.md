@@ -80,6 +80,13 @@ cover low-impact same-origin goal hijacking.** Observation sanitisation is the
 primary control for that class; rule 7 covers cross-origin exfiltration and
 independently high-impact actions.
 
+BrowserUse does not expose anchor `href` values in its live DOM text. The
+detector therefore recognizes a bounded precondition claim split across a
+visible anchor line — for example, `you MUST click on`, `[n]<a />`, `this link`
+— even though the destination itself is unavailable. This produces a
+medium-confidence finding; it does not infer the hidden target or turn an
+ordinary `click Save` instruction into an injection.
+
 ---
 
 ## Fields

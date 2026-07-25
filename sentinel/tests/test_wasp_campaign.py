@@ -251,6 +251,56 @@ def test_running_cell_resume_does_not_reset_environment(
 	assert resumed.status == 'running'
 
 
+@pytest.mark.asyncio
+async def test_fresh_zero_model_checkpoint_is_archived_and_retried_before_completion(
+	tmp_path: Path,
+	monkeypatch: pytest.MonkeyPatch,
+) -> None:
+	campaign = WaspCampaign(_campaign_args(tmp_path))
+	state = campaign._new_state()
+	batch = all_batches()[0]
+	cell = state.cells['user-goal-0-plain/enforce']
+	cell.status = 'prepared'
+	cell_dir = Path(cell.output_dir)
+	cell_dir.mkdir(parents=True)
+	monkeypatch.setattr(wasp_campaign, 'TASK_IDS', (1000,))
+	attempts = 0
+
+	async def run_once_then_succeed(**kwargs: object) -> TaskResult:
+		nonlocal attempts
+		attempts += 1
+		task_dir = Path(kwargs['task_dir'])
+		result = _task_result(1000, 'enforce', detections=0, blocked=0)
+		result.event_counts = {} if attempts == 1 else {'llm_call': 1}
+		result.action_names = ['navigate'] if attempts == 1 else ['click']
+		result.provenance.policy_sha256 = campaign.policy_sha
+		result.provenance.model_settings = campaign.settings
+		result.provenance.participant = campaign.participant
+		atomic_write_json(task_dir / 'task-result.json', result)
+		source_log = task_dir / 'agent-logs' / '1000.jsonl'
+		source_log.parent.mkdir(parents=True, exist_ok=True)
+		source_log.write_text('[]\n')
+		return result
+
+	monkeypatch.setattr(wasp_campaign, 'run_task', run_once_then_succeed)
+
+	await campaign._run_tasks(state, batch, 'enforce', cell, cell_dir)
+
+	assert attempts == 2
+	assert cell.completed_task_ids == [1000]
+	assert (cell_dir / 'agent_logs' / '1000.jsonl').is_file()
+	archives = list(
+		(campaign.run_root / 'abandoned-task-checkpoints').glob(
+			'**/task-1000/task-result.json'
+		)
+	)
+	assert len(archives) == 1
+	assert load_json(archives[0])['event_counts'] == {}
+	events = [json.loads(line) for line in campaign.environment_events_path.read_text().splitlines()]
+	assert events[-1]['type'] == 'zero_model_task_checkpoint_archived_before_completion'
+	assert events[-1]['retrying_same_environment'] is True
+
+
 def test_reset_failure_leaves_pending_cell_untouched(
 	tmp_path: Path,
 	monkeypatch: pytest.MonkeyPatch,

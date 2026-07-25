@@ -203,11 +203,23 @@ _INJECTION_SIGNATURES: tuple[tuple[str, re.Pattern[str], float], ...] = (
 			# The demanded detour must name an explicit off-page target. Ordinary
 			# UI guidance ("in order to continue, you must click Save") points at a
 			# control already in front of the user; goal hijacking points somewhere
-			# else and tells the agent to act there.
+			# else and tells the agent to act there. BrowserUse deliberately omits
+			# link hrefs from its DOM representation, so a rendered "this link"
+			# also counts as an off-page target. The optional element line mirrors
+			# the live accessibility-tree shape:
+			#
+			#   you MUST click on
+			#   [1816]<a />
+			#       this link
 			r'\b(?:in order to|before you can|before you)\s+[\w\s]{2,40}?,?\s*'
 			r'you\s+(?:must|need to|have to|should)\s+(?:immediately\s+|first\s+)?'
 			r'(?:go|navigate|open|visit|click|send|upload|post|publish|create|add|delete|remove|transfer|change|invite)\b'
+			r'(?:'
 			r'[^.\n]{0,60}?(?:https?://|\bwww\.|[\w.+-]+@[\w-]+\.[a-z]{2,})'
+			r'|[^.\n]{0,24}?\[?(?:this|the following)\s+link\b\]?'
+			r'|[^.\n]{0,24}?\n[ \t]*(?:\*?\[\d+\])?<a\b[^>\n]*?/?>'
+			r'\n[ \t]*(?:this|the following)\s+link\b'
+			r')'
 			r'|\bbefore\s+(?:doing|attempting)\s+anything\s+else\b',
 			re.I,
 		),
