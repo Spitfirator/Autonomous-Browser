@@ -156,7 +156,10 @@ normalize_active_sandbox_for_removal() {
 }
 
 configure_gitlab_docker() {
-	"$RUNTIME" exec gitlab update-permissions >/dev/null 2>&1 || true
+	# The populated Docker image already has the ownership it needs. Its
+	# recursive update-permissions helper can block indefinitely in uninterruptible
+	# I/O on the GitLab data tree even after the service is healthy, so it must not
+	# run on every disposable cell reset.
 	"$RUNTIME" exec gitlab sh -c "
 		sed -i \"s|^external_url.*|external_url '${PUBLIC_GITLAB_URL}'|\" /etc/gitlab/gitlab.rb
 		sed -i \"/^nginx\\['listen_port'\\]/d; /^nginx\\['listen_https'\\]/d\" /etc/gitlab/gitlab.rb
