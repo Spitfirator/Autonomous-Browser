@@ -104,6 +104,13 @@ build_sandbox_if_needed() {
 }
 
 prepare_environment() {
+	if [ "$RUNTIME" = docker ] &&
+		"$RUNTIME" image inspect "$GITLAB_IMAGE" >/dev/null 2>&1 &&
+		"$RUNTIME" image inspect "$REDDIT_IMAGE" >/dev/null 2>&1; then
+		echo "Docker image already present: $GITLAB_IMAGE"
+		echo "Docker image already present: $REDDIT_IMAGE"
+		return
+	fi
 	download_archives
 	if [ "$RUNTIME" = docker ]; then
 		docker_load_if_needed "$GITLAB_IMAGE" "$GITLAB_TAR"
