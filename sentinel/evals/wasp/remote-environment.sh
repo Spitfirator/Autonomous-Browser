@@ -206,12 +206,19 @@ wait_for_http() {
 	local path="$3"
 	local attempts="$4"
 	local code
-	echo "Waiting for $name to become healthy on port $port..."
+	local consecutive_successes=0
+	echo "Waiting for $name to become stably healthy on port $port..."
 	for _ in $(seq 1 "$attempts"); do
 		code=$(curl --silent --output /dev/null --write-out '%{http_code}' \
 			--max-time 5 "http://127.0.0.1:${port}${path}" || true)
 		case "$code" in
-			2*|3*) return ;;
+			2*|3*)
+				consecutive_successes=$((consecutive_successes + 1))
+				if [ "$consecutive_successes" -ge 3 ]; then
+					return
+				fi
+				;;
+			*) consecutive_successes=0 ;;
 		esac
 		sleep 5
 	done
