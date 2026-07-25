@@ -674,7 +674,9 @@ complete. A navigation-only zero-model attempt is archived and retried once on
 the unchanged environment; a second failure stops the cell before native
 scoring. Because the official cleanup does not reliably clear Postmill's
 in-memory posting cooldown, pristine GitLab/Reddit clones are restored before
-every new pending 21-task cell.
+every new pending 21-task cell. A failed injector preparation is likewise
+archived and retried once only after another pristine reset, so partial page
+mutations never become a task environment.
 
 A remote reservation wipe can preserve a cell only after all 21 executions
 have native scores. Evaluated cells are portable and skipped on a replacement

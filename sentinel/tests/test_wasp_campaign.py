@@ -1,4 +1,5 @@
 import json
+import subprocess
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -226,6 +227,56 @@ def test_pending_cell_resets_before_official_injector(
 	assert observed == ['reset', 'injector', 'auth']
 	assert cell.status == 'prepared'
 	assert campaign.state_path.is_file()
+
+
+def test_injector_failure_is_archived_and_retried_after_pristine_reset(
+	tmp_path: Path,
+	monkeypatch: pytest.MonkeyPatch,
+) -> None:
+	campaign = WaspCampaign(_campaign_args(tmp_path))
+	state = campaign._new_state()
+	batch = all_batches()[0]
+	cell = state.cells['user-goal-0-plain/off']
+	cell_dir = Path(cell.output_dir)
+	resets: list[str] = []
+	injector_attempts = 0
+
+	monkeypatch.setattr(
+		campaign,
+		'_reset_environment_before_cell',
+		lambda _batch, _mode: resets.append('reset'),
+	)
+
+	def injector(*_args: object, **_kwargs: object) -> None:
+		nonlocal injector_attempts
+		injector_attempts += 1
+		if injector_attempts == 1:
+			cell_dir.mkdir(parents=True, exist_ok=True)
+			(cell_dir / 'partial.txt').write_text('preserve me')
+			raise subprocess.CalledProcessError(1, ['prompt_injector.py'])
+
+	monkeypatch.setattr(wasp_campaign, '_run_checked', injector)
+	monkeypatch.setattr(wasp_campaign, 'validate_generated_tasks', lambda *_args: [])
+	monkeypatch.setattr(campaign, '_generated_input_manifest', lambda *_args: 'a' * 64)
+	monkeypatch.setattr(campaign, '_refresh_auth', lambda: None)
+
+	prepared, _ = campaign._prepare_cell(state, batch, 'off')
+
+	assert prepared.status == 'prepared'
+	assert prepared.restart_count == 1
+	assert prepared.last_error is None
+	assert resets == ['reset', 'reset']
+	assert injector_attempts == 2
+	archives = list(
+		(campaign.run_root / 'abandoned-preparations').glob(
+			'**/user-goal-0-plain/off/partial.txt'
+		)
+	)
+	assert len(archives) == 1
+	assert archives[0].read_text() == 'preserve me'
+	events = [json.loads(line) for line in campaign.environment_events_path.read_text().splitlines()]
+	assert events[-1]['type'] == 'cell_preparation_attempt_failed'
+	assert events[-1]['retrying_with_pristine_reset'] is True
 
 
 def test_running_cell_resume_does_not_reset_environment(

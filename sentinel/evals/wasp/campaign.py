@@ -55,6 +55,7 @@ DEFAULT_RUN_TAG = os.environ.get(
 )
 DEFAULT_MAX_STEPS = int(os.environ.get('WASP_MAX_STEPS', '30'))
 DEFAULT_PARTICIPANT = os.environ.get('WASP_PARTICIPANT', 'none')
+PREPARATION_ATTEMPTS = 2
 
 
 def _environment_flag(name: str, default: bool = False) -> bool:
@@ -410,41 +411,83 @@ class WaspCampaign:
 				f'{cell_dir} already contains data but its checkpoint is pending. '
 				'Move it aside or use a new --run-tag; the controller will not delete evidence.'
 			)
-		self._reset_environment_before_cell(batch, mode)
-		cell_dir.mkdir(parents=True, exist_ok=True)
 		injector_root = self.wasp_root / 'webarena_prompt_injections'
-		_run_checked(
-			[
-				str(self.venv_python),
-				'prompt_injector.py',
-				'--config',
-				str(self.wasp_root / WASP_CONFIG),
-				'--gitlab-domain',
-				self.args.gitlab,
-				'--reddit-domain',
-				self.args.reddit,
-				'--model',
-				'gpt-4o-mini',
-				'--user_goal_idx',
-				str(batch.user_goal_index),
-				'--injection_format',
-				batch.injection_format,
-				'--output-dir',
-				str(cell_dir),
-				'--output-format',
-				'gpt_web_tools',
-			],
-			cwd=injector_root,
-			env=self.env,
-		)
-		validate_generated_tasks(cell_dir / 'webarena_tasks', batch)
-		validate_generated_tasks(cell_dir / 'webarena_tasks_attacker', batch)
-		cell.input_manifest_sha256 = self._generated_input_manifest(cell_dir)
-		self._refresh_auth()
-		cell.status = 'prepared'
-		cell.last_error = None
-		self.save_state(state)
-		return cell, cell_dir
+		injector_command = [
+			str(self.venv_python),
+			'prompt_injector.py',
+			'--config',
+			str(self.wasp_root / WASP_CONFIG),
+			'--gitlab-domain',
+			self.args.gitlab,
+			'--reddit-domain',
+			self.args.reddit,
+			'--model',
+			'gpt-4o-mini',
+			'--user_goal_idx',
+			str(batch.user_goal_index),
+			'--injection_format',
+			batch.injection_format,
+			'--output-dir',
+			str(cell_dir),
+			'--output-format',
+			'gpt_web_tools',
+		]
+		for attempt in range(1, PREPARATION_ATTEMPTS + 1):
+			self._reset_environment_before_cell(batch, mode)
+			cell_dir.mkdir(parents=True, exist_ok=True)
+			try:
+				_run_checked(injector_command, cwd=injector_root, env=self.env)
+				validate_generated_tasks(cell_dir / 'webarena_tasks', batch)
+				validate_generated_tasks(cell_dir / 'webarena_tasks_attacker', batch)
+				cell.input_manifest_sha256 = self._generated_input_manifest(cell_dir)
+				self._refresh_auth()
+			except (OSError, subprocess.CalledProcessError, ValueError) as exc:
+				stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')
+				archive_dir = (
+					self.run_root
+					/ 'abandoned-preparations'
+					/ stamp
+					/ batch.batch_id
+					/ mode
+				)
+				archived = ''
+				if any(cell_dir.iterdir()):
+					archive_dir.parent.mkdir(parents=True, exist_ok=True)
+					shutil.move(str(cell_dir), str(archive_dir))
+					archived = str(archive_dir)
+				else:
+					cell_dir.rmdir()
+				cell.input_manifest_sha256 = None
+				cell.last_error = type(exc).__name__
+				cell.restart_count += 1
+				self.save_state(state)
+				retrying = attempt < PREPARATION_ATTEMPTS
+				self._append_jsonl(
+					self.environment_events_path,
+					{
+						'type': 'cell_preparation_attempt_failed',
+						'observed_at': datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
+						'cell_id': cell_id(batch, mode),
+						'attempt': attempt,
+						'error_type': type(exc).__name__,
+						'archive_dir': archived,
+						'retrying_with_pristine_reset': retrying,
+					},
+				)
+				if not retrying:
+					raise
+				print(
+					f'Preparation attempt {attempt}/{PREPARATION_ATTEMPTS} failed for '
+					f'{cell_id(batch, mode)} with {type(exc).__name__}; '
+					'retrying after a new pristine reset.',
+					flush=True,
+				)
+				continue
+			cell.status = 'prepared'
+			cell.last_error = None
+			self.save_state(state)
+			return cell, cell_dir
+		raise RuntimeError(f'{cell_id(batch, mode)} preparation attempts exhausted')
 
 	async def _run_tasks(
 		self,

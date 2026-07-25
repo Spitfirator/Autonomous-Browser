@@ -275,6 +275,13 @@ checkpoints, native scores, the model, step budget, policy and generated result
 provenance remain untouched. If the reset itself fails, the next cell stays
 pending and the injector is not started.
 
+GitLab can return a healthy root page before its authenticated issue form is
+consistently ready. If the official injector or generated-input/auth validation
+fails during preparation, the controller preserves any partial local inputs
+under `abandoned-preparations/` and retries once only after another complete
+pristine reset. Both attempts and the failure type are recorded in
+`environment-events.jsonl`; no model task runs on the partial environment.
+
 If the benchmark's post-evaluation UI cleanup is interrupted or fails, the
 controller may recover it with the same pristine restore, but only after it
 validates that all 21 task checkpoints and the complete native-score file are
