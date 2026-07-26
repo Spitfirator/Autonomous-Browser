@@ -60,31 +60,75 @@ def _state_regions(text: str) -> list[tuple[str, int, int]]:
 	return regions
 
 
-def _minimal_detecting_lines(
+_MAX_ATTRIBUTION_WINDOW_LINES = 8
+_MULTILINE_ATTRIBUTION_SIGNALS = frozenset({'task_precondition_claim'})
+
+
+def _minimal_detecting_windows(
 	lines: list[str],
-	window: list[int],
 	policy: PromptInjectionPolicy,
 	url: str | None,
-) -> list[int]:
-	"""Shrink a detecting window to the lines actually carrying the injection.
+) -> list[list[int]]:
+	"""Find inclusion-minimal detecting line windows.
 
-	The window branch fires on a *combination* of adjacent lines, so removing the
-	whole window also erased whatever legitimate control happened to sit next to
-	the payload — a neighbouring ``[4]<textarea id=note-body />`` is exactly the
-	element the user's own task needs. Dropping a line that leaves the remainder
-	still detecting proves that line was not part of the instruction, so it is
-	kept. Anything dangerous that survives the narrower removal is caught by the
-	post-sanitisation re-detection, which re-warns the model.
+	BrowserUse can render one injected DOM cluster across prose, element
+	descriptors and their indented labels.  Removing only the lines carrying the
+	detector's strongest lexical signals can leave the attack's operands behind
+	(for example a webhook target and its URL).  Instead, retain the smallest
+	*contiguous* detecting window and remove that whole cluster.
+
+	Windows are considered shortest first.  A larger hit that contains an
+	already-found hit is discarded, which prevents an adjacent legitimate
+	control from being swept into the removal.  Eight lines covers the longest
+	live WASP rendering (seven lines for the two-anchor payload) with one line of
+	formatting tolerance while keeping the fallback deliberately bounded.
+	Multi-line removal additionally requires the detector's off-page
+	task-precondition signal; ordinary settings prose can otherwise combine
+	"enter", "email" and "do not show" into a detected window and erase the
+	legitimate input and select controls.
 	"""
 
-	required = list(window)
-	for candidate in window:
-		trial = [index for index in required if index != candidate]
-		if not trial:
-			continue
-		if detect_prompt_injection(''.join(lines[index] for index in trial), policy, url).detected:
-			required = trial
-	return required
+	line_findings = {
+		index: detect_prompt_injection(line, policy, url)
+		for index, line in enumerate(lines)
+		if line.strip()
+	}
+	windows = [[index] for index, finding in line_findings.items() if finding.detected]
+	signal_lines = [index for index, finding in line_findings.items() if finding.signals]
+	for size in range(2, min(len(lines), _MAX_ATTRIBUTION_WINDOW_LINES) + 1):
+		# A detecting window normally contains at least one line that contributes
+		# a detector signal. Restricting starts to those neighbourhoods avoids
+		# rescoring thousands of unrelated accessibility-tree lines. Fall back to
+		# the exhaustive bounded scan only for a wholly cross-line signature.
+		starts = (
+			{
+				start
+				for index in signal_lines
+				for start in range(
+					max(0, index - size + 1),
+					min(index, len(lines) - size) + 1,
+				)
+			}
+			if signal_lines
+			else set(range(len(lines) - size + 1))
+		)
+		for start in sorted(starts):
+			window = [index for index in range(start, start + size) if lines[index].strip()]
+			if not window:
+				continue
+			window_set = set(window)
+			if any(set(existing).issubset(window_set) for existing in windows):
+				continue
+			finding = detect_prompt_injection(
+				''.join(lines[index] for index in window), policy, url
+			)
+			if (
+				not finding.detected
+				or not _MULTILINE_ATTRIBUTION_SIGNALS.intersection(finding.signals)
+			):
+				continue
+			windows.append(window)
+	return windows
 
 
 @dataclass
@@ -148,30 +192,13 @@ def _sanitize_state_text(
 		"""
 
 		lines = region_text.splitlines(keepends=True)
-		detected_lines = [
-			index
-			for index, line in enumerate(lines)
-			if line.strip() and detect_prompt_injection(line, policy, url).detected
-		]
-		branch = 'line' if detected_lines else None
-		if not detected_lines:
-			# BrowserUse renders a link's visible text on a separate element line
-			# and intentionally omits its href. Detect short adjacent windows so a
-			# precondition such as "you MUST click on" + ``[n]<a />`` + "this
-			# link" remains attributable without erasing the entire observation.
-			for start in range(len(lines)):
-				for size in (2, 3):
-					end = start + size
-					if end > len(lines):
-						continue
-					window = [index for index in range(start, end) if lines[index].strip()]
-					if not window:
-						continue
-					if detect_prompt_injection(''.join(lines[i] for i in window), policy, url).detected:
-						detected_lines.extend(_minimal_detecting_lines(lines, window, policy, url))
-			detected_lines = sorted(set(detected_lines))
-			if detected_lines:
-				branch = 'window'
+		detecting_windows = _minimal_detecting_windows(lines, policy, url)
+		detected_lines = sorted({index for window in detecting_windows for index in window})
+		branch = (
+			'window'
+			if any(len(window) > 1 for window in detecting_windows)
+			else ('line' if detected_lines else None)
+		)
 		if not detected_lines:
 			# Try the structural sanitizer, but only accept a result that actually
 			# separated something. If it fell back to erasing the whole value, keep
