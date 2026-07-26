@@ -399,6 +399,17 @@ bash sentinel/evals/wasp/run-wasp.sh summarize \
 Use a new `--run-tag` whenever the policy, participant, model or scaffold
 settings change.
 
+## Curated results
+
+The reviewed result record for the frozen multi-line sanitisation row is:
+
+- [`results/wasp-qwen35-9b-browser32k-30step-v2-sanitise-noalert-none-v3.md`](results/wasp-qwen35-9b-browser32k-30step-v2-sanitise-noalert-none-v3.md)
+- [`results/wasp-qwen35-9b-browser32k-30step-v2-sanitise-noalert-none-v3.json`](results/wasp-qwen35-9b-browser32k-30step-v2-sanitise-noalert-none-v3.json)
+
+These files contain the matched native/intermediate comparison, frozen
+provenance, sanitisation telemetry, validation gates and bounded thesis claim.
+They do not replace the ignored raw checkpoints.
+
 ## Artifacts and publication
 
 All source checkouts, environments, raw DOM/action logs, authentication state,
