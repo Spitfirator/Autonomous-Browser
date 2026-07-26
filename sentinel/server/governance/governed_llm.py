@@ -10,13 +10,14 @@ import logging
 import secrets
 import time
 from collections.abc import Callable
+from dataclasses import dataclass, field
 from typing import Any
 
 from browser_use.llm.base import BaseChatModel
 from browser_use.llm.messages import SystemMessage
 
 from server.config import ConfigStore, PromptInjectionPolicy
-from server.events import LLMCall, PromptInjectionDetected, SentinelEvent
+from server.events import LLMCall, PromptInjectionDetected, PromptInjectionSanitized, SentinelEvent
 from server.governance.security import (
 	PromptInjectionFinding,
 	detect_prompt_injection,
@@ -59,12 +60,77 @@ def _state_regions(text: str) -> list[tuple[str, int, int]]:
 	return regions
 
 
+def _minimal_detecting_lines(
+	lines: list[str],
+	window: list[int],
+	policy: PromptInjectionPolicy,
+	url: str | None,
+) -> list[int]:
+	"""Shrink a detecting window to the lines actually carrying the injection.
+
+	The window branch fires on a *combination* of adjacent lines, so removing the
+	whole window also erased whatever legitimate control happened to sit next to
+	the payload — a neighbouring ``[4]<textarea id=note-body />`` is exactly the
+	element the user's own task needs. Dropping a line that leaves the remainder
+	still detecting proves that line was not part of the instruction, so it is
+	kept. Anything dangerous that survives the narrower removal is caught by the
+	post-sanitisation re-detection, which re-warns the model.
+	"""
+
+	required = list(window)
+	for candidate in window:
+		trial = [index for index in required if index != candidate]
+		if not trial:
+			continue
+		if detect_prompt_injection(''.join(lines[index] for index in trial), policy, url).detected:
+			required = trial
+	return required
+
+
+@dataclass
+class SanitizationOutcome:
+	"""What sanitisation actually managed to do, per model call.
+
+	`changed` alone is not evidence that the attack is gone: one region can be
+	removed while another stays detector-positive. The caller must therefore
+	re-run detection on the result and consult `residual_detected` before it
+	decides the model no longer needs warning.
+	"""
+
+	attempted: bool = False
+	changed: bool = False
+	regions_targeted: int = 0
+	regions_changed: int = 0
+	regions_unattributable: int = 0
+	branches: list[str] = field(default_factory=list)
+	residual_detected: bool = False
+	residual_score: float = 0.0
+
+	@property
+	def branch(self) -> str:
+		"""Coarsest branch that fired, for one-glance triage of a flat result."""
+
+		for name in ('line', 'window', 'structural'):
+			if name in self.branches:
+				return name
+		return 'none'
+
+	@property
+	def status(self) -> str:
+		if not self.attempted:
+			return 'not_attempted'
+		if not self.changed:
+			return 'unattributable'
+		return 'residual' if self.residual_detected else 'removed'
+
+
 def _sanitize_state_text(
 	text: str,
 	policy: PromptInjectionPolicy,
 	url: str | None,
 	*,
 	aggregate_detected: bool,
+	outcome: SanitizationOutcome,
 ) -> tuple[str, bool]:
 	"""Sanitise detected state regions while preserving trusted prompt sections."""
 
@@ -87,6 +153,7 @@ def _sanitize_state_text(
 			for index, line in enumerate(lines)
 			if line.strip() and detect_prompt_injection(line, policy, url).detected
 		]
+		branch = 'line' if detected_lines else None
 		if not detected_lines:
 			# BrowserUse renders a link's visible text on a separate element line
 			# and intentionally omits its href. Detect short adjacent windows so a
@@ -97,24 +164,30 @@ def _sanitize_state_text(
 					end = start + size
 					if end > len(lines):
 						continue
-					if detect_prompt_injection(''.join(lines[start:end]), policy, url).detected:
-						detected_lines.extend(
-							index
-							for index in range(start, end)
-							if lines[index].strip()
-						)
+					window = [index for index in range(start, end) if lines[index].strip()]
+					if not window:
+						continue
+					if detect_prompt_injection(''.join(lines[i] for i in window), policy, url).detected:
+						detected_lines.extend(_minimal_detecting_lines(lines, window, policy, url))
 			detected_lines = sorted(set(detected_lines))
+			if detected_lines:
+				branch = 'window'
 		if not detected_lines:
 			# Try the structural sanitizer, but only accept a result that actually
 			# separated something. If it fell back to erasing the whole value, keep
 			# the observation and let the caller warn instead.
 			structural = sanitize_detected_untrusted_text(region_text, policy, url)
-			return None if structural.strip() == _REMOVED_UNTRUSTED_INSTRUCTION else structural
+			if structural.strip() == _REMOVED_UNTRUSTED_INSTRUCTION:
+				return None
+			outcome.branches.append('structural')
+			return structural
 		for index in detected_lines:
 			line = lines[index]
 			body = line.rstrip('\r\n')
 			ending = line[len(body):]
 			lines[index] = sanitize_detected_untrusted_text(body, policy, url) + ending
+		if branch:
+			outcome.branches.append(branch)
 		return ''.join(lines)
 
 	regions = _state_regions(text)
@@ -134,14 +207,17 @@ def _sanitize_state_text(
 	if not targets:
 		return text, False
 
+	outcome.regions_targeted += len(targets)
 	out = text
 	changed = False
 	for index in sorted(targets, reverse=True):
 		_, start, end = regions[index]
 		replacement = sanitize_region(out[start:end])
 		if replacement is None:
+			outcome.regions_unattributable += 1
 			continue
 		out = out[:start] + replacement + out[end:]
+		outcome.regions_changed += 1
 		changed = True
 	return (out, True) if changed else (text, False)
 
@@ -150,6 +226,7 @@ def _sanitize_untrusted_messages(
 	messages: list[Any],
 	policy: PromptInjectionPolicy,
 	url: str | None,
+	outcome: SanitizationOutcome,
 ) -> tuple[list[Any], bool]:
 	"""Clone and sanitise the latest BrowserUse state message.
 
@@ -170,6 +247,7 @@ def _sanitize_untrusted_messages(
 				policy,
 				url,
 				aggregate_detected=True,
+				outcome=outcome,
 			)
 		elif isinstance(copied.content, list):
 			for part in copied.content:
@@ -180,6 +258,7 @@ def _sanitize_untrusted_messages(
 					policy,
 					url,
 					aggregate_detected=True,
+					outcome=outcome,
 				)
 				changed = changed or part_changed
 		if changed:
@@ -455,13 +534,28 @@ class GovernedLLM:
 					)
 				)
 			return messages
+		outcome = SanitizationOutcome()
 		sanitized = False
 		if finding.detected and policies.prompt_injection.browser_sanitize:
+			outcome.attempted = True
 			messages, sanitized = _sanitize_untrusted_messages(
 				messages,
 				policies.prompt_injection,
 				current_url,
+				outcome,
 			)
+			outcome.changed = sanitized
+			if sanitized:
+				# "Something was removed" is not "the attack is gone": one region
+				# can be excised while another stays detector-positive. Re-run
+				# detection on what the model will actually see before treating
+				# the observation as clean.
+				residual_text, residual_url = extract_untrusted_regions(messages)
+				residual = detect_prompt_injection(
+					residual_text, policies.prompt_injection, residual_url or current_url
+				)
+				outcome.residual_detected = residual.detected
+				outcome.residual_score = residual.score
 		messages = neutralize_untrusted_boundaries(messages)
 		if finding.detected and is_new:
 			self._emit(
@@ -475,7 +569,31 @@ class GovernedLLM:
 					action_taken='model_sanitized' if sanitized else 'model_warned',
 				)
 			)
+		if outcome.attempted:
+			self._emit(
+				PromptInjectionSanitized(
+					run_id=self._ctx.run_id,
+					url=url_origin(finding.url),
+					status=outcome.status,
+					branch=outcome.branch,
+					regions_targeted=outcome.regions_targeted,
+					regions_changed=outcome.regions_changed,
+					regions_unattributable=outcome.regions_unattributable,
+					residual_detected=outcome.residual_detected,
+					residual_score=outcome.residual_score,
+					alert_emitted=not (
+						outcome.status == 'removed'
+						and not policies.prompt_injection.alert_after_sanitize
+					),
+				)
+			)
 		if not finding.detected:
+			return messages
+		if outcome.status == 'removed' and not policies.prompt_injection.alert_after_sanitize:
+			# Warn only when removal is *confirmed*. `status == 'removed'` means
+			# something was excised and re-detection came back clean, so there is
+			# nothing left for the model to resist. A partial removal that leaves
+			# a detector-positive region falls through and is still warned about.
 			return messages
 
 		safe_origin = url_origin(finding.url) or 'the current page'

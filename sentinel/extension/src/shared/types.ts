@@ -77,6 +77,19 @@ export interface PromptInjectionDetected extends EventBase {
   action_taken: 'model_warned' | 'model_sanitized' | 'shadow_monitored';
 }
 
+export interface PromptInjectionSanitized extends EventBase {
+  type: 'prompt_injection_sanitized';
+  url: string | null;
+  status: 'removed' | 'residual' | 'unattributable' | 'not_attempted';
+  branch: 'line' | 'window' | 'structural' | 'none';
+  regions_targeted: number;
+  regions_changed: number;
+  regions_unattributable: number;
+  residual_detected: boolean;
+  residual_score: number;
+  alert_emitted: boolean;
+}
+
 export interface EnforcementDecision extends EventBase {
   type: 'enforcement_decision';
   action: string;
@@ -213,6 +226,7 @@ export type SentinelEvent =
   | StepEvent
   | LLMCall
   | PromptInjectionDetected
+  | PromptInjectionSanitized
   | EnforcementDecision
   | ActionAudit
   | ApprovalRequest

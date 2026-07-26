@@ -142,6 +142,13 @@ class PromptInjectionPolicy(BaseModel):
 	hard_block_sinks: list[str] = Field(
 		default_factory=lambda: list(DEFAULT_INJECTION_HARD_BLOCK_SINKS)
 	)
+	# Warn the model only when removal is confirmed to have cleared the finding.
+	# Once a detected region has been excised there is no injected instruction
+	# left to resist, and a vigilance banner is then measurable cost: on the WASP
+	# warn row the alert coincided with a 9.6-point utility drop and no change in
+	# end-to-end ASR. The incident is still recorded for the operator either way.
+	# Default True preserves historical behaviour; browser rows opt out.
+	alert_after_sanitize: bool = True
 
 	@model_validator(mode='after')
 	def thresholds_are_ordered(self) -> 'PromptInjectionPolicy':

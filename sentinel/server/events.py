@@ -96,6 +96,28 @@ class PromptInjectionDetected(SentinelEvent):
 	action_taken: Literal['model_warned', 'model_sanitized', 'shadow_monitored']
 
 
+class PromptInjectionSanitized(SentinelEvent):
+	"""Per-attempt record of what observation sanitisation achieved.
+
+	Emitted on every attempt, unlike the deduplicated detection alert: a flat
+	benchmark result has to be diagnosable without re-reading trajectories.
+	`status` distinguishes confirmed removal from a partial removal that left
+	detector-positive content behind, and `branch` says which attribution
+	strategy fired. No payload text is included.
+	"""
+
+	type: Literal['prompt_injection_sanitized'] = 'prompt_injection_sanitized'
+	url: str | None = None
+	status: Literal['removed', 'residual', 'unattributable', 'not_attempted']
+	branch: Literal['line', 'window', 'structural', 'none']
+	regions_targeted: int = 0
+	regions_changed: int = 0
+	regions_unattributable: int = 0
+	residual_detected: bool = False
+	residual_score: float = 0.0
+	alert_emitted: bool = True
+
+
 class EnforcementDecision(SentinelEvent):
 	type: Literal['enforcement_decision'] = 'enforcement_decision'
 	action: str

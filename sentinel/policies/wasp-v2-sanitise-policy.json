@@ -21,7 +21,8 @@
         "evaluate",
         "write_file",
         "replace_file"
-      ]
+      ],
+      "alert_after_sanitize": true
     },
     "data_flow": {
       "enabled": true,
