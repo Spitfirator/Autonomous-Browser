@@ -862,3 +862,27 @@ def test_matched_v2_policies_differ_only_in_browser_sanitize() -> None:
 		assert 'done' not in sinks
 		assert 'request_human_control' not in sinks
 		assert {'input', 'navigate', 'upload_file', 'evaluate'} <= set(sinks)
+
+
+def test_finished_row_stays_readable_after_middleware_changes(tmp_path: Path) -> None:
+	"""A frozen row must remain reportable once the code moves on.
+
+	The enforcement fingerprint exists to stop *mixing* middleware into a row,
+	not to stop reading one that is already complete. Without this, landing any
+	change to the enforcement sources would make every past summary unreadable.
+	"""
+
+	campaign = WaspCampaign(_campaign_args(tmp_path))
+	state = campaign._new_state()
+	for batch in all_batches():
+		_populate_evaluated_cell(campaign, state, batch, 'enforce')
+	state.enforcement_sha256 = 'a-different-middleware-revision'
+	campaign.save_state(state)
+
+	# Read-only paths tolerate the mismatch...
+	reopened = WaspCampaign(_campaign_args(tmp_path)).load_state()
+	assert reopened.enforcement_sha256 == 'a-different-middleware-revision'
+
+	# ...while anything that would extend the row refuses.
+	with pytest.raises(ValueError, match='different enforcement middleware'):
+		WaspCampaign(_campaign_args(tmp_path)).load_state(for_write=True)

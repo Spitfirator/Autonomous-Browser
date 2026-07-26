@@ -38,6 +38,7 @@ from evals.wasp.contract import (
 	sha256_manifest,
 	validate_generated_tasks,
 )
+from evals.wasp.intermediate import TaskDiversion, load_or_score_cell
 from evals.wasp.runner import git_revision, run_task, validate_completed_execution
 
 WORKSPACE_ROOT = Path(__file__).resolve().parents[3]
@@ -165,6 +166,7 @@ class WaspCampaign:
 		self.participant: ParticipantMode = args.participant
 		self.policy_sha = sha256_file(self.policy_path)
 		self.enforcement_sha = enforcement_source_sha256(SENTINEL_ROOT)
+		self._row_enforcement_sha: str | None = None
 		self.env = _subprocess_env(self.wasp_root, self.external_root)
 		self.env['GITLAB'] = args.gitlab
 		self.env['REDDIT'] = args.reddit
@@ -239,7 +241,7 @@ class WaspCampaign:
 			cells=cells,
 		)
 
-	def load_state(self) -> CampaignState:
+	def load_state(self, *, for_write: bool = False) -> CampaignState:
 		if not self.state_path.is_file():
 			return self._new_state()
 		state = CampaignState.model_validate(load_json(self.state_path))
@@ -262,10 +264,15 @@ class WaspCampaign:
 					'campaign state predates enforcement fingerprinting and is unfinished; '
 					'choose a new --run-tag rather than resuming it'
 				)
-		elif state.enforcement_sha256 != self.enforcement_sha:
+		elif state.enforcement_sha256 != self.enforcement_sha and for_write:
 			raise ValueError(
 				'campaign state was produced by different enforcement middleware; choose a new --run-tag'
 			)
+		# Checkpoints are validated for internal consistency against the middleware
+		# that produced the row, not against whatever the working tree holds now.
+		# A finished row must stay readable after the code moves on; the guard
+		# exists to stop mixing middleware into a row, not to stop reporting one.
+		self._row_enforcement_sha = state.enforcement_sha256 or self.enforcement_sha
 		return state
 
 	def save_state(self, state: CampaignState) -> None:
@@ -320,9 +327,10 @@ class WaspCampaign:
 			raise ValueError(f'{batch.case_id(task_id)}: task checkpoint model settings mismatch')
 		if result.provenance.participant != self.participant:
 			raise ValueError(f'{batch.case_id(task_id)}: task checkpoint participant mismatch')
+		expected_enforcement = getattr(self, '_row_enforcement_sha', None) or self.enforcement_sha
 		if (
 			result.provenance.enforcement_sha256 is not None
-			and result.provenance.enforcement_sha256 != self.enforcement_sha
+			and result.provenance.enforcement_sha256 != expected_enforcement
 		):
 			raise ValueError(f'{batch.case_id(task_id)}: task checkpoint enforcement middleware mismatch')
 
@@ -758,7 +766,7 @@ class WaspCampaign:
 		reset to pending for a pristine rerun on the replacement host.
 		"""
 
-		state = self.load_state()
+		state = self.load_state(for_write=True)
 		batch, mode, cell, cell_dir = self._cell_from_key(state, key)
 
 		if cell.status == 'cleaned':
@@ -853,7 +861,7 @@ class WaspCampaign:
 		must validate normally.
 		"""
 
-		state = self.load_state()
+		state = self.load_state(for_write=True)
 		batch, mode, cell, cell_dir = self._cell_from_key(state, key)
 		if cell.status in ('evaluated', 'cleaned', 'cleanup_failed'):
 			if not cell.native_scores_file:
@@ -938,6 +946,7 @@ class WaspCampaign:
 		print(f'{key} is native-scored and portable to a replacement GPU.', flush=True)
 
 	async def run(self, modes: list[PolicyMode]) -> None:
+		self.load_state(for_write=True)
 		for line in self.preflight(require_services=True):
 			print(f'✓ {line}')
 		state = self.load_state()
@@ -967,6 +976,7 @@ class WaspCampaign:
 		for mode in selected_modes:
 			task_results: list[TaskResult] = []
 			native_scores: list[NativeTaskScore] = []
+			diversions: list[TaskDiversion] | None = []
 			for batch in all_batches():
 				key, cell, cell_dir = self._cell(state, batch, mode)
 				if cell.status not in ('evaluated', 'cleaned'):
@@ -974,6 +984,15 @@ class WaspCampaign:
 				manifest = cell.input_manifest_sha256 or self._generated_input_manifest(cell_dir)
 				input_manifests[key] = manifest
 				native = NativeBatchScores.model_validate(load_json(Path(cell.native_scores_file or '')))
+				# Replayed from recorded governance events, so a cell scored before
+				# diversion existed is backfilled without contacting any service.
+				# A cell that no longer carries attacker ground truth yields None,
+				# and the whole mode then reports diversion as unknown rather than
+				# mixing scored and unscored cells into one rate.
+				scored_cell = load_or_score_cell(cell_dir, batch.batch_id, mode)
+				if scored_cell is None:
+					diversions = None
+				by_task = {item.task_id: item for item in (scored_cell.tasks if scored_cell else [])}
 				for score in native.scores:
 					result = TaskResult.model_validate(
 						load_json(cell_dir / 'tasks' / f'task-{score.task_id}' / 'task-result.json')
@@ -981,7 +1000,9 @@ class WaspCampaign:
 					self._validate_task_checkpoint(result, batch, mode, score.task_id)
 					task_results.append(result)
 					native_scores.append(score)
-			cells.append(aggregate_cell(mode, task_results, native_scores))
+					if diversions is not None:
+						diversions.append(by_task[score.task_id])
+			cells.append(aggregate_cell(mode, task_results, native_scores, diversions))
 		if len(selected_modes) > 1:
 			for batch in all_batches():
 				batch_manifests = {
