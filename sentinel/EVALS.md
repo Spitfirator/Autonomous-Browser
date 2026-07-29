@@ -560,7 +560,26 @@ Current run identities:
 | Qwen 3.5 4B | `nonthinking` (8K) | `qwen35-4b-nonthinking-v2` | complete historical run; not used in the controlled scaling headline |
 | Qwen 3.5 4B | `thinking` (32K) | `qwen35-4b-thinking` | complete: 97-task clean ceiling plus all 629 paired off/enforce cases with the fixed middleware |
 | Qwen 3.5 9B | `thinking` (32K) | `qwen35-9b-thinking` | complete; already used the fixed middleware |
-| Qwen 3.5 27B | `thinking` (32K) | `qwen35-27b-thinking` | paired run complete on a 24 GB GPU; off remains valid, fixed-middleware enforce rerun is pending the next suitable reservation |
+| Qwen 3.5 27B | `thinking` (32K) | off: `qwen35-27b-thinking`; enforce: `qwen35-27b-thinking-fixed-enforce-v1` | complete: frozen historical off plus a provenance-separated fixed-middleware enforce rerun |
+
+Do not confuse the two sanitisation boundaries. AgentDojo's
+`SentinelToolsExecutor` has sanitised detected native tool results in enforce
+mode since the original AgentDojo harness, before any of these controlled
+thinking-profile runs. WASP's later `browser_sanitize` setting controls
+BrowserUse observation handling and is not read by the AgentDojo adapter.
+Detector-v2 replay found zero changed classifications, score bands or score
+values across all 726 AgentDojo v1 tool-knowledge attack and benign cases.
+
+The reason only 27B needed an enforce rerun was the earlier
+AgentDojo-relevant serializer-normalisation defect, not the later WASP
+middleware. In the original 27B artifacts, three
+`workspace/user_task_28` variants recorded no detection and achieved the
+attacker goal; all six variants are detected and contained in the 9B, 4B and
+fixed 27B artifacts. The 4B reports record commit `340d421`, which includes the
+normalisation correction. The older 9B reports do not record a Git revision,
+but their six affected artifacts provide direct behavioural evidence that the
+correction was active. A fresh 9B run would strengthen code-provenance
+bookkeeping, but is not required because of the WASP sanitisation changes.
 
 The controlled 4B run completed all 1,258 paired executions without runner
 failures. Its 97-task clean ceiling is 78.4% overall: banking 81.2%, Slack
@@ -580,12 +599,40 @@ capability comparison must be interpreted from the matched 32K/thinking runs,
 not from the earlier 8K/non-thinking 4B result.
 
 The final controlled 4B/9B/27B table uses the `thinking` 32K profile for every
-model and one fixed enforcement pipeline. The completed 4B run therefore
-repeated **both** off and enforce; its old 8K/non-thinking off result is not a
-valid pair. For 27B, the existing off execution remains valid because off bypasses
-the detector/policy change and already used thinking/32K, so only enforce must
-be rerun. Do not combine pre-fix and post-fix enforce scores in one headline
-table.
+model and one fixed enforcement pipeline:
+
+| model | clean utility | off utility | off ASR | enforce utility | enforce ASR |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Qwen 3.5 4B | 76/97 (78.4%) | 362/629 (57.6%) | 206/629 (32.8%) | 446/629 (70.9%) | 0/629 |
+| Qwen 3.5 9B | 80/97 (82.5%) | 422/629 (67.1%) | 131/629 (20.8%) | 467/629 (74.2%) | 1/629 (0.2%) |
+| Qwen 3.5 27B | 81/97 (83.5%) | 428/629 (68.0%) | 203/629 (32.3%) | 483/629 (76.8%) | 0/629 |
+
+The completed 4B run repeated **both** off and enforce; its old
+8K/non-thinking off result is not a valid pair. The 27B row preserves the
+historical thinking/32K off reports byte-for-byte because off bypasses the
+detector and policy decision. Its fixed-middleware enforce result comes from a
+new immutable run tag and must not be combined with the pre-fix enforce
+reports.
+
+For 27B, enforcement changed utility from 428/629 to 483/629 and attacker
+success from 203/629 to 0/629. Useful-and-secure outcomes increased from
+345/629 to 483/629. The paired transitions were 84 utility gains versus 29
+losses, all 203 historical attacker successes absent under enforce, and 158
+useful-and-secure gains versus 20 losses. In the enforce row, detected
+untrusted tool output was sanitised in 609/629 cases; nine subsequent actions
+were blocked by the sensitive-data-flow rule. This makes sanitisation the
+primary observed mechanism and hard action blocking a secondary backstop.
+
+These parameter-size rows are descriptive independent model runs, not an
+identified causal effect of parameter count. The 27B off reports also predate
+Git-revision and Ollama-digest recording: their task, model name, profile and
+sampling configuration match, but exact model-blob parity with the enforce
+rerun cannot be cryptographically verified. Ten scored responses reached the
+4,096-token cap across the pair (three off and seven enforce); the seven new
+truncations are all variants of one difficult travel user task and were kept
+rather than selectively rerun. The reviewed 27B aggregate and detailed
+limitations are in
+`evals/agentdojo-v1-qwen35-27b-thinking-fixed-summary.json`.
 
 Keep raw reports, state, logs, per-suite clean reports, local GPU access
 configuration and reservation-specific host details off Git. Commit only a

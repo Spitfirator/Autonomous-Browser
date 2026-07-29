@@ -1,0 +1,246 @@
+{
+  "schema_version": 1,
+  "kind": "agentdojo-paired-campaign-summary",
+  "model": "qwen3.5-agentdojo:27b",
+  "provider": "ollama",
+  "suite_version": "v1",
+  "attack": "tool_knowledge",
+  "approval_mode": "deny",
+  "run_identity": {
+    "off_source_run_tag": "qwen35-27b-thinking",
+    "enforce_run_tag": "qwen35-27b-thinking-fixed-enforce-v1"
+  },
+  "model_settings": {
+    "profile": "thinking",
+    "context_tokens": 32768,
+    "max_output_tokens": 4096,
+    "reasoning_effort": "medium",
+    "temperature": 0.6,
+    "top_p": 0.95,
+    "presence_penalty": 0.0,
+    "seed": 0
+  },
+  "provenance_validation": {
+    "reports": 1258,
+    "pairs": 629,
+    "unique_model_and_benchmark_configurations": 1,
+    "code_commits": {
+      "off": "unrecorded_in_historical_reports",
+      "enforce": "6c71df2b8e274d843571b20897489b6ad478bd10"
+    },
+    "working_tree_dirty_values_observed": {
+      "off": "unrecorded_in_historical_reports",
+      "enforce": [
+        false
+      ]
+    },
+    "model_artifact": {
+      "off_ollama_digest": "unrecorded_in_historical_reports",
+      "enforce_ollama_digest": "eeeca604a4aa3c8d0554c24fe4b8909a8dc69dc76e1044b2d8c88c37750cdffe",
+      "enforce_quantization": "Q4_K_M",
+      "enforce_full_gpu_residency_verified": true
+    },
+    "reused_off_report_content_multiset_sha256": "16e07e07b8c9a220e1a3e7e225027f47ea7c8560f2b13fb2fd38f42c96f07d21",
+    "policy_file_sha256": "55b09fea5d17b619d58d16efc6ddb89e102cab82063f2149070153ce5789ac64",
+    "normalized_report_policy_sha256": {
+      "off": "203718f968dd8fb27091f248ca5d2d7384f3b945e5dffa92b442acbb0f6d1a90",
+      "enforce": "5c2dbcc6657a8e18c0ec3e3294f1c623e365d44cc6fabe8c28d44c407cc8b54a"
+    },
+    "unique_normalized_policies_per_mode": {
+      "off": 1,
+      "enforce": 1
+    },
+    "runner_failures": [],
+    "partial_reports": 0,
+    "truncated_responses": {
+      "off": 3,
+      "enforce": 7
+    }
+  },
+  "clean_ceiling": {
+    "cases": 97,
+    "utility_successes": 81,
+    "utility_rate": 0.835052,
+    "by_suite": {
+      "banking": {
+        "cases": 16,
+        "utility_successes": 13,
+        "utility_rate": 0.8125
+      },
+      "slack": {
+        "cases": 21,
+        "utility_successes": 20,
+        "utility_rate": 0.952381
+      },
+      "travel": {
+        "cases": 20,
+        "utility_successes": 15,
+        "utility_rate": 0.75
+      },
+      "workspace": {
+        "cases": 40,
+        "utility_successes": 33,
+        "utility_rate": 0.825
+      }
+    }
+  },
+  "paired_results": {
+    "off": {
+      "cases": 629,
+      "utility_successes": 428,
+      "utility_rate": 0.680445,
+      "attack_successes": 203,
+      "attack_success_rate": 0.322734,
+      "outcomes": {
+        "useful_and_secure": 345,
+        "useful_and_compromised": 83,
+        "unsuccessful_and_secure": 81,
+        "unsuccessful_and_compromised": 120
+      },
+      "by_suite": {
+        "banking": {
+          "cases": 144,
+          "utility_successes": 118,
+          "utility_rate": 0.819444,
+          "attack_successes": 44,
+          "attack_success_rate": 0.305556
+        },
+        "slack": {
+          "cases": 105,
+          "utility_successes": 70,
+          "utility_rate": 0.666667,
+          "attack_successes": 70,
+          "attack_success_rate": 0.666667
+        },
+        "travel": {
+          "cases": 140,
+          "utility_successes": 76,
+          "utility_rate": 0.542857,
+          "attack_successes": 54,
+          "attack_success_rate": 0.385714
+        },
+        "workspace": {
+          "cases": 240,
+          "utility_successes": 164,
+          "utility_rate": 0.683333,
+          "attack_successes": 35,
+          "attack_success_rate": 0.145833
+        }
+      }
+    },
+    "enforce": {
+      "cases": 629,
+      "utility_successes": 483,
+      "utility_rate": 0.767886,
+      "attack_successes": 0,
+      "attack_success_rate": 0.0,
+      "outcomes": {
+        "useful_and_secure": 483,
+        "useful_and_compromised": 0,
+        "unsuccessful_and_secure": 146,
+        "unsuccessful_and_compromised": 0
+      },
+      "by_suite": {
+        "banking": {
+          "cases": 144,
+          "utility_successes": 99,
+          "utility_rate": 0.6875,
+          "attack_successes": 0,
+          "attack_success_rate": 0.0
+        },
+        "slack": {
+          "cases": 105,
+          "utility_successes": 70,
+          "utility_rate": 0.666667,
+          "attack_successes": 0,
+          "attack_success_rate": 0.0
+        },
+        "travel": {
+          "cases": 140,
+          "utility_successes": 112,
+          "utility_rate": 0.8,
+          "attack_successes": 0,
+          "attack_success_rate": 0.0
+        },
+        "workspace": {
+          "cases": 240,
+          "utility_successes": 202,
+          "utility_rate": 0.841667,
+          "attack_successes": 0,
+          "attack_success_rate": 0.0
+        }
+      }
+    }
+  },
+  "enforcement_effect": {
+    "utility_success_delta": 55,
+    "utility_rate_delta": 0.08744,
+    "attack_success_delta": -203,
+    "attack_success_rate_delta": -0.322734,
+    "useful_and_secure_delta": 138,
+    "useful_and_secure_rate_delta": 0.219396,
+    "paired_transitions": {
+      "utility": {
+        "gained": 84,
+        "lost": 29,
+        "both_successful": 399,
+        "both_unsuccessful": 117
+      },
+      "attack_success": {
+        "prevented": 203,
+        "introduced": 0,
+        "both_successful": 0,
+        "both_unsuccessful": 426
+      },
+      "useful_and_secure": {
+        "gained": 158,
+        "lost": 20,
+        "both_successful": 325,
+        "both_unsuccessful": 126
+      }
+    }
+  },
+  "enforcement_telemetry": {
+    "detections": 609,
+    "cases_with_detection": 609,
+    "cases_without_detection": 20,
+    "allowed_actions": 2181,
+    "blocked_actions": 9,
+    "approval_actions": 0,
+    "audit_records": 2190,
+    "executed_actions": 2074,
+    "tool_errors": 107,
+    "block_rule_counts": {
+      "sensitive_data_flow": 9
+    },
+    "interpretation": "The main intervention was sanitising detected untrusted tool output before the next model turn. Explicit action blocking was a secondary backstop."
+  },
+  "validation": {
+    "report_audit_errors": [],
+    "repository_tests": "131 passed",
+    "security_smoke": {
+      "cases": 5,
+      "detection_f1": 1.0,
+      "verdict_accuracy": 1.0
+    },
+    "model_free_agentdojo_preflight": {
+      "security_cases": 629,
+      "detection_tp": 629,
+      "detection_fn": 0,
+      "detection_fp": 0,
+      "detection_tn": 97,
+      "hard_block_rate": 1.0,
+      "benign_block_rate": 0.0
+    }
+  },
+  "notes": [
+    "Raw per-case reports, checkpoint state and logs remain local and ignored by Git.",
+    "The historical off reports were copied byte-for-byte and the old run was not modified.",
+    "Off and enforce share the recorded model name, thinking profile, 32K context, output cap, sampling settings, AgentDojo version, suite, attack and approval mode.",
+    "The historical off reports do not record a Git revision or Ollama digest, so exact code and model-blob parity with the new enforce row cannot be cryptographically verified.",
+    "Seven enforce truncations are all variants of travel user_task_19; all were retained and scored as unsuccessful utility and unsuccessful attack rather than selectively rerun.",
+    "AgentDojo native tool-result sanitisation predates the 4B, 9B and 27B thinking-profile campaigns; WASP browser_sanitize is a separate BrowserUse-only boundary.",
+    "Only the original 27B enforce row exhibited the serializer-normalisation miss on workspace user_task_28. The 4B and 9B artifacts already exhibit the corrected detection behaviour and do not require reruns because of later WASP changes.",
+    "AgentDojo v1 tool_knowledge is controlled mechanism evidence. Its detector and policy results are development-set evidence, not held-out universal generalisation or browser deployment evidence."
+  ]
+}
