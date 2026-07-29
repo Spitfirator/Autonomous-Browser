@@ -130,8 +130,9 @@ class PromptInjectionPolicy(BaseModel):
 	model_config = ConfigDict(extra='forbid')
 
 	enabled: bool = True
-	# Browser observations may be rewritten only when explicitly enabled.
-	# AgentDojo and existing browser runs retain their historical behavior.
+	# Legacy/schema default. The interactive ConfigStore explicitly migrates to
+	# sanitise/no-alert; keeping this value preserves old policy documents and
+	# standalone evaluation models that omitted the later switch.
 	browser_sanitize: bool = False
 	detection_threshold: float = Field(default=0.55, ge=0.0, le=1.0)
 	# At/above this confidence, protected sinks influenced by the page are
@@ -142,12 +143,9 @@ class PromptInjectionPolicy(BaseModel):
 	hard_block_sinks: list[str] = Field(
 		default_factory=lambda: list(DEFAULT_INJECTION_HARD_BLOCK_SINKS)
 	)
-	# Warn the model only when removal is confirmed to have cleared the finding.
-	# Once a detected region has been excised there is no injected instruction
-	# left to resist, and a vigilance banner is then measurable cost: on the WASP
-	# warn row the alert coincided with a 9.6-point utility drop and no change in
-	# end-to-end ASR. The incident is still recorded for the operator either way.
-	# Default True preserves historical behaviour; browser rows opt out.
+	# Legacy/schema default. Interactive runtime config migrates this to false;
+	# explicit historical/ablation configs can retain the old confirmed-removal
+	# alert. Residual/unattributable observations never warn the model.
 	alert_after_sanitize: bool = True
 
 	@model_validator(mode='after')
@@ -226,6 +224,34 @@ class SentinelConfig(BaseModel):
 
 
 # ── Store ────────────────────────────────────────────────────────────────────
+def _interactive_config_document(document: dict[str, Any]) -> dict[str, Any]:
+	"""Apply safer defaults only at the interactive application's config edge.
+
+	The Pydantic policy model retains historical missing-field semantics for
+	frozen benchmark documents. A local interactive config that omits the newer
+	fields is migrated explicitly and then persisted by ConfigStore.
+	"""
+
+	out = dict(document)
+	raw_policies = out.get('policies')
+	if raw_policies is not None and not isinstance(raw_policies, dict):
+		return out
+	policies = dict(raw_policies or {})
+	raw_prompt = policies.get('prompt_injection')
+	if raw_prompt is not None and not isinstance(raw_prompt, dict):
+		return out
+	prompt = dict(raw_prompt or {})
+	prompt.setdefault('browser_sanitize', True)
+	prompt.setdefault('alert_after_sanitize', False)
+	policies['prompt_injection'] = prompt
+	out['policies'] = policies
+	return out
+
+
+def default_interactive_config() -> SentinelConfig:
+	return SentinelConfig.model_validate(_interactive_config_document({}))
+
+
 def _deep_merge(base: dict[str, Any], patch: dict[str, Any]) -> dict[str, Any]:
 	"""Recursively merge patch into base. Lists and scalars are replaced, dicts merged."""
 	out = dict(base)
@@ -247,10 +273,17 @@ class ConfigStore:
 	def _load(self) -> SentinelConfig:
 		if self._path.exists():
 			try:
-				return SentinelConfig.model_validate(json.loads(self._path.read_text()))
+				raw = json.loads(self._path.read_text())
+				if not isinstance(raw, dict):
+					raise ValueError('config root must be an object')
+				migrated = _interactive_config_document(raw)
+				config = SentinelConfig.model_validate(migrated)
+				if migrated != raw:
+					self._save(config)
+				return config
 			except Exception as e:
 				logger.warning(f'Invalid config at {self._path}, falling back to defaults: {e}')
-		config = SentinelConfig()
+		config = default_interactive_config()
 		self._save(config)
 		return config
 

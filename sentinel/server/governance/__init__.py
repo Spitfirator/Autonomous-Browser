@@ -6,7 +6,13 @@ PolicyEngine gate, bounded human consent, and paired audit records).
 """
 
 from server.governance.approvals import ApprovalManager
-from server.governance.governed_llm import BudgetExceededError, GovernedLLM, RunContext
+from server.governance.governed_llm import (
+	BudgetExceededError,
+	FreshObservationRequired,
+	GovernedLLM,
+	RunContext,
+	SanitizationIncidentUnavailableError,
+)
 from server.governance.governed_tools import GovernedTools
 from server.governance.handover import HandoverManager
 from server.governance.policy import PolicyDecision, PolicyEngine
@@ -15,11 +21,13 @@ from server.governance.throttle import ThrottledLLM
 __all__ = [
 	'ApprovalManager',
 	'BudgetExceededError',
+	'FreshObservationRequired',
 	'GovernedLLM',
 	'GovernedTools',
 	'HandoverManager',
 	'PolicyDecision',
 	'PolicyEngine',
 	'RunContext',
+	'SanitizationIncidentUnavailableError',
 	'ThrottledLLM',
 ]

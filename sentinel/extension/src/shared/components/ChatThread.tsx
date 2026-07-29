@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { useStore } from '../store';
 import { verdictStyle } from '../verdicts';
 import type {
@@ -29,7 +29,6 @@ function UserBubble({ event }: { event: OperatorMessage }) {
 }
 
 function StepBubble({ event }: { event: StepEvent }) {
-  const [zoomed, setZoomed] = useState(false);
   const text = event.next_goal || event.evaluation_previous_goal || 'Thinking about the next move…';
   return (
     <div className="msg-row agent rise">
@@ -38,7 +37,7 @@ function StepBubble({ event }: { event: StepEvent }) {
         <div className="bubble-meta">
           <span className="num">Step {event.step}</span>
           <span className="bubble-url" title={event.url}>
-            {event.title || event.url}
+            {event.url}
           </span>
         </div>
         <p>{text}</p>
@@ -50,15 +49,6 @@ function StepBubble({ event }: { event: StepEvent }) {
               </span>
             ))}
           </div>
-        )}
-        {event.screenshot_b64 && (
-          <img
-            className={`shot ${zoomed ? 'zoomed' : ''}`}
-            style={zoomed ? { maxHeight: 'none' } : { maxHeight: 96, objectFit: 'cover', objectPosition: 'top' }}
-            src={`data:image/png;base64,${event.screenshot_b64}`}
-            alt={`step ${event.step}`}
-            onClick={() => setZoomed((z) => !z)}
-          />
         )}
       </div>
     </div>
@@ -145,16 +135,38 @@ function renderEvent(e: SentinelEvent) {
       );
     }
     case 'prompt_injection_detected':
+      if (e.action_taken === 'observation_quarantined') {
+        return (
+          <SystemRow key={e.seq} title={e.signals.join(', ')}>
+            <span className="chip blocked">Suspicious page paused · {Math.round(e.score * 100)}%</span>
+            <span className="sys-rule">
+              The current page text and images were hidden from the AI pending your review.
+            </span>
+          </SystemRow>
+        );
+      }
       return (
         <SystemRow key={e.seq} title={e.signals.join(', ')}>
-          <span className="chip blocked">Prompt injection contained · {Math.round(e.score * 100)}%</span>
+          <span className={`chip ${e.action_taken === 'model_sanitized' ? 'allowed' : 'blocked'}`}>
+            {e.action_taken === 'model_sanitized' ? 'Suspicious instructions removed' : 'Prompt injection detected'} ·{' '}
+            {Math.round(e.score * 100)}%
+          </span>
           <span className="sys-rule">
-            Page instructions were treated as untrusted data; protected actions remain policy-gated.
+            {e.action_taken === 'model_sanitized'
+              ? 'The unsafe text and visual observation were kept out of this model call.'
+              : 'Page instructions were treated as untrusted data; protected actions remain policy-gated.'}
           </span>
         </SystemRow>
       );
     case 'control_request': {
       const ev = e as ControlRequest;
+      if (ev.kind === 'security_incident') {
+        return (
+          <SystemRow key={e.seq} title={ev.reason}>
+            <span className="chip blocked">Security pause · your review is required</span>
+          </SystemRow>
+        );
+      }
       return (
         <SystemRow key={e.seq} title={ev.reason}>
           <span className="chip approval_required">Your turn · {ev.reason.slice(0, 60)}</span>
@@ -163,10 +175,27 @@ function renderEvent(e: SentinelEvent) {
     }
     case 'control_returned': {
       const ev = e as ControlReturned;
+      if (ev.kind === 'security_incident') {
+        const label =
+          ev.resolved_by === 'user'
+            ? 'Page will be checked again'
+            : ev.resolved_by === 'cancelled'
+              ? 'Security review cancelled — task stopped'
+              : 'Security review timed out — task stopped';
+        return (
+          <SystemRow key={e.seq}>
+            <span className={`chip ${ev.resolved_by === 'user' ? 'allowed' : 'blocked'}`}>{label}</span>
+          </SystemRow>
+        );
+      }
       return (
         <SystemRow key={e.seq}>
           <span className={`chip ${ev.resolved_by === 'user' ? 'allowed' : 'blocked'}`}>
-            {ev.resolved_by === 'user' ? 'Control returned to agent' : 'Takeover timed out'}
+            {ev.resolved_by === 'user'
+              ? 'Control returned to agent'
+              : ev.resolved_by === 'cancelled'
+                ? 'Takeover cancelled'
+                : 'Takeover timed out'}
           </span>
           {ev.note && <span className="sys-rule">“{ev.note}”</span>}
         </SystemRow>

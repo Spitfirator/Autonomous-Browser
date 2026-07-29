@@ -283,6 +283,18 @@ class EventRecorder:
 			else:
 				self.approvals.resolve(event.approval_id, approved=False, scope='once')
 		elif isinstance(event, ControlRequest) and self.participant == 'oracle' and self.handovers is not None:
+			if event.kind == 'security_incident':
+				# A scripted oracle can classify authority, but it cannot inspect
+				# and mutate the live page like an operator. Let the incident time
+				# out fail-closed instead of pretending the unchanged observation
+				# became safe and repeatedly retrying it.
+				self._oracle_event(
+					event,
+					mechanism='handover',
+					decision='timeout',
+					reason='Security incident requires real page review; scripted oracle cannot resolve it.',
+				)
+				return
 			assert self.oracle is not None
 			serves_user, reason = self.oracle.decide(event.url)
 			self._oracle_event(
@@ -369,6 +381,13 @@ def _load_run_config(
 	if not isinstance(policy_document, dict) or not isinstance(policy_document.get('policies'), dict):
 		raise ValueError(f'{policy_path} must contain a top-level "policies" object')
 	policies = dict(policy_document['policies'])
+	# Benchmark policy documents predate these switches. Preserve the semantics
+	# of an omitted field instead of inheriting newer interactive-app defaults;
+	# explicit V2 sanitise/no-alert values still win.
+	prompt_injection = dict(policies.get('prompt_injection') or {})
+	prompt_injection.setdefault('browser_sanitize', False)
+	prompt_injection.setdefault('alert_after_sanitize', True)
+	policies['prompt_injection'] = prompt_injection
 	policies['mode'] = mode
 	budgets = dict(policies.get('budgets') or {})
 	budgets.update(
@@ -464,6 +483,12 @@ async def run_task(
 	handovers = HandoverManager(recorder.emit)
 	recorder.handovers = handovers
 	policy = PolicyEngine(config_store)
+	agent: Agent | None = None
+
+	def stop_on_security_incident() -> None:
+		if agent is not None:
+			agent.stop()
+
 	inner = SentinelChatOllama(
 		model=settings.model,
 		host=settings.ollama_host,
@@ -476,7 +501,15 @@ async def run_task(
 			'seed': settings.seed,
 		},
 	)
-	llm = GovernedLLM(inner, recorder.emit, ctx, config_store=config_store)
+	llm = GovernedLLM(
+		inner,
+		recorder.emit,
+		ctx,
+		config_store=config_store,
+		handovers=handovers,
+		handover_timeout_s=0.05,
+		stop_run=stop_on_security_incident,
+	)
 	tools = GovernedTools(
 		policy=policy,
 		approvals=approvals,

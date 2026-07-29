@@ -3,6 +3,7 @@ import { api } from '../shared/api';
 import { ApprovalCard } from '../shared/components/ApprovalCard';
 import { ChatThread } from '../shared/components/ChatThread';
 import { HandoverCard } from '../shared/components/HandoverCard';
+import { SecurityIncidentCard } from '../shared/components/SecurityIncidentCard';
 import {
   ChatsIcon,
   OverlayIcon,
@@ -35,6 +36,9 @@ export function App() {
 
   const agentStatus = status?.agent_status ?? 'idle';
   const serverConversationId = status?.conversation_id ?? null;
+  const securityIncidents = handovers.filter((h) => h.kind === 'security_incident');
+  const ordinaryHandovers = handovers.filter((h) => h.kind !== 'security_incident');
+  const securityIncidentActive = securityIncidents.length > 0;
 
   // Adopt the server's active chat after a reconnect or a switch made from
   // another client; keeps the live feed and hides duplicated history turns.
@@ -117,25 +121,26 @@ export function App() {
         <div className="head-actions">
           {running && (
             <>
-              {agentStatus === 'paused' ? (
-                <button
-                  className="ghost icon-btn"
-                  title="Resume the agent"
-                  aria-label="Resume the agent"
-                  onClick={() => control('resume')}
-                >
-                  <PlayIcon />
-                </button>
-              ) : (
-                <button
-                  className="ghost icon-btn"
-                  title="Pause / take over"
-                  aria-label="Pause / take over"
-                  onClick={() => control('pause')}
-                >
-                  <PauseIcon />
-                </button>
-              )}
+              {!securityIncidentActive &&
+                (agentStatus === 'paused' ? (
+                  <button
+                    className="ghost icon-btn"
+                    title="Resume the agent"
+                    aria-label="Resume the agent"
+                    onClick={() => control('resume')}
+                  >
+                    <PlayIcon />
+                  </button>
+                ) : (
+                  <button
+                    className="ghost icon-btn"
+                    title="Pause / take over"
+                    aria-label="Pause / take over"
+                    onClick={() => control('pause')}
+                  >
+                    <PauseIcon />
+                  </button>
+                ))}
               <button
                 className="ghost icon-btn stop-btn"
                 title="Stop the task"
@@ -191,7 +196,10 @@ export function App() {
 
       {(handovers.length > 0 || approvals.length > 0 || error) && (
         <section className="dock">
-          {handovers.map((h) => (
+          {securityIncidents.map((incident) => (
+            <SecurityIncidentCard key={incident.handover_id} incident={incident} />
+          ))}
+          {ordinaryHandovers.map((h) => (
             <HandoverCard key={h.handover_id} handover={h} />
           ))}
           {approvals.map((a) => (

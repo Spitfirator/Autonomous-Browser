@@ -11,7 +11,7 @@ from browser_use.llm.base import BaseChatModel
 
 from server.config import ConfigStore, ModelConfig
 from server.events import SentinelEvent
-from server.governance import GovernedLLM, RunContext, ThrottledLLM
+from server.governance import GovernedLLM, HandoverManager, RunContext, ThrottledLLM
 
 logger = logging.getLogger('sentinel.llm')
 
@@ -80,6 +80,9 @@ def build_governed_llm(
 	ctx: RunContext,
 	config_store: ConfigStore | None = None,
 	is_fallback: bool = False,
+	handovers: HandoverManager | None = None,
+	handover_timeout_s: float = 900,
+	stop_run: Callable[[], None] | None = None,
 ) -> GovernedLLM:
 	chat: BaseChatModel = build_chat(cfg)
 	if cfg.throttle is not None:
@@ -89,7 +92,16 @@ def build_governed_llm(
 			backoff_s=cfg.throttle.backoff_s,
 			max_retries=cfg.throttle.max_retries,
 		)
-	return GovernedLLM(chat, emit, ctx, config_store=config_store, is_fallback=is_fallback)
+	return GovernedLLM(
+		chat,
+		emit,
+		ctx,
+		config_store=config_store,
+		is_fallback=is_fallback,
+		handovers=handovers,
+		handover_timeout_s=handover_timeout_s,
+		stop_run=stop_run,
+	)
 
 
 def build_llm_pair(
@@ -97,13 +109,33 @@ def build_llm_pair(
 	emit: Callable[[SentinelEvent], None],
 	ctx: RunContext,
 	config_store: ConfigStore | None = None,
+	handovers: HandoverManager | None = None,
+	handover_timeout_s: float = 900,
+	stop_run: Callable[[], None] | None = None,
 ) -> tuple[GovernedLLM, GovernedLLM | None]:
 	"""Primary + optional fallback (both governed so events/budgets survive a switch)."""
-	primary = build_governed_llm(cfg, emit, ctx, config_store=config_store)
+	primary = build_governed_llm(
+		cfg,
+		emit,
+		ctx,
+		config_store=config_store,
+		handovers=handovers,
+		handover_timeout_s=handover_timeout_s,
+		stop_run=stop_run,
+	)
 	fallback: GovernedLLM | None = None
 	if cfg.fallback is not None:
 		try:
-			fallback = build_governed_llm(cfg.fallback, emit, ctx, config_store=config_store, is_fallback=True)
+			fallback = build_governed_llm(
+				cfg.fallback,
+				emit,
+				ctx,
+				config_store=config_store,
+				is_fallback=True,
+				handovers=handovers,
+				handover_timeout_s=handover_timeout_s,
+				stop_run=stop_run,
+			)
 		except MissingApiKeyError as e:
 			logger.warning(f'Fallback model unavailable, continuing without it: {e}')
 	return primary, fallback

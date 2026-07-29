@@ -48,10 +48,13 @@ export const api = {
       body: JSON.stringify({ approve, scope }),
     }),
   completeHandover: (handoverId: string, note: string) =>
-    request<{ resolved: boolean }>(`/api/handover/${handoverId}/complete`, {
+    request<{ resolved: boolean; kind: 'human_step' | 'security_incident' | null }>(
+      `/api/handover/${handoverId}/complete`,
+      {
       method: 'POST',
       body: JSON.stringify({ note }),
-    }),
+      },
+    ),
   history: (limit = 50) => request<HistoryRecord[]>(`/api/history?limit=${limit}`),
   runDecisions: (runId: string) => request<DecisionRow[]>(`/api/traces/${runId}/decisions`),
   setUnderstood: (runId: string, seq: number, understood: boolean | null) =>

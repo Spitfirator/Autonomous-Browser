@@ -8,9 +8,11 @@ export type Verdict =
   | 'approval_required'
   | 'denied_by_human'
   | 'denied_timeout'
+  | 'denied_cancelled'
   | 'handoff_required'
   | 'handoff_returned'
   | 'handoff_timeout'
+  | 'handoff_cancelled'
   | 'shadow_blocked'
   | 'shadow_approval_required'
   | 'shadow_handoff_required';
@@ -74,7 +76,11 @@ export interface PromptInjectionDetected extends EventBase {
   severity: 'low' | 'medium' | 'high' | 'critical';
   signals: string[];
   content_hash: string;
-  action_taken: 'model_warned' | 'model_sanitized' | 'shadow_monitored';
+  action_taken:
+    | 'model_warned'
+    | 'model_sanitized'
+    | 'observation_quarantined'
+    | 'shadow_monitored';
 }
 
 export interface PromptInjectionSanitized extends EventBase {
@@ -88,6 +94,8 @@ export interface PromptInjectionSanitized extends EventBase {
   residual_detected: boolean;
   residual_score: number;
   alert_emitted: boolean;
+  visual_input_withheld: boolean;
+  handover_id: string | null;
 }
 
 export interface EnforcementDecision extends EventBase {
@@ -131,6 +139,7 @@ export interface ActionAudit extends EventBase {
     | 'blocked'
     | 'denied'
     | 'timeout'
+    | 'cancelled'
     | 'handoff_returned'
     | 'handoff_timeout'
     | 'exception';
@@ -156,7 +165,7 @@ export interface ApprovalResolved extends EventBase {
   type: 'approval_resolved';
   approval_id: string;
   approved: boolean;
-  resolved_by: 'user' | 'timeout';
+  resolved_by: 'user' | 'timeout' | 'cancelled';
   scope: 'once' | 'similar';
 }
 
@@ -182,13 +191,17 @@ export interface ControlRequest extends EventBase {
   reason: string;
   url: string | null;
   expires_at: number;
+  kind: 'human_step' | 'security_incident';
+  sanitization_status: 'residual' | 'unattributable' | null;
+  severity: 'low' | 'medium' | 'high' | 'critical' | null;
 }
 
 export interface ControlReturned extends EventBase {
   type: 'control_returned';
   handover_id: string;
   note: string | null;
-  resolved_by: 'user' | 'timeout';
+  resolved_by: 'user' | 'timeout' | 'cancelled';
+  kind: 'human_step' | 'security_incident';
 }
 
 export interface TaskDone extends EventBase {
@@ -293,8 +306,11 @@ export interface Budgets {
 
 export interface PromptInjectionPolicy {
   enabled: boolean;
+  browser_sanitize: boolean;
   detection_threshold: number;
   block_threshold: number;
+  hard_block_sinks: string[];
+  alert_after_sanitize: boolean;
 }
 
 export interface DataFlowPolicy {
@@ -348,9 +364,10 @@ export interface EnforcementSummary {
   enforcement_ms_total?: number;
   enforcement_ms_mean?: number;
   enforcement_ms_max?: number;
-  human_wait_s: number; // total frozen-on-a-human time (approvals + handoffs)
+  human_wait_s: number; // total frozen-on-a-human time (approvals + handoffs + incidents)
   approval_wait_s?: number; // approval gates — the extra time enforcement adds
   handoff_wait_s?: number; // handed-over steps (login/CAPTCHA) — baseline, happens either way
+  incident_wait_s?: number; // unresolved sanitisation reviews — enforcement-added
   human_interventions: number;
   prompt_injection_detections?: number;
   approval_prompts?: number;

@@ -21,14 +21,16 @@ chrome.runtime.onStartup.addListener(hello);
 hello();
 
 // ── Control state relay ──────────────────────────────────────────────────────
-let state = {
+const DEFAULT_STATE = {
   online: false,
   agent_status: 'idle',
   task: null,
   acting: false,
-  handover: null, // {handover_id, reason, expires_at}
+  handover: null, // compact ControlRequest, including security-incident metadata
   ts: 0,
 };
+let state = { ...DEFAULT_STATE };
+let stateHydrated = false;
 
 function pushState(patch) {
   state = { ...state, ...patch, ts: Date.now() };
@@ -39,6 +41,7 @@ let ws = null;
 let connecting = false;
 
 function connect() {
+  if (!stateHydrated) return;
   if (connecting || (ws && ws.readyState <= WebSocket.OPEN)) return;
   connecting = true;
   try {
@@ -63,12 +66,16 @@ function connect() {
     switch (frame.type) {
       case 'snapshot': {
         const s = frame.status || {};
+        const pending = Array.isArray(frame.pending_handovers) ? frame.pending_handovers : null;
+        const handover = pending
+          ? pending.find((request) => request.kind === 'security_incident') || pending[0] || null
+          : s.handover || null;
         pushState({
           online: true,
           agent_status: s.agent_status ?? 'idle',
           task: s.task ?? null,
           acting: false,
-          handover: (frame.pending_handovers && frame.pending_handovers[0]) || s.handover || null,
+          handover,
         });
         break;
       }
@@ -85,12 +92,28 @@ function connect() {
         pushState({ acting: false });
         break;
       case 'control_request':
-        pushState({
-          handover: { handover_id: frame.handover_id, reason: frame.reason, expires_at: frame.expires_at },
-        });
+        {
+          const handover = {
+            handover_id: frame.handover_id,
+            reason: frame.reason,
+            url: frame.url,
+            expires_at: frame.expires_at,
+            kind: frame.kind || 'human_step',
+            sanitization_status: frame.sanitization_status || null,
+            severity: frame.severity || null,
+            resolution_pending: false,
+          };
+          // Never let a lower-priority request hide an unresolved security
+          // incident while the service worker is reconnecting.
+          if (state.handover?.kind !== 'security_incident' || handover.kind === 'security_incident') {
+            pushState({ handover });
+          }
+        }
         break;
       case 'control_returned':
-        pushState({ handover: null });
+        if (!state.handover || state.handover.handover_id === frame.handover_id) {
+          pushState({ handover: null });
+        }
         break;
     }
   };
@@ -109,7 +132,25 @@ function connect() {
   };
 }
 
-connect();
+// A Manifest V3 service worker can restart while the backend is unreachable.
+// Hydrate the last compact state before opening the socket so an unresolved
+// security incident is not overwritten by a blank in-memory default.
+chrome.storage.session
+  .get('sentinelState')
+  .then((data) => {
+    state = {
+      ...DEFAULT_STATE,
+      ...(data.sentinelState || {}),
+      online: false,
+      acting: false,
+    };
+  })
+  .catch(() => {})
+  .finally(() => {
+    stateHydrated = true;
+    pushState({});
+    connect();
+  });
 // Belt-and-braces: an alarm re-arms the socket after service-worker sleeps.
 chrome.alarms.create('sentinel-ws', { periodInMinutes: 0.5 });
 chrome.alarms.onAlarm.addListener((alarm) => {
@@ -133,9 +174,30 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     case 'stop':
       post(`/api/agent/${msg.cmd}`);
       return true;
-    case 'handover_complete':
-      post(`/api/handover/${msg.id}/complete`, { note: msg.note || '' });
+    case 'handover_complete': {
+      const matching = state.handover?.handover_id === msg.id;
+      if (matching) {
+        pushState({ handover: { ...state.handover, resolution_pending: true } });
+      }
+      fetch(`${BASE}/api/handover/${msg.id}/complete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ note: msg.note || '' }),
+      })
+        .then((r) => {
+          if (!r.ok && matching && state.handover?.handover_id === msg.id) {
+            pushState({ handover: { ...state.handover, resolution_pending: false } });
+          }
+          sendResponse({ ok: r.ok });
+        })
+        .catch(() => {
+          if (matching && state.handover?.handover_id === msg.id) {
+            pushState({ handover: { ...state.handover, resolution_pending: false } });
+          }
+          sendResponse({ ok: false });
+        });
       return true;
+    }
     case 'open_panel': {
       const tabId = sender && sender.tab && sender.tab.id;
       const opts = tabId != null ? { tabId } : { windowId: sender?.tab?.windowId };

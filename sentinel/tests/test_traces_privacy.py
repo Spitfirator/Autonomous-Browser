@@ -34,6 +34,7 @@ def test_sensitive_visual_and_reasoning_retention_is_off_by_default(tmp_path: Pa
 	traces = TraceStore(tmp_path / 'traces', config)
 	_write_run(traces, 'safe-default')
 	payload = _step_payload(tmp_path / 'traces' / 'safe-default' / 'events.jsonl')
+	assert payload['title'] == ''
 	assert payload['screenshot_b64'] is None
 	assert 'screenshot_file' not in payload
 	assert payload['thinking'] is None
@@ -47,6 +48,7 @@ def test_operator_can_explicitly_enable_sensitive_trace_retention(tmp_path: Path
 	traces = TraceStore(tmp_path / 'traces', config)
 	_write_run(traces, 'opted-in')
 	payload = _step_payload(tmp_path / 'traces' / 'opted-in' / 'events.jsonl')
+	assert payload['title'] == ''
 	assert payload['screenshot_b64'] is None
 	assert payload['screenshot_file'] == 'steps/step-001.png'
 	assert payload['thinking'] == 'private chain of thought'

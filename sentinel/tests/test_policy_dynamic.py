@@ -35,6 +35,51 @@ def test_dynamic_hard_block_wins_over_static_approval(tmp_path: Path) -> None:
 	assert decision.rule == 'test_dynamic'
 
 
+def test_dynamic_handoff_wins_over_static_approval(tmp_path: Path) -> None:
+	engine = _engine(tmp_path, {'approval_required_actions': ['input']})
+	decision = engine.evaluate('input', {'text': 'redacted'}, 'https://example.test', risk=_risk('handoff'))
+	assert decision.verdict == 'handoff'
+	assert decision.rule == 'test_dynamic'
+
+
+def test_dynamic_hard_block_wins_over_sensitive_domain_handoff(tmp_path: Path) -> None:
+	engine = _engine(tmp_path, {'sensitive_domains': ['example.test']})
+	decision = engine.evaluate(
+		'input',
+		{'text': 'redacted'},
+		'https://example.test',
+		risk=_risk('block', 'prompt_injection_high_confidence'),
+	)
+	assert decision.verdict == 'block'
+	assert decision.rule == 'prompt_injection_high_confidence'
+
+
+def test_human_only_dynamic_handoff_wins_over_generic_sensitive_domain_handoff(tmp_path: Path) -> None:
+	engine = _engine(tmp_path, {'sensitive_domains': ['example.test']})
+	decision = engine.evaluate(
+		'input',
+		{'text': 'redacted'},
+		'https://example.test',
+		risk=_risk('handoff', 'human_only_sensitive_data'),
+	)
+	assert decision.verdict == 'handoff'
+	assert decision.rule == 'human_only_sensitive_data'
+	assert decision.pattern is None
+
+
+def test_shadow_mode_keeps_dynamic_block_priority_over_sensitive_domain(tmp_path: Path) -> None:
+	engine = _engine(tmp_path, {'mode': 'shadow', 'sensitive_domains': ['example.test']})
+	decision = engine.evaluate(
+		'input',
+		{'text': 'redacted'},
+		'https://example.test',
+		risk=_risk('block', 'prompt_injection_high_confidence'),
+	)
+	assert decision.verdict == 'allow'
+	assert decision.shadow_verdict == 'block'
+	assert decision.rule == 'prompt_injection_high_confidence'
+
+
 def test_dynamic_approval_carries_opaque_scope(tmp_path: Path) -> None:
 	engine = _engine(tmp_path)
 	decision = engine.evaluate('click', {'index': 1}, 'https://example.test', risk=_risk('approve'))

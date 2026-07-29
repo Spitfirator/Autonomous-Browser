@@ -24,9 +24,11 @@ Verdict = Literal[
 	'approval_required',
 	'denied_by_human',
 	'denied_timeout',
+	'denied_cancelled',
 	'handoff_required',      # policy forced control to the human (sensitive domain)
 	'handoff_returned',      # human finished the sensitive step and handed back
 	'handoff_timeout',       # nobody responded to the forced handoff
+	'handoff_cancelled',     # the run stopped before control was returned
 	'shadow_blocked',        # shadow mode: would have blocked, allowed through
 	'shadow_approval_required',
 	'shadow_handoff_required',
@@ -93,7 +95,12 @@ class PromptInjectionDetected(SentinelEvent):
 	severity: Literal['low', 'medium', 'high', 'critical']
 	signals: list[str] = Field(default_factory=list)
 	content_hash: str
-	action_taken: Literal['model_warned', 'model_sanitized', 'shadow_monitored']
+	action_taken: Literal[
+		'model_warned',
+		'model_sanitized',
+		'observation_quarantined',
+		'shadow_monitored',
+	]
 
 
 class PromptInjectionSanitized(SentinelEvent):
@@ -116,6 +123,8 @@ class PromptInjectionSanitized(SentinelEvent):
 	residual_detected: bool = False
 	residual_score: float = 0.0
 	alert_emitted: bool = True
+	visual_input_withheld: bool = False
+	handover_id: str | None = None
 
 
 class EnforcementDecision(SentinelEvent):
@@ -161,6 +170,7 @@ class ActionAudit(SentinelEvent):
 		'blocked',
 		'denied',
 		'timeout',
+		'cancelled',
 		'handoff_returned',
 		'handoff_timeout',
 		'exception',
@@ -187,7 +197,7 @@ class ApprovalResolved(SentinelEvent):
 	type: Literal['approval_resolved'] = 'approval_resolved'
 	approval_id: str
 	approved: bool
-	resolved_by: Literal['user', 'timeout']
+	resolved_by: Literal['user', 'timeout', 'cancelled']
 	scope: Literal['once', 'similar'] = 'once'
 
 
@@ -218,13 +228,17 @@ class ControlRequest(SentinelEvent):
 	reason: str
 	url: str | None = None
 	expires_at: float
+	kind: Literal['human_step', 'security_incident'] = 'human_step'
+	sanitization_status: Literal['residual', 'unattributable'] | None = None
+	severity: Literal['low', 'medium', 'high', 'critical'] | None = None
 
 
 class ControlReturned(SentinelEvent):
 	type: Literal['control_returned'] = 'control_returned'
 	handover_id: str
 	note: str | None = None
-	resolved_by: Literal['user', 'timeout']
+	resolved_by: Literal['user', 'timeout', 'cancelled']
+	kind: Literal['human_step', 'security_incident'] = 'human_step'
 
 
 class TaskDone(SentinelEvent):
@@ -260,14 +274,13 @@ class EventHub:
 	"""Fans events out to all connected WebSocket clients via bounded queues.
 
 	Also keeps a small replay buffer so a newly connected panel can rebuild the
-	feed. Step screenshots are stripped from the replay (only the latest step
-	keeps its image) to bound memory.
+	feed. Screenshots and raw page titles are never part of the WebSocket view;
+	a synchronous trace listener may still retain an explicitly opted-in frame.
 	"""
 
 	def __init__(self, replay_size: int = 50) -> None:
 		self._queues: set[asyncio.Queue[str]] = set()
 		self._replay: deque[SentinelEvent] = deque(maxlen=replay_size)
-		self._last_step_screenshot: tuple[int, str] | None = None   # (seq, b64)
 		self._seq = 0
 		# Synchronous observers of every event (e.g. the trace recorder).
 		self._listeners: list[Callable[[SentinelEvent], None]] = []
@@ -287,19 +300,25 @@ class EventHub:
 		if event.conversation_id is None:
 			event.conversation_id = self.current_conversation_id
 
+		internal_event = (
+			event.model_copy(update={'title': ''})
+			if isinstance(event, StepEvent)
+			else event
+		)
 		for listener in self._listeners:
 			try:
-				listener(event)
+				listener(internal_event)
 			except Exception:
 				logger.exception('Event listener failed')
 
-		if isinstance(event, StepEvent) and event.screenshot_b64:
-			self._last_step_screenshot = (event.seq, event.screenshot_b64)
-			self._replay.append(event.model_copy(update={'screenshot_b64': None}))
-		else:
-			self._replay.append(event)
+		public_event = (
+			internal_event.model_copy(update={'screenshot_b64': None})
+			if isinstance(internal_event, StepEvent)
+			else internal_event
+		)
+		self._replay.append(public_event)
 
-		payload = event.model_dump_json()
+		payload = public_event.model_dump_json()
 		for queue in self._queues:
 			try:
 				queue.put_nowait(payload)
@@ -326,7 +345,6 @@ class EventHub:
 		"""Drop the replay buffer (switching chats). Never resets _seq — labels
 		and traces key on the monotonic per-process sequence."""
 		self._replay.clear()
-		self._last_step_screenshot = None
 
 	def snapshot(
 		self,
@@ -336,11 +354,6 @@ class EventHub:
 	) -> dict[str, Any]:
 		"""First frame sent to a newly connected client."""
 		events = [e.model_dump(mode='json') for e in self._replay]
-		if self._last_step_screenshot is not None:
-			seq, b64 = self._last_step_screenshot
-			for e in events:
-				if e['seq'] == seq:
-					e['screenshot_b64'] = b64
 		return {
 			'type': 'snapshot',
 			'ts': time.time(),

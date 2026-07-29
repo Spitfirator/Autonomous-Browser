@@ -143,6 +143,9 @@ async def post_agent_control(request: web.Request) -> web.Response:
 	if command == 'pause':
 		runner.pause()
 	elif command == 'resume':
+		handovers = request.app['handovers']
+		if handovers.has_pending_kind('security_incident'):
+			return _json_error(409, 'Resolve the security incident before returning control to the agent')
 		runner.resume()
 	elif command == 'stop':
 		runner.stop()
@@ -207,9 +210,10 @@ async def post_handover_complete(request: web.Request) -> web.Response:
 	note = body.get('note')
 	if note is not None and not isinstance(note, str):
 		return _json_error(400, 'note must be a string')
+	kind = handovers.kind_for(handover_id)
 	if not handovers.complete(handover_id, note):
 		return _json_error(404, 'Handover not found or already resolved')
-	return web.json_response({'resolved': True})
+	return web.json_response({'resolved': True, 'kind': kind})
 
 
 async def post_approval(request: web.Request) -> web.Response:
@@ -415,6 +419,7 @@ async def get_run_events(request: web.Request) -> web.Response:
 				continue
 			total += 1
 			ev.pop('screenshot_b64', None)   # traces null it already; belt and braces
+			ev.pop('title', None)            # legacy traces may contain untrusted page titles
 			events.append(ev)
 	except OSError as e:
 		logger.warning(f'Failed to read trace events for {run_id}: {e}')

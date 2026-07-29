@@ -47,10 +47,12 @@ function EnforcementPanel({
   const machineMs = enf.enforcement_ms_total ?? enf.decision_ms_total ?? 0;
   const approvalWait = enf.approval_wait_s ?? 0;
   const handoffWait = enf.handoff_wait_s ?? 0;
-  // Enforcement adds approval-gate waits + policy-check time; everything else —
-  // agent work and handed-over steps (logins, CAPTCHAs) — is baseline the task
-  // needs either way. Direct decomposition; doesn't capture block re-planning.
-  const added = approvalWait + machineMs / 1000;
+  const incidentWait = enf.incident_wait_s ?? 0;
+  // Enforcement adds approval-gate waits, unresolved-observation review, and
+  // policy-check time. Agent work and task-intrinsic handed-over steps
+  // (logins/CAPTCHAs) remain baseline. This direct decomposition does not
+  // capture block re-planning.
+  const added = approvalWait + incidentWait + machineMs / 1000;
   const baseline = Math.max(0, total - added);
   const addPct = total > 0 ? Math.min(100, (added / total) * 100) : 0;
   const machineStr = machineMs < 1 ? `${machineMs.toFixed(2)}ms` : `${Math.round(machineMs)}ms`;
@@ -107,6 +109,7 @@ function EnforcementPanel({
 
       <div className="enf-sub">
         {fmtDur(approvalWait)} on approval gates · {machineStr} policy checks
+        {incidentWait > 0 && ` · ${fmtDur(incidentWait)} on security-incident review`}
         {handoffWait > 0 &&
           ` · ${fmtDur(handoffWait)} on handed-over steps (login/CAPTCHA — baseline, happens either way)`}
       </div>

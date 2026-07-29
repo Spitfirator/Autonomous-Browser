@@ -6,9 +6,12 @@ Layout:
         steps/         step-NNN.png|jpg extracted from step events
         meta.json      task, policy snapshot at start, outcome, enforcement summary
 
-Registered as an EventHub listener (hub.add_listener), so it sees exactly what
-the side panel sees — the trace IS the audit log. A run opens lazily on the
-first event carrying its run_id and closes on task_done / task_error.
+Registered as an EventHub listener (hub.add_listener), so it receives the
+internal audit event before the WebSocket-specific screenshot strip. Page
+titles are already cleared; an explicitly opted-in screenshot may be
+externalized to the trace but is never sent to the extension. A run opens
+lazily on the first event carrying its run_id and closes on task_done /
+task_error.
 """
 
 import base64
@@ -62,6 +65,9 @@ class TraceStore:
 
 		if isinstance(event, StepEvent):
 			audit = self._config_store.get().policies.audit
+			# Page titles are arbitrary page-controlled text and have included
+			# full redirect URLs/tokens. The redacted URL is sufficient context.
+			payload['title'] = ''
 			payload['screenshot_b64'] = None
 			if event.screenshot_b64 and audit.store_screenshots:
 				payload['screenshot_file'] = self._save_screenshot(trace, event.step, event.screenshot_b64)

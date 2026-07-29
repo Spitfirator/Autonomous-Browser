@@ -184,13 +184,6 @@ label.field > span { font: 500 0.8rem/1.2 var(--sans); color: var(--foreground);
 @keyframes rise { from { opacity: 0; transform: translateY(4px); } }
 .rise { animation: rise 0.25s cubic-bezier(0.25, 1, 0.5, 1) backwards; }
 
-/* ── Screenshot thumbnails ──────────────────────────────────────────────── */
-.shot {
-  margin-top: 8px; width: 100%; border-radius: var(--r-md);
-  border: 1px solid var(--border); cursor: zoom-in; display: block;
-}
-.shot.zoomed { cursor: zoom-out; }
-
 /* ── Meters (budget / countdown) ────────────────────────────────────────── */
 .meter, .countdown { height: 4px; border-radius: 2px; background: var(--border); overflow: hidden; }
 .meter > i, .countdown > i { display: block; height: 100%; border-radius: 2px; background: var(--primary); transition: width 0.3s; }

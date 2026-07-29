@@ -609,6 +609,7 @@ async def test_wasp_compatible_log_has_official_gpt_tool_shape(tmp_path: Path) -
 def test_wasp_policy_is_overridden_only_by_requested_mode(tmp_path: Path) -> None:
 	policy_path = Path(__file__).parents[1] / 'policies' / 'wasp-policy.json'
 	settings = ModelSettings()
+	assert settings.use_vision is False
 	enforce = _load_run_config(tmp_path / 'enforce.json', policy_path, 'enforce', settings).get()
 	off = _load_run_config(tmp_path / 'off.json', policy_path, 'off', settings).get()
 	assert enforce.policies.mode == 'enforce'

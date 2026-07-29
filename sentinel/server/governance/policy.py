@@ -6,9 +6,9 @@ next action. Rule order (first match wins):
   1. blocked_actions          -> block    (action type is forbidden outright)
   2. domain_blocklist         -> block    (target/current URL matches)
   3. domain_allowlist         -> block    (URL matches nothing on the list)
-  4. sensitive_domains        -> handoff  (first touch of the domain this run;
+  4. dynamic injection/sensitive flow -> block or handoff
+  5. sensitive_domains        -> handoff  (first touch of the domain this run;
                                            the human takes over in the browser)
-  5. dynamic injection/sensitive flow -> block
   6. approval_required_actions/domains -> approve (side-panel consent gate)
   7. adaptive action risk     -> approve
   8. default                  -> allow
@@ -198,21 +198,11 @@ class PolicyEngine:
 					rule='domain_allowlist',
 					reason=f"'{display_url}' is not on the domain allowlist",
 				)
-			# 4. Sensitive domains: force a human handoff on first touch this run.
-			sensitive = first_match(target_url, [p for p in policies.sensitive_domains if p not in handed_over_patterns])
-			if sensitive is not None:
-				return PolicyDecision(
-					verdict='handoff',
-					rule='sensitive_domain',
-					reason=(
-						f"'{display_url}' matches sensitive entry '{sensitive}' — "
-						f'a human must take over in the browser for this step'
-					),
-					pattern=sensitive,
-				)
-
-		# 5. Dynamic data-flow and prompt-injection enforcement. Static hard
-		# blocks above always win; a dynamic hard block wins over an approval rule.
+		# 4. Dynamic data-flow and prompt-injection enforcement. Static hard
+		# blocks and the allowlist above always win. Dynamic hard blocks and
+		# human-only data handoffs must be classified before a generic sensitive-
+		# domain handoff, so an injection-induced action cannot be reframed as an
+		# ordinary operator step.
 		if risk is not None and risk.recommendation == 'block':
 			return PolicyDecision(
 				verdict='block',
@@ -220,6 +210,27 @@ class PolicyEngine:
 				reason=risk.reason,
 				approval_key=risk.approval_key,
 			)
+		if risk is not None and risk.recommendation == 'handoff':
+			return PolicyDecision(
+				verdict='handoff',
+				rule=risk.rule,
+				reason=risk.reason,
+				approval_key=risk.approval_key,
+			)
+
+		# 5. Sensitive domains: force a human handoff on first touch this run.
+		if target_url:
+			sensitive = first_match(target_url, [p for p in policies.sensitive_domains if p not in handed_over_patterns])
+			if sensitive is not None:
+				return PolicyDecision(
+					verdict='handoff',
+					rule='sensitive_domain',
+					reason=(
+						f"'{redact_url(target_url)}' matches sensitive entry '{sensitive}' — "
+						f'a human must take over in the browser for this step'
+					),
+					pattern=sensitive,
+				)
 
 		# 6. Human-in-the-loop approval gate (by action type or by domain).
 		if action_name in policies.approval_required_actions:

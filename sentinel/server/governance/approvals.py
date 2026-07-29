@@ -20,7 +20,9 @@ logger = logging.getLogger('sentinel.approvals')
 class PendingApproval:
 	def __init__(self, request: ApprovalRequest) -> None:
 		self.request = request
-		self.future: asyncio.Future[tuple[bool, Literal['once', 'similar']]] = asyncio.get_event_loop().create_future()
+		self.future: asyncio.Future[
+			tuple[Literal['approved', 'denied', 'timeout', 'cancelled'], Literal['once', 'similar']]
+		] = asyncio.get_event_loop().create_future()
 
 
 class ApprovalManager:
@@ -68,7 +70,7 @@ class ApprovalManager:
 		# explicitly offer that bounded scope.
 		if scope == 'similar' and not pending.request.can_approve_scope:
 			scope = 'once'
-		pending.future.set_result((approved, scope))
+		pending.future.set_result(('approved' if approved else 'denied', scope))
 		self._emit(
 			ApprovalResolved(
 				run_id=pending.request.run_id,
@@ -82,18 +84,18 @@ class ApprovalManager:
 
 	async def wait(
 		self, approval_id: str, timeout_s: float
-	) -> Literal['approved_once', 'approved_scope', 'denied', 'timeout']:
+	) -> Literal['approved_once', 'approved_scope', 'denied', 'timeout', 'cancelled']:
 		pending = self._pending.get(approval_id)
 		if pending is None:
 			return 'denied'
 		try:
-			approved, scope = await asyncio.wait_for(asyncio.shield(pending.future), timeout=timeout_s)
-			if not approved:
-				return 'denied'
+			resolution, scope = await asyncio.wait_for(asyncio.shield(pending.future), timeout=timeout_s)
+			if resolution != 'approved':
+				return resolution
 			return 'approved_scope' if scope == 'similar' else 'approved_once'
 		except TimeoutError:
 			if not pending.future.done():
-				pending.future.set_result((False, 'once'))
+				pending.future.set_result(('timeout', 'once'))
 			self._emit(
 				ApprovalResolved(
 					run_id=pending.request.run_id,
@@ -104,6 +106,23 @@ class ApprovalManager:
 				)
 			)
 			return 'timeout'
+		except asyncio.CancelledError:
+			# Forced reset can cancel the outer step without calling cancel_all()
+			# first. Resolve the still-pending authority explicitly so reconnecting
+			# UIs do not retain an orphaned card and the trace cannot imply silence
+			# or user consent.
+			if not pending.future.done():
+				pending.future.set_result(('cancelled', 'once'))
+				self._emit(
+					ApprovalResolved(
+						run_id=pending.request.run_id,
+						approval_id=approval_id,
+						approved=False,
+						resolved_by='cancelled',
+						scope='once',
+					)
+				)
+			raise
 		finally:
 			self._pending.pop(approval_id, None)
 
@@ -115,4 +134,13 @@ class ApprovalManager:
 		"""Deny everything outstanding (used on stop/shutdown)."""
 		for approval_id, pending in list(self._pending.items()):
 			if not pending.future.done():
-				pending.future.set_result((False, 'once'))
+				pending.future.set_result(('cancelled', 'once'))
+				self._emit(
+					ApprovalResolved(
+						run_id=pending.request.run_id,
+						approval_id=approval_id,
+						approved=False,
+						resolved_by='cancelled',
+						scope='once',
+					)
+				)

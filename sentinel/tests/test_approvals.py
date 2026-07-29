@@ -2,8 +2,9 @@ import asyncio
 
 import pytest
 
-from server.events import ApprovalRequest, ApprovalResolved
+from server.events import ApprovalRequest, ApprovalResolved, ControlReturned
 from server.governance.approvals import ApprovalManager
+from server.governance.handover import HandoverManager
 
 
 @pytest.mark.asyncio
@@ -45,9 +46,64 @@ async def test_timeout_fails_closed_and_cleans_pending_request() -> None:
 	assert events[-1].resolved_by == 'timeout'
 
 
-def test_cancel_all_fails_closed() -> None:
-	manager = ApprovalManager(lambda event: None)
+@pytest.mark.asyncio
+async def test_cancel_all_is_explicit_and_fails_closed() -> None:
+	events = []
+	manager = ApprovalManager(events.append)
 	request = manager.create('input', {}, None, 1, 'run')
 	manager.cancel_all()
-	loop = asyncio.get_event_loop()
-	assert loop.run_until_complete(manager.wait(request.approval_id, 1)) == 'denied'
+	assert await manager.wait(request.approval_id, 1) == 'cancelled'
+	resolved = [event for event in events if isinstance(event, ApprovalResolved)]
+	assert len(resolved) == 1
+	assert not resolved[0].approved
+	assert resolved[0].resolved_by == 'cancelled'
+
+
+@pytest.mark.asyncio
+async def test_cancelled_approval_wait_emits_terminal_resolution_and_cleans_pending() -> None:
+	events = []
+	manager = ApprovalManager(events.append)
+	request = manager.create('input', {}, None, 1, 'run')
+	waiter = asyncio.create_task(manager.wait(request.approval_id, 1))
+	await asyncio.sleep(0)
+	waiter.cancel()
+	with pytest.raises(asyncio.CancelledError):
+		await waiter
+
+	assert manager.pending_list() == []
+	resolved = [event for event in events if isinstance(event, ApprovalResolved)]
+	assert len(resolved) == 1
+	assert not resolved[0].approved
+	assert resolved[0].resolved_by == 'cancelled'
+
+
+@pytest.mark.asyncio
+async def test_handover_cancel_is_not_misreported_as_human_return() -> None:
+	events = []
+	manager = HandoverManager(events.append)
+	request = manager.create('Protected step', 'https://example.test', 1, 'run')
+	manager.cancel_all()
+	assert await manager.wait(request.handover_id, 1) == ('cancelled', None)
+	resolved = [event for event in events if isinstance(event, ControlReturned)]
+	assert len(resolved) == 1
+	assert resolved[0].resolved_by == 'cancelled'
+
+
+@pytest.mark.asyncio
+async def test_security_incident_return_drops_operator_note() -> None:
+	events = []
+	manager = HandoverManager(events.append)
+	request = manager.create(
+		'Unsafe observation withheld',
+		'https://example.test',
+		1,
+		'run',
+		kind='security_incident',
+		sanitization_status='residual',
+		severity='high',
+	)
+	assert manager.complete(request.handover_id, 'text that must not enter model context')
+	assert await manager.wait(request.handover_id, 1) == ('returned', None)
+	resolved = [event for event in events if isinstance(event, ControlReturned)]
+	assert resolved[-1].kind == 'security_incident'
+	assert resolved[-1].note is None

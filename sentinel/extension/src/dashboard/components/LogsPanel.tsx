@@ -81,7 +81,7 @@ function rowContent(e: SentinelEvent) {
       return (
         <>
           <span className="log-type">step {e.step}</span>
-          <span className="log-text">{cut(e.next_goal || e.title || e.url)}</span>
+          <span className="log-text">{cut(e.next_goal || e.url)}</span>
         </>
       );
     case 'llm_call':
@@ -97,7 +97,15 @@ function rowContent(e: SentinelEvent) {
     case 'prompt_injection_detected':
       return (
         <>
-          <span className="chip blocked">Injection contained</span>
+          <span className={`chip ${e.action_taken === 'model_sanitized' ? 'allowed' : 'blocked'}`}>
+            {e.action_taken === 'observation_quarantined'
+              ? 'Suspicious page paused'
+              : e.action_taken === 'model_sanitized'
+                ? 'Suspicious instructions removed'
+                : e.action_taken === 'shadow_monitored'
+                  ? 'Injection observed (shadow)'
+                  : 'Injection warning sent'}
+          </span>
           <span className="log-text">
             {Math.round(e.score * 100)}% · {e.severity} · {e.signals.join(', ')}
           </span>
@@ -126,7 +134,9 @@ function rowContent(e: SentinelEvent) {
       return (
         <>
           <span className={`chip ${e.approved ? 'allowed' : e.resolved_by === 'timeout' ? 'unattended' : 'blocked'}`}>
-            {e.resolved_by === 'timeout'
+            {e.resolved_by === 'cancelled'
+              ? 'Approval cancelled - task stopped'
+              : e.resolved_by === 'timeout'
               ? 'Approval timed out'
               : e.approved
                 ? e.scope === 'similar'
@@ -149,15 +159,31 @@ function rowContent(e: SentinelEvent) {
     case 'control_request':
       return (
         <>
-          <span className="chip approval_required">Handed to you</span>
+          <span className={`chip ${e.kind === 'security_incident' ? 'blocked' : 'approval_required'}`}>
+            {e.kind === 'security_incident' ? 'Security pause' : 'Handed to you'}
+          </span>
           <span className="log-text">{cut(e.reason)}</span>
         </>
       );
     case 'control_returned':
       return (
         <>
-          <span className={`chip ${e.resolved_by === 'timeout' ? 'unattended' : 'allowed'}`}>
-            {e.resolved_by === 'timeout' ? 'Handoff timed out' : 'You handed back'}
+          <span
+            className={`chip ${
+              e.resolved_by === 'user' ? 'allowed' : e.resolved_by === 'timeout' ? 'unattended' : 'blocked'
+            }`}
+          >
+            {e.kind === 'security_incident'
+              ? e.resolved_by === 'user'
+                ? 'Page queued for a fresh check'
+                : e.resolved_by === 'timeout'
+                  ? 'Security review timed out'
+                  : 'Security review cancelled - task stopped'
+              : e.resolved_by === 'user'
+                ? 'You handed back'
+                : e.resolved_by === 'timeout'
+                  ? 'Handoff timed out'
+                  : 'Handoff cancelled - task stopped'}
           </span>
           {e.note && <span className="log-text">{cut(e.note)}</span>}
         </>

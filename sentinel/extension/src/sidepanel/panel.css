@@ -159,6 +159,38 @@
 .handover-reason { font: 600 0.8125rem/1.4 var(--sans); color: var(--foreground); }
 .handover-hint { font-size: 0.71875rem; color: var(--muted-foreground); }
 
+.security-incident {
+  border-color: oklch(0.577 0.245 27.325 / 0.42);
+  background: oklch(0.577 0.245 27.325 / 0.035);
+  border-radius: 12px; padding: 12px; display: grid; gap: 10px;
+}
+.incident-head {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start; gap: 9px;
+}
+.incident-mark {
+  width: 28px; height: 28px; border-radius: 9px; display: grid; place-items: center;
+  background: oklch(0.577 0.245 27.325 / 0.12); color: var(--destructive);
+  font: 700 0.875rem/1 var(--sans);
+}
+.incident-kicker {
+  display: block; color: var(--destructive);
+  font: 650 0.6875rem/1.2 var(--sans);
+}
+.incident-head h3 {
+  margin: 2px 0 0; color: var(--foreground); font: 650 0.875rem/1.3 var(--sans);
+}
+.incident-timer {
+  color: var(--destructive); font: 600 0.71875rem/1 var(--sans);
+  font-variant-numeric: tabular-nums; white-space: nowrap; padding-top: 2px;
+}
+.security-incident p, .security-incident ol {
+  margin: 0; color: var(--secondary-foreground); font: 400 0.75rem/1.5 var(--sans);
+}
+.security-incident ol { padding-left: 19px; display: grid; gap: 3px; }
+.incident-actions { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+.incident-note { color: var(--muted-foreground); font: 400 0.6875rem/1.4 var(--sans); }
+
 .step-actions { display: flex; flex-wrap: wrap; gap: 5px; min-width: 0; }
 .step-actions .chip {
   font-family: var(--mono); font-size: 0.6875rem;

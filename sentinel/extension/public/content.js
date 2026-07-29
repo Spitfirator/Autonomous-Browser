@@ -38,6 +38,11 @@
           animation: breathe 1.6s ease-in-out infinite;
         }
         .glow.static { animation: none; opacity: .6; }
+        .glow.incident {
+          border-color: oklch(0.577 0.245 27.325 / 0.92);
+          box-shadow: inset 0 0 24px oklch(0.577 0.245 27.325 / 0.22);
+          opacity: 1;
+        }
         @keyframes breathe { 50% { opacity: .4; } }
         .shield { position: fixed; inset: 0; pointer-events: none; background: transparent; }
         .shield.active { pointer-events: auto; cursor: not-allowed; }
@@ -50,6 +55,11 @@
           font-size: 13px; white-space: nowrap; max-width: min(92vw, 760px);
         }
         .pill.attention { animation: nudge .3s ease; }
+        .pill.incident {
+          width: min(92vw, 720px); white-space: normal; align-items: flex-start;
+          border-color: oklch(0.577 0.245 27.325 / 0.42);
+          background: oklch(0.99 0.008 27.325);
+        }
         @keyframes nudge { 30% { transform: translateX(-50%) scale(1.04); } }
         .bot {
           width: 22px; height: 22px; border-radius: 7px; flex: none;
@@ -60,8 +70,15 @@
           background: oklch(0.421 0.095 57.708);
         }
         .bot.pulse { animation: breathe 1.4s ease-in-out infinite; }
+        .bot.incident { background: oklch(0.577 0.245 27.325 / 0.14); color: oklch(0.577 0.245 27.325); }
+        .bot.incident::after {
+          content: '!'; width: auto; height: auto; background: none;
+          font-weight: 800; font-size: 14px;
+        }
         .label { color: oklch(0.556 0 0); font-weight: 500; overflow: hidden; text-overflow: ellipsis; }
         .label b { color: oklch(0.145 0 0); font-weight: 600; }
+        .pill.incident .label { flex: 1; line-height: 1.45; overflow: visible; }
+        .pill.incident .label b { display: block; color: oklch(0.577 0.245 27.325); margin-bottom: 2px; }
         button {
           all: initial; cursor: pointer; font: 500 12.5px system-ui, -apple-system, 'Segoe UI', sans-serif;
           border-radius: 9px; padding: 7px 12px; white-space: nowrap;
@@ -86,6 +103,16 @@
         input:focus { border-color: oklch(0.708 0 0); box-shadow: 0 0 0 3px oklch(0.708 0 0 / 0.5); }
         .timer { color: oklch(0.421 0.095 57.708); font-weight: 600; font-size: 12.5px; font-variant-numeric: tabular-nums; }
         .hidden { display: none !important; }
+        @media (max-width: 640px) {
+          .pill.incident {
+            left: 10px; right: 10px; transform: none; width: auto; max-width: none;
+            display: grid; grid-template-columns: 22px minmax(0, 1fr); align-items: start;
+          }
+          .pill.incident .label { min-width: 0; }
+          .pill.incident .timer, .pill.incident button { grid-column: 1 / -1; }
+          .pill.incident .timer { justify-self: start; }
+          .pill.incident button { box-sizing: border-box; display: block; width: 100%; text-align: center; }
+        }
         @media (prefers-reduced-motion: reduce) {
           .glow, .bot.pulse, .pill.attention { animation: none; }
         }
@@ -150,8 +177,14 @@
       clearInterval(countdownTimer);
       countdownTimer = null;
     }
+    const incident = state && state.handover && state.handover.kind === 'security_incident';
+    // A security incident is fail-safe UI: it remains visible through service
+    // reconnects and even when the optional everyday in-page controls are off.
     const active =
-      enabled && state && state.online && state.agent_status && state.agent_status !== 'idle';
+      state &&
+      state.agent_status &&
+      state.agent_status !== 'idle' &&
+      (incident || (enabled && state.online));
     if (!active) {
       shieldActive = false;
       if (host) {
@@ -169,22 +202,49 @@
 
     glow.classList.remove('hidden');
     glow.classList.toggle('static', paused || !!s.handover);
+    glow.classList.toggle('incident', !!incident);
 
     shieldActive = working && !s.acting;
     shield.classList.toggle('active', shieldActive);
 
     pill.classList.remove('hidden');
+    pill.classList.toggle('incident', !!incident);
     pill.replaceChildren();
 
     const bot = document.createElement('span');
-    bot.className = 'bot' + (working ? ' pulse' : '');
+    bot.className = 'bot' + (working ? ' pulse' : '') + (incident ? ' incident' : '');
     pill.appendChild(bot);
 
     const label = document.createElement('span');
     label.className = 'label';
     pill.appendChild(label);
 
-    if (s.handover) {
+    if (incident) {
+      label.innerHTML =
+        '<b>Security pause — check this page</b>' +
+        'Suspicious instructions could not be safely removed. Sentinel hid this page from the AI. ' +
+        'Review or change it yourself, then ask Sentinel to inspect a fresh copy.';
+      const timer = document.createElement('span');
+      timer.className = 'timer';
+      const tick = () => {
+        const left = Math.max(0, Math.round(s.handover.expires_at - Date.now() / 1000));
+        timer.textContent = left >= 60 ? `${Math.floor(left / 60)}m${left % 60}s` : `${left}s`;
+      };
+      tick();
+      countdownTimer = setInterval(tick, 1000);
+      const recheck = button(
+        s.handover.resolution_pending ? 'Re-checking…' : 'Re-check page',
+        'amber',
+        () => send('handover_complete', { id: s.handover.handover_id }),
+      );
+      recheck.disabled = !!s.handover.resolution_pending;
+      pill.append(
+        timer,
+        recheck,
+        button('Open Sentinel', '', () => send('open_panel')),
+        button('Stop', 'red', () => send('stop')),
+      );
+    } else if (s.handover) {
       label.innerHTML = '<b>Your turn</b> - ';
       label.appendChild(document.createTextNode(s.handover.reason || 'the agent needs your help'));
       const timer = document.createElement('span');
