@@ -181,6 +181,9 @@ a persistent security incident in the extension:
 4. Silence, timeout, cancellation, or shutdown stops the unsafe path without a model
    call.
 
+After the run ends, Activity keeps a per-task **security pause** count and review time.
+The count links to the incident lifecycle in that run's redacted log.
+
 Page-extraction subcalls and persistent tool-result values cross the same detector and
 sanitiser, but they are bounded inputs with different lifecycle constraints. If one
 cannot be cleaned, Sentinel removes that whole value rather than starting an incident

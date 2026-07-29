@@ -5,7 +5,14 @@ import { verdictStyle } from '../../shared/verdicts';
 
 // Where a chip/decision click should land inside the log. `nonce` re-triggers
 // the scroll when the same target is clicked twice.
-export type LogAnchorKind = 'allowed' | 'approvals' | 'handoffs' | 'blocked' | 'timed_out' | 'interventions';
+export type LogAnchorKind =
+  | 'allowed'
+  | 'approvals'
+  | 'handoffs'
+  | 'incidents'
+  | 'blocked'
+  | 'timed_out'
+  | 'interventions';
 export type LogAnchor =
   | { kind: LogAnchorKind; nonce: number }
   | { kind: 'seq'; seq: number; nonce: number };
@@ -27,8 +34,16 @@ function matchesAnchor(e: SentinelEvent, anchor: LogAnchor): boolean {
     case 'handoffs':
       return (
         (e.type === 'enforcement_decision' && e.verdict === 'handoff_required') ||
-        e.type === 'control_request' ||
-        e.type === 'control_returned'
+        (e.type === 'control_request' && e.kind === 'human_step') ||
+        (e.type === 'control_returned' && e.kind === 'human_step')
+      );
+    case 'incidents':
+      return (
+        (e.type === 'prompt_injection_detected' && e.action_taken === 'observation_quarantined') ||
+        (e.type === 'prompt_injection_sanitized' &&
+          (e.status === 'residual' || e.status === 'unattributable')) ||
+        (e.type === 'control_request' && e.kind === 'security_incident') ||
+        (e.type === 'control_returned' && e.kind === 'security_incident')
       );
     case 'blocked':
       return e.type === 'enforcement_decision' && (e.verdict === 'blocked' || e.verdict === 'denied_by_human');

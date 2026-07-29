@@ -32,6 +32,15 @@ function fmtDur(s: number): string {
   return sec ? `${m}m ${sec}s` : `${m}m`;
 }
 
+function securityIncidentCount(record: HistoryRecord): number {
+  const enforcement = record.enforcement;
+  if (!enforcement) return 0;
+  if (typeof enforcement.security_incidents === 'number') return enforcement.security_incidents;
+  // Older history rows predate the explicit counter. A recorded incident wait
+  // is still enough to show that at least one security pause occurred.
+  return (enforcement.incident_wait_s ?? 0) > 0 ? 1 : 0;
+}
+
 /** Baseline-vs-enforcement time split + decision breakdown for one run. */
 function EnforcementPanel({
   record,
@@ -64,6 +73,7 @@ function EnforcementPanel({
   const blocked = (d.blocked ?? 0) + (d.denied_by_human ?? 0); // deliberately stopped
   const timedOut = (d.denied_timeout ?? 0) + (d.handoff_timeout ?? 0); // nobody responded
   const interventions = enf.human_interventions ?? 0;
+  const incidents = securityIncidentCount(record);
 
   // Non-zero chips deep-link into the run's log; zero chips stay inert.
   const chip = (count: number, kind: LogAnchorKind, cls: string, label: string, title?: string) =>
@@ -109,7 +119,7 @@ function EnforcementPanel({
 
       <div className="enf-sub">
         {fmtDur(approvalWait)} on approval gates · {machineStr} policy checks
-        {incidentWait > 0 && ` · ${fmtDur(incidentWait)} on security-incident review`}
+        {incidentWait > 0 && ` · ${fmtDur(incidentWait)} on security incident review`}
         {handoffWait > 0 &&
           ` · ${fmtDur(handoffWait)} on handed-over steps (login/CAPTCHA — baseline, happens either way)`}
       </div>
@@ -118,6 +128,13 @@ function EnforcementPanel({
         {chip(allowed, 'allowed', 'allowed', `${allowed} allowed`)}
         {chip(approvals, 'approvals', 'approval_required', `${approvals} approval${approvals === 1 ? '' : 's'}`)}
         {chip(handoffs, 'handoffs', 'info', `${handoffs} handoff${handoffs === 1 ? '' : 's'}`)}
+        {chip(
+          incidents,
+          'incidents',
+          'blocked',
+          `${incidents} security pause${incidents === 1 ? '' : 's'}`,
+          'Page observations withheld until the user reviewed the browser',
+        )}
         {chip(blocked, 'blocked', 'blocked', `${blocked} blocked`)}
         {chip(
           timedOut,
@@ -293,6 +310,7 @@ export function ActivityTab() {
               {records.map((r) => {
                 const chip = statusChip(r);
                 const open = expanded === r.run_id;
+                const incidents = securityIncidentCount(r);
                 return (
                   <Fragment key={r.run_id}>
                     <tr onClick={() => toggleExpanded(r.run_id, open)} style={{ cursor: 'pointer' }}>
@@ -308,7 +326,17 @@ export function ActivityTab() {
                         {open ? r.task : r.task.length > 90 ? `${r.task.slice(0, 90)}…` : r.task}
                       </td>
                       <td>
-                        <span className={`chip ${chip.cls}`}>{chip.label}</span>
+                        <div className="activity-status">
+                          <span className={`chip ${chip.cls}`}>{chip.label}</span>
+                          {incidents > 0 && (
+                            <span
+                              className="chip blocked"
+                              title="Sentinel withheld a page observation for user review"
+                            >
+                              {incidents} security pause{incidents === 1 ? '' : 's'}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="num-cell">{r.steps ?? '-'}</td>
                       <td className="num-cell">{r.llm_calls ?? '-'}</td>

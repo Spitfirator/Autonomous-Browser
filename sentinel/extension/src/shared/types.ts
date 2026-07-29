@@ -368,6 +368,7 @@ export interface EnforcementSummary {
   approval_wait_s?: number; // approval gates — the extra time enforcement adds
   handoff_wait_s?: number; // handed-over steps (login/CAPTCHA) — baseline, happens either way
   incident_wait_s?: number; // unresolved sanitisation reviews — enforcement-added
+  security_incidents?: number; // browser observations withheld for operator review
   human_interventions: number;
   prompt_injection_detections?: number;
   approval_prompts?: number;

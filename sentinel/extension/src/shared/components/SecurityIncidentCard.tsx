@@ -56,7 +56,7 @@ export function SecurityIncidentCard({ incident }: { incident: ControlRequest })
       </ol>
       <div className="incident-actions">
         <button className="primary" disabled={busy} onClick={recheck}>
-          {busy ? 'Re-checking…' : 'I’ve checked it — re-check page'}
+          {busy ? 'Re-checking…' : 'I’ve checked it. Re-check page'}
         </button>
         <button className="danger" onClick={() => api.control('stop')}>
           Stop task

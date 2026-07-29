@@ -221,7 +221,7 @@
 
     if (incident) {
       label.innerHTML =
-        '<b>Security pause — check this page</b>' +
+        '<b>Security pause: check this page</b>' +
         'Suspicious instructions could not be safely removed. Sentinel hid this page from the AI. ' +
         'Review or change it yourself, then ask Sentinel to inspect a fresh copy.';
       const timer = document.createElement('span');

@@ -528,6 +528,7 @@ class RunContext:
 		# task-intrinsic login/CAPTCHA handoff. Keep its operator wait separate so
 		# future evaluations cannot accidentally count it as baseline task time.
 		self.incident_wait_s = 0.0
+		self.security_incidents = 0
 		self.human_interventions = 0  # human-resolved approvals, handoffs, and security incidents
 		# Sensitive-domain patterns cleared by a completed handoff this run.
 		self.handed_over_patterns: set[str] = set()
@@ -645,6 +646,7 @@ class RunContext:
 			'approval_wait_s': round(self.approval_wait_s, 1),
 			'handoff_wait_s': round(self.handoff_wait_s, 1),
 			'incident_wait_s': round(self.incident_wait_s, 1),
+			'security_incidents': self.security_incidents,
 			'human_interventions': self.human_interventions,
 			'prompt_injection_detections': self.prompt_injection_detections,
 			'approval_prompts': self.approval_prompts,
@@ -762,6 +764,7 @@ class GovernedLLM:
 	async def _await_sanitization_incident(self, incident: PendingSanitizationIncident) -> None:
 		"""Pause at the observation boundary without ever calling the model."""
 
+		self._ctx.security_incidents += 1
 		if self._handovers is None:
 			if self._stop_run is not None:
 				self._stop_run()

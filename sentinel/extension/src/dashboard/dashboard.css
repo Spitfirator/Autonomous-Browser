@@ -142,6 +142,7 @@
 .nowrap { white-space: nowrap; }
 .task-cell { max-width: 420px; }
 .num-cell { font-variant-numeric: tabular-nums; }
+.activity-status { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
 .row-detail {
   margin-top: 8px; padding: 8px 10px;
   background: var(--muted); border-radius: var(--r-md);

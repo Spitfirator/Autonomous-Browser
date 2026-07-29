@@ -180,8 +180,8 @@ function renderEvent(e: SentinelEvent) {
           ev.resolved_by === 'user'
             ? 'Page will be checked again'
             : ev.resolved_by === 'cancelled'
-              ? 'Security review cancelled — task stopped'
-              : 'Security review timed out — task stopped';
+              ? 'Security review cancelled. Task stopped'
+              : 'Security review timed out. Task stopped';
         return (
           <SystemRow key={e.seq}>
             <span className={`chip ${ev.resolved_by === 'user' ? 'allowed' : 'blocked'}`}>{label}</span>

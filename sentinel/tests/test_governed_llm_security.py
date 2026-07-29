@@ -1049,6 +1049,8 @@ async def test_four_recorded_9b_unattributable_attempts_pause_without_model_call
 	assert inner.calls == []
 	assert ctx.llm_calls == 0
 	assert ctx.human_interventions == 4
+	assert ctx.security_incidents == 4
+	assert ctx.enforcement_summary()['security_incidents'] == 4
 	sanitized = [event for event in events if isinstance(event, PromptInjectionSanitized)]
 	requests = [event for event in events if isinstance(event, ControlRequest)]
 	returned = [event for event in events if isinstance(event, ControlReturned)]
