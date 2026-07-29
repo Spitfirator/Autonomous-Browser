@@ -54,3 +54,22 @@ def test_operator_can_explicitly_enable_sensitive_trace_retention(tmp_path: Path
 	assert payload['thinking'] == 'private chain of thought'
 	assert payload['memory'] == 'private page memory'
 	assert (tmp_path / 'traces' / 'opted-in' / 'steps' / 'step-001.png').exists()
+
+
+def test_trace_store_redacts_special_url_even_for_unredacted_event(tmp_path: Path) -> None:
+	config = ConfigStore(tmp_path / 'config.json')
+	traces = TraceStore(tmp_path / 'traces', config)
+	traces.on_event(TaskStarted(run_id='special', task='test', max_steps=1, model='dummy', provider='test'))
+	traces.on_event(
+		StepEvent(
+			run_id='special',
+			step=1,
+			url='data:text/html,%3Ch1%3EPersonal%20Access%20Tokens%3C%2Fh1%3E',
+			title='Encoded page',
+		)
+	)
+	traces.on_event(TaskDone(run_id='special', success=True, steps=1, duration_s=0.1))
+
+	payload = _step_payload(tmp_path / 'traces' / 'special' / 'events.jsonl')
+	assert payload['url'] == 'data:[REDACTED]'
+	assert 'Personal%20Access%20Tokens' not in json.dumps(payload)

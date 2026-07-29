@@ -4,16 +4,17 @@ Reads policies live from the ConfigStore, so dashboard edits apply to the very
 next action. Rule order (first match wins):
 
   1. blocked_actions          -> block    (action type is forbidden outright)
-  2. domain_blocklist         -> block    (target/current URL matches)
-  3. domain_allowlist         -> block    (URL matches nothing on the list)
-  4. dynamic injection/sensitive flow -> block or handoff
-  5. sensitive_domains        -> handoff  (first touch of the domain this run;
+  2. unsafe_navigation_scheme -> block    (non-web direct navigation)
+  3. domain_blocklist         -> block    (target/current URL matches)
+  4. domain_allowlist         -> block    (URL matches nothing on the list)
+  5. dynamic injection/sensitive flow -> block or handoff
+  6. sensitive_domains        -> handoff  (first touch of the domain this run;
                                            the human takes over in the browser)
-  6. approval_required_actions/domains -> approve (side-panel consent gate)
-  7. adaptive action risk     -> approve
-  8. default                  -> allow
+  7. approval_required_actions/domains -> approve (side-panel consent gate)
+  8. adaptive action risk     -> approve
+  9. default                  -> allow
 
-Modes (policies.mode): 'enforce' applies verdicts; 'shadow' evaluates rules 1-7
+Modes (policies.mode): 'enforce' applies verdicts; 'shadow' evaluates rules 1-8
 and reports the would-be verdict in PolicyDecision.shadow_verdict while
 returning allow (log-only, for false-block/missed-danger evals); 'off' skips
 evaluation entirely (overhead + completion-rate baseline).
@@ -28,7 +29,7 @@ from browser_use.utils import match_url_with_domain_pattern
 from pydantic import BaseModel
 
 from server.config import ConfigStore, Policies, PolicyMode
-from server.governance.security import RiskAssessment, redact_url
+from server.governance.security import RiskAssessment, redact_url, unsafe_agent_navigation_scheme
 
 logger = logging.getLogger('sentinel.policy')
 
@@ -172,6 +173,20 @@ class PolicyEngine:
 				reason=f"action '{action_name}' is in the blocked actions list",
 			)
 
+		# 2. The autonomous navigate tool is deliberately a web-URL surface.
+		# Non-web schemes can embed page/code payloads or bypass host policy.
+		if action_name == 'navigate' and isinstance(params.get('url'), str):
+			scheme = unsafe_agent_navigation_scheme(params['url'])
+			if scheme is not None:
+				return PolicyDecision(
+					verdict='block',
+					rule='unsafe_navigation_scheme',
+					reason=(
+						f"agent navigation to the '{scheme}:' scheme is blocked because "
+						'host policy and embedded content cannot be evaluated safely'
+					),
+				)
+
 		# Domain rules apply to the target URL (navigate) or the current page.
 		target_url = None
 		if action_name not in NON_PAGE_ACTIONS:
@@ -182,7 +197,7 @@ class PolicyEngine:
 
 		if target_url:
 			display_url = redact_url(target_url)
-			# 2. Blocklist.
+			# 3. Blocklist.
 			blocked = first_match(target_url, policies.domain_blocklist)
 			if blocked is not None:
 				return PolicyDecision(
@@ -191,14 +206,14 @@ class PolicyEngine:
 					reason=f"'{display_url}' matches blocked entry '{blocked}'",
 					pattern=blocked,
 				)
-			# 3. Allowlist (when enabled, anything not on it is blocked).
+			# 4. Allowlist (when enabled, anything not on it is blocked).
 			if policies.domain_allowlist is not None and first_match(target_url, policies.domain_allowlist) is None:
 				return PolicyDecision(
 					verdict='block',
 					rule='domain_allowlist',
 					reason=f"'{display_url}' is not on the domain allowlist",
 				)
-		# 4. Dynamic data-flow and prompt-injection enforcement. Static hard
+		# 5. Dynamic data-flow and prompt-injection enforcement. Static hard
 		# blocks and the allowlist above always win. Dynamic hard blocks and
 		# human-only data handoffs must be classified before a generic sensitive-
 		# domain handoff, so an injection-induced action cannot be reframed as an
@@ -218,7 +233,7 @@ class PolicyEngine:
 				approval_key=risk.approval_key,
 			)
 
-		# 5. Sensitive domains: force a human handoff on first touch this run.
+		# 6. Sensitive domains: force a human handoff on first touch this run.
 		if target_url:
 			sensitive = first_match(target_url, [p for p in policies.sensitive_domains if p not in handed_over_patterns])
 			if sensitive is not None:
@@ -232,7 +247,7 @@ class PolicyEngine:
 					pattern=sensitive,
 				)
 
-		# 6. Human-in-the-loop approval gate (by action type or by domain).
+		# 7. Human-in-the-loop approval gate (by action type or by domain).
 		if action_name in policies.approval_required_actions:
 			return PolicyDecision(
 				verdict='approve',
@@ -258,5 +273,5 @@ class PolicyEngine:
 				approval_key=risk.approval_key,
 			)
 
-		# 7. Default.
+		# 9. Default.
 		return PolicyDecision(verdict='allow', rule='default', reason='no policy matched')

@@ -150,8 +150,9 @@ to the evidence presented.
   enforce, sanitisation V1 enforce, and sanitisation V2 enforce.
 - Treat the post-campaign browser-observation incident, bounded
   extraction/tool-result enforcement, human-only secret takeover, lifecycle
-  fixes, and DOM-only interactive model path as implementation changes, not as
-  results measured by the frozen AgentDojo or WASP rows.
+  fixes, DOM-only interactive model path, and special-URL observation boundary
+  as implementation changes, not as results measured by the frozen AgentDojo
+  or WASP rows.
 - Treat HITL, plan authority, provenance hiding, and deterministic oracle work
   as unfinished unless a separate frozen implementation and evaluation artifact
   establishes otherwise. Scripted benchmark participant modes are not humans.

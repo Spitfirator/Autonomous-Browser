@@ -146,13 +146,17 @@ Implemented mechanisms include:
   channels rather than agent approval;
 - DOM-only interactive model input and no screenshot thumbnails in the
   extension;
+- complete non-web URL-suffix redaction at the model, Activity and trace
+  boundaries, plus enforce-mode blocking of direct autonomous special-URL
+  navigation;
 - action revalidation after approval and explicit cancellation outcomes;
 - redacted attempted/terminal audit records and local operator interfaces.
 
-These are implementation facts. The new incident, extraction/tool-result
-boundary, screenshot, guarded-secret, bounded-upload, and lifecycle hardening
-post-date the frozen benchmark rows and are not benchmark results. The secret
-checks are deterministic channel coverage, not universal DLP; semantically
+These are implementation facts. The incident and extraction/tool-result
+boundary, screenshot controls, guarded-secret and bounded-upload checks,
+lifecycle hardening, and special-URL boundary post-date the frozen benchmark
+rows and are not benchmark results. The secret checks are deterministic channel
+coverage, not universal DLP; semantically
 secret values with no recognized marker can still be missed. These mechanisms
 also do not mean every governance or HITL workflow is finished.
 

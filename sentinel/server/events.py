@@ -300,11 +300,17 @@ class EventHub:
 		if event.conversation_id is None:
 			event.conversation_id = self.current_conversation_id
 
-		internal_event = (
-			event.model_copy(update={'title': ''})
-			if isinstance(event, StepEvent)
-			else event
-		)
+		if isinstance(event, StepEvent):
+			# Defense in depth for every trace/Activity producer. A data: URL can
+			# contain a complete HTML document, so never trust callers to have
+			# redacted the step location already.
+			from server.governance.security import redact_url
+
+			internal_event = event.model_copy(
+				update={'title': '', 'url': redact_url(event.url)}
+			)
+		else:
+			internal_event = event
 		for listener in self._listeners:
 			try:
 				listener(internal_event)

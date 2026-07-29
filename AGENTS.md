@@ -97,6 +97,9 @@ compact curated result summaries only.
 - Treat the model, DOM, screenshots, downloads, extracted text, and tool
   results as untrusted.
 - Evaluate every proposed action immediately before privileged execution.
+- Keep non-web URL suffixes opaque at model, event, Activity, and trace
+  boundaries. In enforce mode, direct autonomous `navigate` actions may use
+  HTTP(S) or `about:blank`; other schemes fail closed before execution.
 - Do not downgrade hard policy or sensitive-data-flow blocks into approvals.
 - In enforce mode, recognized credentials, passwords, one-time codes,
   access/API tokens, payment details, and private keys are human-only: withhold

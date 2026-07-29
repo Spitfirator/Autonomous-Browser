@@ -160,6 +160,30 @@ async def test_blocked_action_has_attempt_and_completion_audit_without_secret(tm
 
 
 @pytest.mark.asyncio
+async def test_special_url_navigation_is_blocked_audited_and_payload_free(tmp_path: Path) -> None:
+	events = []
+	tools = _tools(tmp_path, events)
+	action_model = tools.registry.create_action_model()
+	raw_url = 'data:text/html,%3Ch1%3EPersonal%20Access%20Tokens%3C%2Fh1%3E'
+	action = action_model.model_validate({'navigate': {'url': raw_url}})
+
+	result = await tools.act(action, DummyBrowser())  # type: ignore[arg-type]
+
+	assert result.error
+	assert 'blocked by policy' in result.error
+	audits = [event for event in events if isinstance(event, ActionAudit)]
+	assert [event.phase for event in audits] == ['attempted', 'completed']
+	assert audits[-1].outcome == 'blocked'
+	decision = next(event for event in events if isinstance(event, EnforcementDecision))
+	assert decision.rule == 'unsafe_navigation_scheme'
+	assert decision.params_preview == '{"url": "data:[REDACTED]"}'
+	assert not any(isinstance(event, ActionExecuting) for event in events)
+	serialized = ''.join(event.model_dump_json() for event in events)
+	assert 'Personal%20Access%20Tokens' not in serialized
+	assert '%3Ch1%3E' not in serialized
+
+
+@pytest.mark.asyncio
 async def test_executed_action_has_matching_completion_audit(tmp_path: Path) -> None:
 	events = []
 	tools = _tools(tmp_path, events)

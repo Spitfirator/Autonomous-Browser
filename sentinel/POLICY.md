@@ -146,6 +146,14 @@ if a domain is on both lists, the allowlist wins at the browser layer, while the
 `PolicyEngine` decision below always applies the blocklist first - so keep a
 domain on one list, not both.)
 
+Host rules cannot safely classify URLs that have no host. In enforce mode,
+Sentinel therefore blocks direct autonomous `navigate` actions using non-web
+schemes such as `data:`, `javascript:`, `blob:`, `file:` or `mailto:`.
+`http:`, `https:` and the recovery target `about:blank` remain available.
+Regardless of mode, model navigation metadata, Activity and traces replace the
+complete suffix of a non-web URL with `[REDACTED]`; an inline `data:` document
+is never displayed as though it were an ordinary URL path.
+
 ## Decision order (first match wins)
 
 Every browser action passes through `PolicyEngine.evaluate()` -
@@ -155,14 +163,15 @@ decision point:
 | # | Rule | Verdict | What happens |
 |---|------|---------|--------------|
 | 1 | `blocked_actions` | **block** | action refused; agent told to re-plan |
-| 2 | `domain_blocklist` | **block** | same (checked against the navigation target or current page) |
-| 3 | `domain_allowlist` | **block** | anything not on the list is refused |
-| 4 | high-confidence injection into a protected sink, unsafe sensitive flow, or unavailable URL needed by active domain policy | **block** | action is refused; values remain redacted in events |
-| 5 | detected password/one-time-code/token/payment/private-key data in an agent action | **handoff** | original action is withheld; the human performs the step directly |
-| 6 | `sensitive_domains` | **handoff** | run freezes; human takes over in the browser |
-| 7 | `approval_required_actions` / `_domains` | **approve** | side-panel allow-once / allow-similar / deny gate |
-| 8 | adaptive or configured approvable risk | **approve** | only side-effecting actions are held; read-only inspection stays available |
-| 9 | *(default)* | **allow** | action executes |
+| 2 | non-web direct `navigate` scheme | **block** | embedded content, local-resource or external-handler URLs never reach the privileged navigation tool |
+| 3 | `domain_blocklist` | **block** | same (checked against the navigation target or current page) |
+| 4 | `domain_allowlist` | **block** | anything not on the list is refused |
+| 5 | high-confidence injection into a protected sink, unsafe sensitive flow, or unavailable URL needed by active domain policy | **block** | action is refused; values remain redacted in events |
+| 6 | detected password/one-time-code/token/payment/private-key data in an agent action | **handoff** | original action is withheld; the human performs the step directly |
+| 7 | `sensitive_domains` | **handoff** | run freezes; human takes over in the browser |
+| 8 | `approval_required_actions` / `_domains` | **approve** | side-panel allow-once / allow-similar / deny gate |
+| 9 | adaptive or configured approvable risk | **approve** | only side-effecting actions are held; read-only inspection stays available |
+| 10 | *(default)* | **allow** | action executes |
 
 The agent can also hand over voluntarily: it has a `request_human_control`
 action and standing instructions to use it for logins, one-time codes,

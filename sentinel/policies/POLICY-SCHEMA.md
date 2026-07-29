@@ -58,17 +58,25 @@ The engine checks rules top-to-bottom and returns the first one that fires:
 | # | Rule                                    | Verdict   |
 |---|-----------------------------------------|-----------|
 | 1 | `blocked_actions`                       | `block`   |
-| 2 | `domain_blocklist`                      | `block`   |
-| 3 | `domain_allowlist` (URL on nothing)     | `block`   |
-| 4 | high-confidence injection, configured hard sensitive flow, or missing URL required by active domain rules | `block` |
-| 5 | detected human-only password/one-time-code/token/payment/private-key flow | `handoff` |
-| 6 | `sensitive_domains` (first touch/run)   | `handoff` |
-| 7 | `approval_required_actions` / `_domains`| `approve` |
-| 8 | detected injection + independently amplified action | `approve` |
-| 9 | dynamic side-effect risk ≥ threshold    | `approve` |
-| 10 | default                                | `allow`   |
+| 2 | non-web direct `navigate` scheme        | `block`   |
+| 3 | `domain_blocklist`                      | `block`   |
+| 4 | `domain_allowlist` (URL on nothing)     | `block`   |
+| 5 | high-confidence injection, configured hard sensitive flow, or missing URL required by active domain rules | `block` |
+| 6 | detected human-only password/one-time-code/token/payment/private-key flow | `handoff` |
+| 7 | `sensitive_domains` (first touch/run)   | `handoff` |
+| 8 | `approval_required_actions` / `_domains`| `approve` |
+| 9 | detected injection + independently amplified action | `approve` |
+| 10 | dynamic side-effect risk ≥ threshold   | `approve` |
+| 11 | default                                | `allow`   |
 
-Rule 8 is **targeted defense in depth, not a blanket gate**. On a page with an
+Rule 2 needs no policy field. In enforce mode the autonomous `navigate` action
+accepts HTTP(S), plus `about:blank` as the browser recovery target. A non-web
+scheme such as `data:`, `javascript:`, `blob:`, `file:` or `mailto:` is blocked
+before the privileged navigation tool runs. Shadow records the would-be block;
+off preserves the no-enforcement baseline. In every mode, model metadata and
+telemetry withhold the complete non-web URL suffix.
+
+Rule 9 is **targeted defense in depth, not a blanket gate**. On a page with an
 active finding it holds only actions that are independently risk-amplifying:
 
 - the action crosses an origin boundary, or discloses data off the current one;
@@ -77,7 +85,7 @@ active finding it holds only actions that are independently risk-amplifying:
 - its target appears destructive or consequential.
 
 Ordinary same-origin interaction — typing into a form, clicking an unremarkable
-control — is left to the numeric risk policy in rule 9, and read-only actions
+control — is left to the numeric risk policy in rule 10, and read-only actions
 are never gated.
 
 This boundary is deliberate. An injected page is normally the same page the
@@ -90,7 +98,7 @@ exhausts the budget on none.
 
 The consequence must be stated when reporting results: **action gating does not
 cover low-impact same-origin goal hijacking.** Observation sanitisation is the
-primary control for that class; rule 8 covers cross-origin exfiltration and
+primary control for that class; rule 9 covers cross-origin exfiltration and
 independently high-impact actions.
 
 BrowserUse does not expose anchor `href` values in its live DOM text. The

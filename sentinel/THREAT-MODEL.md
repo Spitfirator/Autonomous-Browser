@@ -55,6 +55,7 @@ invariants are:
 | Local-file upload/exfiltration | `local_file_read` capability, secret-looking path checks, bounded scan of authorized local UTF-8 text, content-bound approval scope; remote/missing/binary/oversized/unreadable files hand over as unclassifiable |
 | Consequential click (purchase, publish, delete, transfer) | target-element semantics raise risk to approval threshold without prompting on ordinary clicks |
 | Cross-origin exfiltration in a URL | origin transition + tainted query factors; high-confidence injected navigation is blocked |
+| Inline content or code hidden in a special URL | direct autonomous navigation is limited to HTTP(S) plus `about:blank`; non-web URL suffixes such as `data:`, `javascript:`, `blob:` and `file:` are withheld from model metadata, events, Activity and traces |
 | JavaScript/code execution | high base risk, adaptive approval; injected code sink is blocked at high confidence |
 | Redirect/pop-up bypass of URL rules | browser-use navigation watchdog mirrors block/allow lists |
 | Approval fatigue / rubber-stamping | risk threshold, Allow once, explicit bounded Allow similar, prompt budget, handoff/block escalation |
@@ -62,7 +63,7 @@ invariants are:
 | Page/policy changes while approval is pending | post-approval URL/DOM/policy/risk refresh; execute only when now allowed or the same narrow scope remains valid |
 | Stop races with an approval or handoff completion | run-local cancellation signal checked before accepting authority and immediately before privileged execution; one terminal cancelled audit and no scope grant |
 | Domain rules skipped because current URL is unavailable | protected page actions fail closed while enforce-mode domain-sensitive policy is active |
-| Secret leakage through monitoring | recursive redaction, URL query/fragment redaction, no injection payload events, keyed per-run digests, error type rather than raw exception, screenshots/reasoning omitted from disk by default |
+| Secret leakage through monitoring | recursive redaction, HTTP(S) query/fragment redaction, complete non-web URL suffix redaction, no injection payload events, keyed per-run digests, error type rather than raw exception, screenshots/reasoning omitted from disk by default |
 | Action disappears from audit during preflight/cancellation | attempted audit precedes fallible URL/DOM/risk/policy work; every path receives exactly one terminal record, including explicit cancellation |
 | Model retries a denied action | fail-closed result explicitly says not to retry; bounded prompt budget prevents an infinite approval loop |
 
@@ -159,6 +160,11 @@ not expose it to the model or extension.
   behave differently from their visible description (for example, a benign
   click handler can be replaced server-side). Navigation watchdogs and audit
   reduce impact/detectability but do not provide transactional isolation.
+- Direct agent `navigate` calls reject non-web schemes, but a page can still
+  initiate navigation through its own script or click handler. If that happens,
+  the URL-carried suffix remains withheld and the resulting DOM stays inside
+  the ordinary untrusted-observation boundary; this is not a general browser
+  content sandbox.
 - Approval, handover, trace and extension UI primitives exist, but there has
   been no participant evaluation. Sentinel therefore makes no measured claim
   about human comprehension, trust, workload, fatigue, usability or
@@ -188,9 +194,10 @@ the wild.
 The completed rows are immutable historical evidence under their recorded
 policy, middleware, model and scaffold provenance. Human-only secret takeover,
 unresolved-sanitisation quarantine, bounded extraction/tool-result enforcement,
-post-approval revalidation, preflight audit hardening and interactive
-screenshot-channel hardening were implemented after those campaigns and are
-**not represented in the reported results**. The WASP profile itself already
+post-approval revalidation, preflight audit hardening, interactive
+screenshot-channel hardening, and special-URL observation hardening were
+implemented after those campaigns. They are **not represented in the reported
+results**. The WASP profile itself already
 used DOM/accessibility observations without screenshots; the later screenshot
 work closes the ordinary extension and trace paths. These changes require
 targeted validation or a new immutable run tag before supporting new

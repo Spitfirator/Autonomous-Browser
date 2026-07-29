@@ -14,11 +14,44 @@ from server.governance.security import (
 	detect_prompt_injection,
 	extract_untrusted_regions,
 	neutralize_untrusted_boundaries,
+	normalized_url_scheme,
 	redact_params,
 	redact_text,
+	redact_url,
 	sanitize_detected_untrusted_text,
 	sensitive_categories,
+	unsafe_agent_navigation_scheme,
 )
+
+
+@pytest.mark.parametrize(
+	('url', 'expected'),
+	[
+		('data:text/html,%3Ch1%3EAccess%20Tokens%3C%2Fh1%3E', 'data:[REDACTED]'),
+		('javascript:alert(document.cookie)', 'javascript:[REDACTED]'),
+		('blob:https://example.test/opaque-object-id', 'blob:[REDACTED]'),
+		('file:///Users/operator/private.html', 'file:[REDACTED]'),
+		('mailto:person@example.test?body=private', 'mailto:[REDACTED]'),
+	],
+)
+def test_non_web_url_payloads_are_fully_redacted(url: str, expected: str) -> None:
+	assert redact_url(url) == expected
+
+
+def test_special_url_scheme_normalization_handles_browser_whitespace() -> None:
+	url = '\njava\tscript:alert(document.cookie)'
+	assert normalized_url_scheme(url) == 'javascript'
+	assert unsafe_agent_navigation_scheme(url) == 'javascript'
+	assert redact_url(url) == 'javascript:[REDACTED]'
+
+
+def test_web_urls_keep_safe_context_and_internal_recovery_url_is_allowed() -> None:
+	assert redact_url('https://alice:password@example.test/path?token=secret&view=full') == (
+		'https://example.test/path?token=%5BREDACTED%5D&view=full'
+	)
+	assert unsafe_agent_navigation_scheme('https://example.test/path') is None
+	assert unsafe_agent_navigation_scheme('about:blank') is None
+	assert redact_url('about:blank') == 'about:blank'
 
 
 def test_extracts_only_untrusted_state_and_current_url() -> None:

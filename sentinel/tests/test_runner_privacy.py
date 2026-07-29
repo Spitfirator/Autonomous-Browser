@@ -152,3 +152,24 @@ async def test_event_hub_keeps_opted_in_frame_internal_and_never_sends_it_to_pan
 	snapshot = hub.snapshot([], {})
 	assert snapshot['events'][0]['screenshot_b64'] is None
 	assert snapshot['events'][0]['title'] == ''
+
+
+@pytest.mark.asyncio
+async def test_event_hub_redacts_special_step_url_for_trace_and_activity() -> None:
+	hub = EventHub()
+	internal = []
+	hub.add_listener(internal.append)
+	queue = hub.register()
+	hub.emit(
+		StepEvent(
+			run_id='run',
+			step=1,
+			url='data:text/html,%3Ch1%3EPersonal%20Access%20Tokens%3C%2Fh1%3E',
+			title='Encoded page',
+		)
+	)
+
+	wire = json.loads(await queue.get())
+	assert internal[0].url == 'data:[REDACTED]'
+	assert wire['url'] == 'data:[REDACTED]'
+	assert hub.snapshot([], {})['events'][0]['url'] == 'data:[REDACTED]'

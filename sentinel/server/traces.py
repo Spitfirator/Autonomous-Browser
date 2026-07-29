@@ -23,6 +23,7 @@ from typing import Any, TextIO
 
 from server.config import ConfigStore
 from server.events import SentinelEvent, StepEvent, TaskDone, TaskError, TaskStarted
+from server.governance.security import redact_url
 
 logger = logging.getLogger('sentinel.traces')
 
@@ -67,6 +68,7 @@ class TraceStore:
 			audit = self._config_store.get().policies.audit
 			# Page titles are arbitrary page-controlled text and have included
 			# full redirect URLs/tokens. The redacted URL is sufficient context.
+			payload['url'] = redact_url(event.url)
 			payload['title'] = ''
 			payload['screenshot_b64'] = None
 			if event.screenshot_b64 and audit.store_screenshots:

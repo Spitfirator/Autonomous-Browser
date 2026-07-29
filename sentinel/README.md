@@ -67,6 +67,11 @@ Schema + decision order: **[POLICY.md](POLICY.md)**. Metrics: **[EVALS.md](EVALS
 - **Domain allow/blocklist** - glob patterns (`*.bank.com`); checked per action against
   the navigation target or current page, and mirrored into browser-use's SecurityWatchdog
   as a second net. Live: dashboard edits apply to the *next action*, even mid-run.
+- **Special-URL boundary** - enforce mode blocks direct autonomous navigation
+  outside HTTP(S), except the browser recovery target `about:blank`. In every
+  mode, non-web URL suffixes are replaced before model input, events, Activity
+  or traces, so a `data:` address cannot smuggle an inline HTML document through
+  navigation metadata.
 - **Blocked actions** - removed from the LLM's toolbox at run start *and* refused at
   runtime; the agent gets an explanatory error and re-plans.
 - **Approval gate** - by action type or by domain: the agent pauses inside the step; the
@@ -115,7 +120,8 @@ Schema + decision order: **[POLICY.md](POLICY.md)**. Metrics: **[EVALS.md](EVALS
 - **Full audit stream** - every decision is a WS `enforcement_decision` event (with
   policy-only `decision_ms` and full pre-action `enforcement_ms`); every model call a `llm_call` event with latency +
   tokens; every run is persisted to `data/traces/<run_id>/` (redacted events + meta
-  with per-run enforcement metrics; screenshots/reasoning are omitted at rest by default).
+  with per-run enforcement metrics; special-URL payloads, screenshots and
+  reasoning are omitted at rest by default).
 - **Paired action audit** - every attempted action, including a policy refusal, timeout,
   exception or cancellation, emits start and completion records under one action ID with
   capabilities, taint, risk, verdict, outcome and duration—never raw secrets.

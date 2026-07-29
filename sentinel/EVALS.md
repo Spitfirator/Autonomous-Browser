@@ -772,9 +772,12 @@ observation. Interactive runs also withhold page screenshots and image-bearing
 tool results, scan page-extraction subcalls, and wrap later tool-result text so
 stored or second-order instructions cross the same model boundary. A bounded
 extraction or historical tool result that cannot be cleaned is dropped in
-full; it does not open the browser-observation incident flow. These
-post-campaign safety changes are not measured by the frozen 9B or 27B rows and
-require a new immutable run tag if they are benchmarked later. No further
+full; it does not open the browser-observation incident flow. Navigation
+metadata now also withholds complete non-web URL suffixes, and enforce mode
+blocks direct autonomous `navigate` actions outside HTTP(S), except
+`about:blank`. These post-campaign safety changes are not measured by the
+frozen 9B or 27B rows and require a new immutable run tag if they are
+benchmarked later. No further
 benchmark run is currently planned.
 
 The warning-only result is a negative finding: it left ASR unchanged at 7/84,

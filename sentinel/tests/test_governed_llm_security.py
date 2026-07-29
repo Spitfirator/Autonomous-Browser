@@ -112,6 +112,51 @@ async def test_model_boundary_withholds_tab_titles_and_all_url_query_fragments(
 
 
 @pytest.mark.asyncio
+async def test_model_boundary_withholds_special_url_payloads_in_all_modes(
+	tmp_path: Path,
+) -> None:
+	store = ConfigStore(tmp_path / 'config.json')
+	store.update({'policies': {'mode': 'off'}})
+	inner = DummyLLM()
+	llm = GovernedLLM(  # type: ignore[arg-type]
+		inner,
+		lambda event: None,
+		RunContext('run', 5),
+		config_store=store,
+	)
+	messages = [
+		SystemMessage(content='trusted'),
+		UserMessage(
+			content=(
+				'<browser_state>Current tab: ab12\nAvailable tabs:\n'
+				'Tab ab12: data:text/html,%3Ch1%3EPersonal%20Access%20Tokens%3C%2Fh1%3E '
+				'- encoded page title\n'
+				'Tab cd34: blob:https://example.test/private-object-id - object page\n'
+				'<url>javascript:alert(document.cookie)</url>\n'
+				'[4]<button>Continue</button>\n'
+				'</browser_state>'
+			)
+		),
+	]
+
+	await llm.ainvoke(messages)
+
+	forwarded = inner.calls[0][1].text
+	assert 'data:[REDACTED] - [TITLE WITHHELD]' in forwarded
+	assert 'blob:[REDACTED] - [TITLE WITHHELD]' in forwarded
+	assert '<url>javascript:[REDACTED]</url>' in forwarded
+	for payload in (
+		'Personal%20Access%20Tokens',
+		'private-object-id',
+		'document.cookie',
+		'encoded page title',
+		'object page',
+	):
+		assert payload not in forwarded
+	assert '[4]<button>Continue</button>' in forwarded
+
+
+@pytest.mark.asyncio
 async def test_extraction_subcall_sanitizes_only_webpage_content(tmp_path: Path) -> None:
 	store = ConfigStore(tmp_path / 'config.json')
 	inner = DummyLLM()

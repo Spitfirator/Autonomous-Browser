@@ -551,6 +551,44 @@ def sanitize_detected_untrusted_text(
 	return redacted if changed else _REMOVED_UNTRUSTED_INSTRUCTION
 
 
+_URL_SCHEME_PREFIX_RE = re.compile(
+	r'^[\x00-\x20]*(?P<scheme>[A-Za-z][A-Za-z0-9+.\-\x00-\x20]*):'
+)
+_WEB_NAVIGATION_SCHEMES = frozenset({'http', 'https'})
+_SAFE_INTERNAL_NAVIGATION_URLS = frozenset({'about:blank'})
+
+
+def normalized_url_scheme(url: str) -> str:
+	"""Return the browser-relevant URL scheme without ASCII whitespace.
+
+	Browsers tolerate leading controls and, for some scheme checks, embedded
+	ASCII whitespace. Normalizing it here prevents spellings such as
+	``java\nscript:`` from bypassing a string-prefix policy check.
+	"""
+
+	match = _URL_SCHEME_PREFIX_RE.match(url)
+	if match is None:
+		return ''
+	return re.sub(r'[\x00-\x20]+', '', match.group('scheme')).lower()
+
+
+def unsafe_agent_navigation_scheme(url: str) -> str | None:
+	"""Identify a non-web scheme that an autonomous ``navigate`` must not use.
+
+	HTTP(S) remains the browser agent's network navigation surface.
+	``about:blank`` is the one internal recovery target. Other schemes can carry
+	inline documents or code, expose local resources, launch external handlers,
+	or bypass host-based domain policy, so enforce mode fails them closed.
+	"""
+
+	if url.strip().lower() in _SAFE_INTERNAL_NAVIGATION_URLS:
+		return None
+	scheme = normalized_url_scheme(url)
+	if scheme and scheme not in _WEB_NAVIGATION_SCHEMES:
+		return scheme
+	return None
+
+
 def url_origin(url: str | None) -> str | None:
 	if not url:
 		return None
@@ -1112,8 +1150,19 @@ def _params_digest(params: dict[str, Any], key: bytes) -> str:
 
 
 def redact_url(url: str) -> str:
-	"""Strip credentials and sensitive query values from a URL for telemetry."""
+	"""Return a URL representation safe for model metadata and telemetry.
+
+	Only HTTP(S) URLs retain their host/path context. Non-web schemes can encode
+	an entire document, executable code, local paths, opaque object identifiers,
+	or external-handler parameters after the colon; their complete suffix is
+	therefore withheld rather than treated as an ordinary path.
+	"""
 	try:
+		if url.strip().lower() in _SAFE_INTERNAL_NAVIGATION_URLS:
+			return url.strip().lower()
+		scheme = normalized_url_scheme(url)
+		if scheme and scheme not in _WEB_NAVIGATION_SCHEMES:
+			return f'{scheme}:[REDACTED]'
 		parsed = urlparse(url)
 		if not parsed.scheme:
 			return url
