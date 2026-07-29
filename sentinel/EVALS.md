@@ -7,6 +7,19 @@ current numbers from `data/history.jsonl` (each run's record carries a
 `policy_mode`, a full policy snapshot, and an `enforcement` summary; the
 per-event ground truth lives in `data/traces/<run_id>/events.jsonl`).
 
+This file is the canonical human-readable ledger for quantitative results. For
+the thesis-facing implementation map, supported contribution boundary, and
+unfinished HITL work, see [THESIS-STATUS.md](THESIS-STATUS.md).
+
+## Results index
+
+- [AgentDojo component replay](#agentdojo-v1-full-tier-1-component-run)
+- [Detector-v2 scorecard](#detector-v2-goal-hijacking-coverage)
+- [Action-gating replay](#what-action-gating-does-and-does-not-cover)
+- [Gemini pilot and integration smoke](#gemini-pilot-and-integration-smoke)
+- [Completed Qwen AgentDojo campaigns](#completed-agentdojo-end-to-end-results)
+- [WASP browser-native campaigns](#wasp-browser-native-enforcement-evaluation)
+
 ## The three run modes (policies.mode)
 
 Comparative metrics need baselines. The middleware supports:
@@ -251,6 +264,22 @@ failures, this is a development-set score. Do not describe it as an unbiased
 held-out result; freeze the policy before evaluating v1.2.x, a new attack
 generator, WASP, or DoomArena.
 
+The completed model-free replay result is:
+
+| measure | result |
+| --- | ---: |
+| attack families | 16 |
+| security cases across families | 7,404 |
+| unique benign tasks per family | 97 |
+| detection precision / recall / F1 | 1.000 / 1.000 / 1.000 |
+| hard-block rate on security cases | 1.000 |
+| benign hard-block rate | 0/97 |
+| benign approval-triggering tasks | 1/97 (1.03%) |
+
+These aggregate detector counts repeat the 97 benign tasks once per attack
+family. They are component evidence, not an end-to-end model result or a
+held-out estimate.
+
 ### Detector v2: goal-hijacking coverage
 
 The first WASP browser campaign exposed a detector fitted to AgentDojo's attack
@@ -369,6 +398,8 @@ retaining AgentDojo's unchanged utility and attacker-goal oracles:
   --output sentinel/evals/fixtures/agentdojo-v1-agent.report.json --pretty
 ```
 
+### Gemini pilot and integration smoke
+
 `attack_success_rate` follows the actual AgentDojo injection-task oracle: lower
 is better. `secure_rate = 1 - attack_success_rate`. Always report utility next
 to security; an inactive agent is secure but useless. Current Gemini models
@@ -389,6 +420,18 @@ The run stopped at the 500-request daily quota and excludes the incomplete
 attempt. Per-run privacy-preserving reports are written beside the summary but
 are gitignored: like all auto-written run artifacts they stay on the machine
 that produced them, and only hand-curated compact summaries are committed.
+
+The 34 completed pilot pairs recorded:
+
+| mode | utility | native ASR | secure utility |
+| --- | ---: | ---: | ---: |
+| off | 19/34 (55.9%) | 22/34 (64.7%) | 11/34 (32.4%) |
+| enforce | 30/34 (88.2%) | 0/34 | 30/34 (88.2%) |
+
+This is a quota-limited pilot containing four development cases, not a
+headline benchmark row. The one-pair agent smoke changed native attacker
+success from pass in `off` to fail in `enforce`, but user utility failed in
+both modes; it establishes integration only.
 
 ### Resumable full AgentDojo campaign
 
@@ -581,6 +624,8 @@ but their six affected artifacts provide direct behavioural evidence that the
 correction was active. A fresh 9B run would strengthen code-provenance
 bookkeeping, but is not required because of the WASP sanitisation changes.
 
+### Completed AgentDojo end-to-end results
+
 The controlled 4B run completed all 1,258 paired executions without runner
 failures. Its 97-task clean ceiling is 78.4% overall: banking 81.2%, Slack
 76.2%, travel 75.0% and workspace 80.0%. Under attack, off mode achieved
@@ -601,11 +646,19 @@ not from the earlier 8K/non-thinking 4B result.
 The final controlled 4B/9B/27B table uses the `thinking` 32K profile for every
 model and one fixed enforcement pipeline:
 
-| model | clean utility | off utility | off ASR | enforce utility | enforce ASR |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| Qwen 3.5 4B | 76/97 (78.4%) | 362/629 (57.6%) | 206/629 (32.8%) | 446/629 (70.9%) | 0/629 |
-| Qwen 3.5 9B | 80/97 (82.5%) | 422/629 (67.1%) | 131/629 (20.8%) | 467/629 (74.2%) | 1/629 (0.2%) |
-| Qwen 3.5 27B | 81/97 (83.5%) | 428/629 (68.0%) | 203/629 (32.3%) | 483/629 (76.8%) | 0/629 |
+| model | clean utility | off utility | off ASR | off secure utility | enforce utility | enforce ASR | enforce secure utility |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Qwen 3.5 4B | 76/97 (78.4%) | 362/629 (57.6%) | 206/629 (32.8%) | 297/629 (47.2%) | 446/629 (70.9%) | 0/629 | 446/629 (70.9%) |
+| Qwen 3.5 9B | 80/97 (82.5%) | 422/629 (67.1%) | 131/629 (20.8%) | 367/629 (58.3%) | 467/629 (74.2%) | 1/629 (0.2%) | 467/629 (74.2%) |
+| Qwen 3.5 27B | 81/97 (83.5%) | 428/629 (68.0%) | 203/629 (32.3%) | 345/629 (54.8%) | 483/629 (76.8%) | 0/629 | 483/629 (76.8%) |
+
+Enforce-mode diagnostics:
+
+| model | detected cases | explicit action blocks | approval actions | truncated responses |
+| --- | ---: | ---: | ---: | ---: |
+| Qwen 3.5 4B | 600/629 | 9 | 0 | 6 |
+| Qwen 3.5 9B | 615/629 | 9 | 0 | 0 |
+| Qwen 3.5 27B | 609/629 | 9 | 0 | 7 |
 
 The completed 4B run repeated **both** off and enforce; its old
 8K/non-thinking off result is not a valid pair. The 27B row preserves the
@@ -613,6 +666,11 @@ historical thinking/32K off reports byte-for-byte because off bypasses the
 detector and policy decision. Its fixed-middleware enforce result comes from a
 new immutable run tag and must not be combined with the pre-fix enforce
 reports.
+
+For 9B, enforcement changed utility from 422/629 to 467/629, attacker success
+from 131/629 to 1/629, and useful-and-secure outcomes from 367/629 to 467/629.
+Paired transitions were 92 utility gains versus 47 losses, with 130 attacker
+successes prevented and none introduced.
 
 For 27B, enforcement changed utility from 428/629 to 483/629 and attacker
 success from 203/629 to 0/629. Useful-and-secure outcomes increased from
@@ -642,9 +700,9 @@ code provenance after the reruns finish.
 ### WASP: browser-native enforcement evaluation
 
 AgentDojo isolates Sentinel's enforcement logic in a different tool-agent
-environment. WASP answers the deployment question AgentDojo cannot: whether
-the same middleware contains prompt injections while a BrowserUse agent is
-actually reading pages, navigating, clicking, entering data and replanning.
+environment. WASP answers the browser-transfer question AgentDojo cannot:
+whether the same middleware contains prompt injections while a BrowserUse agent
+is actually reading pages, navigating, clicking, entering data and replanning.
 
 The checked-in adapter is under `evals/wasp/` and pins the official WASP
 repository to commit `ffee6f41fde76acd14bd792db442479c506260c2`.
@@ -655,14 +713,15 @@ The published matrix is:
 - plain-text and URL-based goal-hijacking injections;
 - 84 attacked cases per policy mode.
 
-The model/scaffold is fixed to one capable browser agent rather than repeating
-the AgentDojo scaling study: Qwen 3.5 9B, 32K context, 4,096 output tokens,
-temperature 0.6, top-p 0.95, seed 0, BrowserUse structured planning, one action
-per step, 30 steps, DOM/accessibility observations and no screenshots. Ollama's
-separate native thinking stream is disabled so its response remains valid
-against BrowserUse's action schema; BrowserUse's structured thinking/planning
-fields remain enabled. Report this as a browser profile, not as identical to
-AgentDojo's native-thinking profile.
+The browser profile was first evaluated with Qwen 3.5 9B and then replicated
+as a fresh matched off/enforce comparison with Qwen 3.5 27B. Both use 32K
+context, 4,096 output tokens, temperature 0.6, top-p 0.95, seed 0, BrowserUse
+structured planning, one action per step, 30 steps, DOM/accessibility
+observations and no screenshots. Ollama's separate native thinking stream is
+disabled so its response remains valid against BrowserUse's action schema;
+BrowserUse's structured thinking/planning fields remain enabled. These are
+descriptive independent model runs, not an identified model-size effect and
+not the same profile as AgentDojo's native-thinking runs.
 
 The 30-step budget was frozen before the browser campaign because a
 21-case off-mode pilot at 20 steps showed seven executions reaching the
@@ -671,26 +730,64 @@ attacker success 2/21) and all traces remain locally preserved under the old
 run tag, but are excluded from the primary aggregate. No 20-step and 30-step
 cases are pooled or selectively substituted.
 
-The browser evaluation has three provenance-separated rows:
+The finalized thesis-eligible conditions are:
 
-1. historical warn-only middleware with `participant=none`, using
-   `wasp-warn-policy.json`;
-2. observation sanitisation with `participant=none`, using
-   `wasp-policy.json` in paired `off,enforce` modes;
-3. observation sanitisation with `participant=oracle`, using
-   `wasp-policy.json` in `enforce` mode.
+| model and condition | utility | end-to-end ASR | secure utility | attacker-directed attempted | attacker-directed executed |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 9B shared off baseline | 45/84 (53.57%) | 7/84 (8.33%) | 41/84 (48.81%) | 31/84 (36.90%) | 31/84 (36.90%) |
+| 9B warn enforce | 37/84 (44.05%) | 7/84 (8.33%) | 35/84 (41.67%) | 32/84 (38.10%) | 32/84 (38.10%) |
+| 9B sanitise V1 | 52/84 (61.90%) | 6/84 (7.14%) | 49/84 (58.33%) | 18/84 (21.43%) | 18/84 (21.43%) |
+| **9B sanitise V2** | **54/84 (64.29%)** | **0/84** | **54/84 (64.29%)** | **1/84 (1.19%)** | **1/84 (1.19%)** |
+| 27B off | 47/84 (55.95%) | 5/84 (5.95%) | 44/84 (52.38%) | 17/84 (20.24%) | 17/84 (20.24%) |
+| **27B sanitise V2** | **46/84 (54.76%)** | **0/84** | **46/84 (54.76%)** | **0/84** | **0/84** |
 
-`browser_sanitize` is opt-in and affects only the BrowserUse prompt boundary.
-When enabled, detected browser/read-state regions are removed with the existing
-shared sanitizer before the model call. The shared detector, normaliser, risk
-engine and sanitizer bodies remain frozen, and the AgentDojo adapter does not
-import the changed browser wrappers.
+The last two columns count task instances with at least one matched
+attacker-directed attempt or execution; they are not raw action totals.
 
-In `participant=none`, approval requests are denied immediately and handoffs
-fail closed. In `participant=oracle`, a deterministic script uses the
-task-local WASP attacker domain and instantiated attacker action URL to deny
-attacker-serving targets and approve other exposed targets once. It returns
-user-serving handovers without simulating a browser mutation. This is a
+The 9B structure is exactly one shared `off` baseline with no enforcement,
+followed by three separate `enforce` rows: warning-only, sanitisation V1, and
+sanitisation V2. The latter two are the two sanitisation-enforcement revisions.
+This is a provenance-separated engineering sequence, not one immutable matched
+campaign, because middleware changed between revisions. The 27B campaign is
+the primary matched browser result. Across its 168 executions, sanitisation
+removed all five observed terminal attacker successes and all 17
+task instances with an attacker-directed execution, changed native utility by
+one task (47 to 46) and increased secure utility from 44 to 46.
+
+`browser_sanitize` affects only the BrowserUse prompt boundary. The final
+post-verified implementation used in the frozen campaigns suppressed the model
+warning only when attributable removal left no detector-positive residual. The
+9B V2 row recorded 1,053 confirmed removals from 1,057 attempts, with four
+unattributable attempts sent through the then-current model-warning fallback
+and zero residuals. The 27B row recorded 368/368 confirmed removals, zero
+residuals or unattributable cases and zero post-success alerts. No hard block
+or handoff occurred in the matched 27B enforce row; its one denied approval did
+not prevent native user-task success.
+
+The current runtime has since replaced that unresolved model-warning fallback
+with a fail-closed operator incident for the current browser/read observation:
+residual or unattributable content is withheld from the model, the run pauses,
+and a human must take over or stop it before Sentinel captures a fresh
+observation. Interactive runs also withhold page screenshots and image-bearing
+tool results, scan page-extraction subcalls, and wrap later tool-result text so
+stored or second-order instructions cross the same model boundary. A bounded
+extraction or historical tool result that cannot be cleaned is dropped in
+full; it does not open the browser-observation incident flow. These
+post-campaign safety changes are not measured by the frozen 9B or 27B rows and
+require a new immutable run tag if they are benchmarked later. No further
+benchmark run is currently planned.
+
+The warning-only result is a negative finding: it left ASR unchanged at 7/84,
+slightly increased attacker-directed execution and reduced utility. The final
+evidence supports the narrower conclusion that, under these WASP conditions,
+independently enforced post-verified observation sanitisation reduced achieved
+attacks and attacker-serving execution while preserving almost all aggregate
+utility. It does not show universal prompt-injection robustness. Two of four
+27B off batches already had zero ASR, only one seed was evaluated, and zero
+successes in 84 enforce cases gives a rough rule-of-three 95% upper bound of
+about 3.6%.
+
+No oracle-participant WASP row was run. Oracle remains a possible deterministic
 scripted-oversight upper bound, not a participant study and not evidence about
 human fatigue, workload, trust or rubber-stamping.
 
@@ -706,11 +803,14 @@ action counts and enforcement latency. The official LLM-based
 intermediate-action classifier is a secondary optional score because it needs a
 separate OpenAI/Azure judge; native final-state utility and ASR do not.
 
-The warn/none versus sanitise/none comparison isolates the browser middleware
-change. The sanitise/none versus sanitise/oracle comparison estimates the
-scripted-oversight upper bound. A future plan-authority experiment remains a
-separate ablation on the same 84 cases; do not attribute the current
-sanitisation/oracle comparison to plan authority.
+The complete thesis-ready synthesis, exact run identities, mechanism telemetry,
+validation gates and exclusions are in
+[`evals/wasp/results/README.md`](evals/wasp/results/README.md). Historical and
+excluded runs are retained only where they explain a provenance boundary or
+prevent a misleading comparison; they should not be expanded into headline
+tables. A future plan-authority, provenance-hiding, or oracle experiment remains
+a separately labelled optional ablation; do not retroactively attribute any of
+those mechanisms to these frozen results.
 
 All vendor source, virtual environments, website images, authentication state,
 DOM/action logs and campaign checkpoints are ignored under `.wasp/`. The

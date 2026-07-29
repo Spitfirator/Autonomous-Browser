@@ -54,7 +54,8 @@ and can also be set from the dashboard.
 | `data/` | runtime state: config, history, traces, the persistent Chrome profile |
 | `POLICY.md` / `policies/` | the policy schema + a shareable reference policy |
 | `THREAT-MODEL.md` | trust boundaries, invariants, control mapping and residual risks |
-| `EVALS.md` / `evals/` | evaluation protocol, AgentDojo scaling campaign and WASP browser-native adapter |
+| `THESIS-STATUS.md` | concise thesis handoff: implementation state, evidence map, supported claims and unfinished work |
+| `EVALS.md` / `evals/` | canonical result ledger, evaluation protocol, AgentDojo campaigns and WASP browser-native adapter |
 | `demo/` | `run_scenarios.py`: scripted allowed/blocked/approval/handoff demo runs |
 | `share/` | generated share pack: traces, decision logs, screenshots |
 
@@ -74,16 +75,25 @@ Schema + decision order: **[POLICY.md](POLICY.md)**. Metrics: **[EVALS.md](EVALS
 - **Sensitive domains → forced handoff** - first touch of a listed domain freezes the run
   and hands the browser to the human (same flow as `request_human_control`, but initiated
   by policy). After the human hands back, the agent may act there for the rest of the run.
-- **Prompt-injection containment** - browser/read state is an explicit untrusted-data
-  boundary. Multi-signal findings are origin-scoped, payload-free, reinforced at the
-  system boundary and propagated into downstream action risk. High-confidence injection
-  into navigation/input/upload/code/file sinks blocks; ambiguous side effects are held
-  while read-only recovery stays available.
-- **Sensitive-data flow control** - credentials, secret placeholders, API/access tokens,
-  JWTs, private keys and payment data are labelled recursively. Password/OTP/payment
-  input fields are recognized from live DOM metadata. Disclosure outside
-  `data_flow.trusted_domains` fails closed by default; approval UI and traces see only
-  redacted values and per-run keyed digests.
+- **Prompt-injection containment** - browser/read state, page-extraction input, and
+  wrapped tool-result text are explicit untrusted-data boundaries. Multi-signal findings
+  are origin-scoped, payload-free, reinforced at the system boundary and propagated
+  into downstream action risk. High-confidence injection into
+  navigation/input/upload/code/file sinks blocks. Detected current browser/read
+  observations are sanitised and checked again; residual or unattributable content is
+  quarantined from the model while the extension asks the operator to take over or
+  stop. An unresolved bounded extraction or historical tool result is removed in full
+  instead, avoiding nested timeout and replay loops.
+- **Sensitive-data flow control** - in enforce mode, recognized credentials,
+  one-time codes, tokens, private keys and payment data become direct
+  human-takeover steps, even on a trusted destination. Detection covers
+  recursive parameter patterns, live password/OTP/payment fields, free-text
+  `send_keys`, sensitive `evaluate` code, secret-looking upload paths, and a
+  bounded scan of authorized local text uploads. Uploads Sentinel cannot inspect
+  safely are handed over too. Other sensitive flows outside
+  `data_flow.trusted_domains` fail closed by policy; UI and traces receive only
+  redacted values and per-run keyed digests. This is deterministic channel
+  coverage, not universal DLP.
 - **Fatigue-resistant approval** - ordinary clicks do not prompt. Consequential target
   semantics and other risk factors can hold an action. The operator chooses Allow once,
   a narrow/time-and-use-bounded Allow similar scope, or Deny. A per-run prompt budget
@@ -95,8 +105,13 @@ Schema + decision order: **[POLICY.md](POLICY.md)**. Metrics: **[EVALS.md](EVALS
   backstop two calls later), approval + takeover timeouts.
 - **Agent-internal planning** - BrowserUse's structured planning/replanning loop
   is enabled. This is distinct from the proposed plan-authority feature, where a
-  human reviews a compact task contract before execution; that remains a
-  separately evaluated thesis ablation.
+  human would review a short pre-run contract covering the goal, expected sites/data,
+  allowed and prohibited actions, likely human steps and stop conditions. That remains
+  optional future HITL work.
+- **DOM-only interactive perception** - browser screenshots are not sent to the model.
+  An instruction rendered into pixels cannot be cleaned by DOM sanitisation. Screenshots
+  are also omitted from the extension; optional local trace retention is a separate,
+  explicit audit setting.
 - **Full audit stream** - every decision is a WS `enforcement_decision` event (with
   policy-only `decision_ms` and full pre-action `enforcement_ms`); every model call a `llm_call` event with latency +
   tokens; every run is persisted to `data/traces/<run_id>/` (redacted events + meta
@@ -116,7 +131,7 @@ The side panel is a conversation. One box does everything, depending on when you
 - **After a task finishes** → your message is a *follow-up*: the agent gets a recap of
   what it just did plus your new request, and continues in the same browser session.
 
-Agent steps stream in as chat bubbles (goal, action chips, screenshot); a typing
+Agent steps stream in as chat bubbles (goal and redacted action chips); a typing
 indicator shows while it thinks; the final answer arrives as a highlighted bubble.
 
 ## The in-page control layer
@@ -130,7 +145,8 @@ after which the page is fully yours until you hand it back. The small ◉ toggle
 panel header turns the in-page layer off - do that in your personal Chrome if you load
 the extension there, since the agent only ever drives the dedicated window.
 
-Screenshots the model sees include this UI; its system prompt tells it to ignore it.
+The interactive model is DOM-only, so neither this control layer nor page content
+rendered only into screenshot pixels is sent to it.
 
 ## Human takeover (your turn)
 
@@ -146,8 +162,29 @@ payment, or personal details (postcodes, addresses). When it fires:
    **Done - continue** on the page pill (or **Give control back** in the panel).
 4. The agent resumes from the *current* page state with your note in its context.
 
-If nobody responds within the takeover timeout (default 15 min, Policies tab), the agent
-is told to find another way or finish. `Stop` also releases any waiting takeover.
+If nobody responds within the takeover timeout (default 15 min, Policies tab), or the
+run is cancelled, the original action is not executed and the wait fails closed.
+
+## Unresolved sanitisation incident
+
+If Sentinel detects an injection in the current browser/read observation but cannot
+safely remove all of it—or cannot map the finding to a narrow part of that observation—it
+does not ask the model to resist a warning. It withholds that observation and pauses on
+a persistent security incident in the extension:
+
+1. The side panel and in-page control explain that untrusted content could not be
+   cleaned safely. No attacker text is copied into the card.
+2. The user takes control, checks or leaves the page, and either stops the task or marks
+   the page ready to be checked again.
+3. Giving control back is not approval of the held content. Sentinel discards the stale
+   model call and captures a fresh browser observation before continuing.
+4. Silence, timeout, cancellation, or shutdown stops the unsafe path without a model
+   call.
+
+Page-extraction subcalls and persistent tool-result values cross the same detector and
+sanitiser, but they are bounded inputs with different lifecycle constraints. If one
+cannot be cleaned, Sentinel removes that whole value rather than starting an incident
+inside BrowserUse's extraction timeout or repeatedly pausing on the same history item.
 
 ## Using the panel from your everyday Chrome
 
@@ -164,6 +201,10 @@ header) so your own browsing doesn't show the control pill. After rebuilding the
 · `GET|PUT /api/config` · `GET|PUT /api/keys` · `POST /api/approvals/{id} {approve, scope}`
 · `GET /api/history` · `GET /api/actions` · `GET /ws` (events; first frame is a snapshot)
 
+This local, origin-checked API is the intended boundary for the thesis prototype; there
+is no remote deployment. A malicious process already running as the same OS user is
+outside that boundary and could still call the API or alter local files.
+
 ## Development
 
 - Backend only (no Chrome): `SENTINEL_NO_BROWSER=1 ./start.sh`
@@ -174,8 +215,9 @@ header) so your own browsing doesn't show the control pill. After rebuilding the
 - Offline benchmark smoke run: `PYTHONPATH=sentinel:browser-use browser-use/.venv/bin/python sentinel/evals/security_benchmark.py sentinel/evals/fixtures/security-smoke.jsonl --pretty`
 - Full AgentDojo v1 component/native replay: see [EVALS.md](EVALS.md#agentdojo-v1-full-tier-1-component-run); the compact reproducible result is `evals/agentdojo-v1-summary.json`.
 - Browser-native WASP setup and resumable paired campaign: see
-  [evals/wasp/README.md](evals/wasp/README.md). Its contract tests need no
-  browser, Docker or GPU:
+  [evals/wasp/README.md](evals/wasp/README.md); the complete thesis-ready result
+  synthesis is [evals/wasp/results/README.md](evals/wasp/results/README.md).
+  Its contract tests need no browser, Docker or GPU:
   `PYTHONPATH=sentinel:browser-use browser-use/.venv/bin/pytest -q sentinel/tests/test_wasp_campaign.py`.
 
 Known quirks: `pause` takes effect after the in-flight step completes (upstream behavior,

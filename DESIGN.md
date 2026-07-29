@@ -92,14 +92,25 @@ Light-first white surfaces, near-black ink, hairline `border` dividers, flat-by-
 - **Status colors:** running = `success`, paused / needs-you = `primary` (amber), stopped/offline/error = `destructive`, idle = neutral. Always dot + word or chip + label — never hue alone.
 - **Chips (verdicts, run status):** tinted-background badges, sentence case, 500 weight. Allowed/done = success tint with darkened-success text; blocked/error = destructive tint with destructive text; held/approval = primary tint with `primary-foreground` text; neutral/info = `secondary` with `secondary-foreground` text. The old blue "info" color is retired — off-palette.
 - **`accent-deep`** (`oklch(0.681 0.162 75.834)`, FUZER's `chart-3`/`sidebar-primary`): the darker amber used where the signal must be *text or icon on white* (active nav icon, step numbers, timers) — raw `primary` fails contrast as foreground on white.
-- **Approval / takeover cards** are the product's hero moment: white card, amber-mixed border, countdown meter in `primary`, one amber primary action ("Approve" / "Give control back"), destructive-tinted secondary ("Deny"). No box-shadow — they are in-flow, not overlays.
+- **Approval / takeover cards** are a key control moment: white card, amber-mixed border, countdown meter in `primary`, one amber primary action ("Approve" / "Give control back"), destructive-tinted secondary ("Deny"). No box-shadow — they are in-flow, not overlays.
+- **Failed-sanitisation incidents are not ordinary handovers.** Use a persistent
+  destructive-tinted card and red in-page frame with plain wording: Sentinel
+  could not safely clean the page, withheld the current text and images from
+  the model, and needs the operator to inspect or leave the page. Offer exactly
+  two decisions: re-check a fresh page observation or stop the task. Do not
+  include attacker text, a note field, an approve button, or the ordinary
+  Pause/Resume control. Keep this warning visible after reconnect and even when
+  optional in-page visuals are turned off.
 - **The in-page frame + pill** (content script): the amber breathing frame stays — it *is* the "agent is driving" signal — over a white floating pill (real overlay → soft shadow allowed). Buttons inside: dark `foreground` button for "Take over", amber primary for "give back / done", destructive tint for "Stop".
+- **No page screenshot thumbnails.** The user can already see the controlled
+  browser. The side panel uses the redacted URL and text-only step summary; it
+  never renders a page screenshot or raw page title.
 - **Numbers:** steps, calls, tokens, budgets, timers — Sora with `font-variant-numeric: tabular-nums`, never mono.
 - **Motion:** small 4–6px ease-out rises on new chat items and cards; breathing pulse on live status dots and the page frame; everything gated behind `prefers-reduced-motion: reduce`.
 
 ## Surfaces
 
-1. **Side panel** (`extension/src/sidepanel`, ~320–420px): chat-first. White canvas, hairline header/footer, secondary-tinted user bubbles, bordered agent bubbles, amber only on the send action, approval/takeover cards, and steering tags.
+1. **Side panel** (`extension/src/sidepanel`, ~320–420px): chat-first. White canvas, hairline header/footer, secondary-tinted user bubbles, bordered agent bubbles, amber only on the send action, approval/takeover cards, a persistent failed-sanitisation incident card, and steering tags. It is text-only: no page screenshot thumbnails.
 2. **Dashboard** (`extension/src/dashboard`): FUZER-style app shell — white sidebar with icon + sentence-case nav (active = `secondary` fill + `accent-deep` icon), headline + one primary Save action per tab, bordered section panels, quiet tables with sentence-case headers.
 3. **Setup page** (`server/static/setup.html`): muted canvas, single white card, real numbered install steps, mono paths, amber "waiting" → success "connected" status row.
 4. **In-page overlay** (`extension/public/content.js`): amber frame + white floating pill, as above.

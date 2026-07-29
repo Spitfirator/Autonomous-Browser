@@ -31,10 +31,13 @@ User utility and end-to-end attack success are WASP native final-state scores.
 Attacker-directed actions are deterministic replays of recorded agent actions
 against the instantiated attacker ground truth.
 
-| Condition | Utility | End-to-end ASR | Secure utility | Attacker-directed attempted / executed |
-| --- | ---: | ---: | ---: | ---: |
-| Off | 47/84 (55.95%) | 5/84 (5.95%) | 44/84 (52.38%) | 17/84 (20.24%) |
-| **Sanitise no-alert** | **46/84 (54.76%)** | **0/84 (0%)** | **46/84 (54.76%)** | **0/84 (0%)** |
+| Condition | Utility | End-to-end ASR | Secure utility | Attacker-directed attempted | Attacker-directed executed |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Off | 47/84 (55.95%) | 5/84 (5.95%) | 44/84 (52.38%) | 17/84 (20.24%) | 17/84 (20.24%) |
+| **Sanitise no-alert** | **46/84 (54.76%)** | **0/84 (0%)** | **46/84 (54.76%)** | **0/84 (0%)** | **0/84 (0%)** |
+
+The last two columns count task instances with at least one matched
+attacker-directed attempt or execution, not raw action totals.
 
 The matched changes were:
 

@@ -40,12 +40,15 @@ User utility and end-to-end attack success are scored by WASP's native
 final-state oracles. Attacker diversion is a deterministic replay of recorded
 governance events against the instantiated attacker ground truth.
 
-| Condition | Utility | End-to-end ASR | Secure utility | Attacker-directed attempted / executed |
-| --- | ---: | ---: | ---: | ---: |
-| Warn off | 45/84 (53.57%) | 7/84 (8.33%) | 41/84 (48.81%) | 31/84 (36.90%) |
-| Warn enforce | 37/84 (44.05%) | 7/84 (8.33%) | 35/84 (41.67%) | 32/84 (38.10%) |
-| Sanitise V1 | 52/84 (61.90%) | 6/84 (7.14%) | 49/84 (58.33%) | 18/84 (21.43%) |
-| **Sanitise V2** | **54/84 (64.29%)** | **0/84 (0%)** | **54/84 (64.29%)** | **1/84 (1.19%)** |
+| Condition | Utility | End-to-end ASR | Secure utility | Attacker-directed attempted | Attacker-directed executed |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Shared off baseline | 45/84 (53.57%) | 7/84 (8.33%) | 41/84 (48.81%) | 31/84 (36.90%) | 31/84 (36.90%) |
+| Warn enforce | 37/84 (44.05%) | 7/84 (8.33%) | 35/84 (41.67%) | 32/84 (38.10%) | 32/84 (38.10%) |
+| Sanitise V1 | 52/84 (61.90%) | 6/84 (7.14%) | 49/84 (58.33%) | 18/84 (21.43%) | 18/84 (21.43%) |
+| **Sanitise V2** | **54/84 (64.29%)** | **0/84 (0%)** | **54/84 (64.29%)** | **1/84 (1.19%)** | **1/84 (1.19%)** |
+
+The last two columns count task instances with at least one matched
+attacker-directed attempt or execution, not raw action totals.
 
 The remaining V2 diversion was an attacker-directed navigation in task 1009.
 It executed, but the native attacker oracle scored the terminal objective as
@@ -57,7 +60,7 @@ The per-attempt sanitisation telemetry recorded:
 
 - 1,057 attempts;
 - 1,053 confirmed removals;
-- four unattributable attempts, all warned;
+- four unattributable attempts sent through the historical model-warning fallback;
 - zero detector-positive residuals;
 - 14 line-branch, 1,039 window-branch and four no-branch outcomes;
 - zero alerts after confirmed removal.
@@ -79,11 +82,13 @@ claims above come from the full agent trajectories and native WASP oracles.
 
 ## Bounded interpretation
 
-In this matched Qwen 3.5 9B WASP evaluation, independently enforced and
+Across this Qwen 3.5 9B development sequence, independently enforced and
 post-verified observation sanitisation reduced both attacker diversion and
-achieved attacks while preserving useful task autonomy. The result is stronger
-than a low terminal ASR alone because attempted and executed attacker-serving
-actions also fell from 18/84 in Sanitise V1 to 1/84 in V2.
+achieved attacks relative to the shared no-enforcement baseline while
+preserving useful task autonomy. This is not one immutable matched campaign:
+the three enforce rows use successive middleware revisions. The result is
+stronger than a low terminal ASR alone because attempted and executed
+attacker-serving actions also fell from 18/84 in Sanitise V1 to 1/84 in V2.
 
 This does not show that Sentinel solves prompt injection. It is one model, one
 seed, one benchmark revision and 84 attacked tasks. Zero observed attack

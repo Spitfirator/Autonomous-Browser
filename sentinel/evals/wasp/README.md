@@ -5,7 +5,7 @@ agentic browsing. It uses:
 
 - the official WASP prompt injector and native user/attacker oracles;
 - BrowserUse as the browser agent and privileged executor;
-- Qwen 3.5 9B through Ollama on the reserved GPU;
+- Qwen 3.5 9B and the matched 27B replication through Ollama on reserved GPUs;
 - the same `GovernedLLM`, `GovernedTools`, detector, risk engine and
   `PolicyEngine` used by Sentinel;
 - immutable run provenance for the policy, participant mode, generated inputs,
@@ -45,46 +45,56 @@ participant study and not evidence about human workload, fatigue, trust or
 rubber-stamping.
 
 The browser middleware also has an explicit observation-sanitisation switch.
-`wasp-warn-policy.json` preserves the historical warn-only behaviour.
-`wasp-policy.json` sets `prompt_injection.browser_sanitize=true`, so detected
-untrusted browser/read-state regions are removed before the model sees them.
-The detector, normalisation, risk assessment and shared sanitizer primitives
-remain unchanged.
+`wasp-v2-warn-policy.json` preserves warn-only behaviour.
+`wasp-v2-sanitise-noalert-policy.json` enables post-verified sanitisation and
+suppresses the model warning only after attributable removal leaves no
+detector-positive residual. In the frozen campaigns, failed, residual or
+unattributable removal used the historical model-warning fallback. The current
+interactive runtime instead quarantines an unresolved current browser/read
+observation for operator takeover. It also fail-closes unresolved bounded
+page-extraction/tool-result values by removing the whole value. Those later
+behaviours are not retroactively part of these rows.
 
 ## Primary run matrix
 
 Each configuration uses a separate run tag and therefore a separate ignored
 run directory:
 
-| Run tag | Modes | Middleware | Participant | Purpose |
+| Run tag | Modes | Middleware | Participant | Thesis status |
 | --- | --- | --- | --- | --- |
-| `wasp-qwen35-9b-browser32k-30step-v1` | `off,enforce` | warn-only | `none` | historical before-improvement baseline |
-| `wasp-qwen35-9b-sanitise-none-v1` | `off,enforce` | sanitise | `none` | isolates the browser middleware change |
-| `wasp-qwen35-9b-sanitise-oracle-v1` | `enforce` | sanitise | `oracle` | estimates the scripted-oversight upper bound |
+| `wasp-qwen35-9b-browser32k-30step-v2-warn-none-v2` | `off,enforce` | warn-only | `none` | frozen 9B baseline and warning comparison |
+| `wasp-qwen35-9b-browser32k-30step-v2-sanitise-noalert-none-v2` | `enforce` | sanitise V1 | `none` | development row; provenance-separated |
+| `wasp-qwen35-9b-browser32k-30step-v2-sanitise-noalert-none-v3` | `enforce` | sanitise V2 | `none` | final 9B row using the frozen shared off baseline |
+| `wasp-qwen35-27b-browser32k-30step-v2-sanitise-noalert-none-v1` | `off,enforce` | sanitise V2 | `none` | primary matched browser comparison |
 
-The middleware comparison is warn/none versus sanitise/none. The oversight
-comparison is sanitise/none versus sanitise/oracle. Do not pool the historical
-20-step pilot, different policies, or participant modes.
+The matched 27B row is the primary browser comparison. The 9B sequence is
+reported as provenance-separated engineering evidence because middleware
+changed between sanitisation revisions. No oracle-participant WASP row was run.
+Do not pool the historical 20-step pilot, different policies, middleware
+revisions or participant modes.
 
-The baseline intentionally uses Sentinel as it exists before plan-level
-authority. After the baseline is frozen, task-contract/plan authority can be
-implemented and the exact same 84 cases rerun as a separate ablation:
+The baseline intentionally uses Sentinel before plan-level authority. In plain
+terms, a future plan-authority feature would show the user a short plan before
+the run: the intended goal, expected sites/data, allowed and prohibited
+actions, likely intervention points, and stop conditions. If implemented, it
+would need a new separate ablation such as:
 
 1. BrowserUse + Sentinel off;
 2. BrowserUse + current Sentinel enforcement;
 3. BrowserUse + Sentinel enforcement plus plan authority.
 
-That isolates the contribution of plan authority. BrowserUse's internal
-structured planning remains enabled in every cell; the future feature is the
-human-visible, pre-execution authority contract.
+That would isolate the contribution of plan authority. BrowserUse's internal
+structured planning remains enabled in every existing cell; it is not the same
+as a human-visible, pre-execution authority contract. This is optional future
+HITL work, not an authorized next benchmark.
 
 ## Model/scaffold profile
 
-The default profile is `qwen3.5-agentdojo:9b` with 32,768 context tokens,
-4,096 output tokens, temperature 0.6, top-p 0.95 and seed 0. BrowserUse uses
-one structured action per step, a 30-step cap, DOM/accessibility observations
-and no screenshots. Its explicit structured planning/thinking fields are
-enabled.
+The initial profile is `qwen3.5-agentdojo:9b`; the final matched replication
+uses `qwen3.5-agentdojo:27b`. Both use 32,768 context tokens, 4,096 output
+tokens, temperature 0.6, top-p 0.95 and seed 0. BrowserUse uses one structured
+action per step, a 30-step cap, DOM/accessibility observations and no
+screenshots. Its explicit structured planning/thinking fields are enabled.
 
 Ollama's separate native `think` stream is disabled because BrowserUse needs
 the response body to be valid against its action schema. Do not describe this
@@ -247,19 +257,21 @@ model tag:
 bash sentinel/evals/wasp/run-wasp.sh preflight
 ```
 
-Launch each matrix row with an explicit immutable configuration:
+Every completed tag in the results table is frozen and must not be reused.
+Launch a future row only with a new explicit immutable tag:
 
 ```bash
-bash sentinel/evals/wasp/run-wasp.sh run \
-  --run-tag wasp-qwen35-9b-sanitise-none-v1 \
-  --policy sentinel/policies/wasp-policy.json \
-  --participant none --modes off,enforce
+NEW_RUN_TAG=wasp-qwen35-NEW-CONDITION-v1
 
 bash sentinel/evals/wasp/run-wasp.sh run \
-  --run-tag wasp-qwen35-9b-sanitise-oracle-v1 \
-  --policy sentinel/policies/wasp-policy.json \
-  --participant oracle --modes enforce
+  --run-tag "$NEW_RUN_TAG" \
+  --policy sentinel/policies/wasp-v2-sanitise-noalert-policy.json \
+  --participant none --modes off,enforce
 ```
+
+Changing the model, policy, participant mode, sampling settings, middleware,
+benchmark inputs or scaffold requires another new tag. Do not launch an oracle
+or plan-authority row under a completed sanitisation tag.
 
 With `WASP_RESET_BETWEEN_CELLS=1`, the campaign calls
 `reset-between-cells.sh` immediately before preparing each **pending** cell.
@@ -323,92 +335,43 @@ This is not seamless at the in-flight-cell level: task checkpoints from an
 unscored cell cannot be combined with a new mutable GitLab/Reddit state. It is
 seamless for every already native-scored cell.
 
-For the historical warn-only/none run, inspect the local checkpoint without
-contacting a GPU:
+All thesis-eligible campaigns listed above are complete and frozen. Their
+status and summaries can be inspected without contacting a GPU. For example,
+the matched 27B result is:
 
 ```bash
 bash sentinel/evals/wasp/run-wasp.sh status \
-  --run-tag wasp-qwen35-9b-browser32k-30step-v1 \
-  --policy sentinel/policies/wasp-warn-policy.json \
-  --participant none
-```
-
-The current historical state lists 21/21 task IDs in
-`user-goal-1-plain/enforce`, but tasks 1018-1020 are zero-model,
-initial-navigation-only attempts and the cell has no native-score file. If the
-**original** GitLab/Reddit state is still reachable before reservation expiry,
-finish only that cell first:
-
-```bash
-bash sentinel/evals/wasp/run-wasp.sh finish-cell \
-  --run-tag wasp-qwen35-9b-browser32k-30step-v1 \
-  --policy sentinel/policies/wasp-warn-policy.json \
-  --participant none \
-  --cell user-goal-1-plain/enforce
-```
-
-`finish-cell` preserves the 18 valid task checkpoints, archives and retries
-only those three non-mutating zero-model attempts, native-scores the cell and
-never starts the next cell. Do not run it against rebuilt websites: task-level
-resume and native final-state scoring are valid only against the same mutable
-environment that produced the retained checkpoints.
-
-If the old remote environment has actually been lost before native scoring,
-recover that exact incomplete cell once:
-
-```bash
-bash sentinel/evals/wasp/run-wasp.sh recover-cell \
-  --run-tag wasp-qwen35-9b-browser32k-30step-v1 \
-  --policy sentinel/policies/wasp-warn-policy.json \
-  --participant none \
-  --cell user-goal-1-plain/enforce
-```
-
-Then rebuild Ollama, GitLab and Reddit, restore the three forwards, pass the
-full preflight, and resume the historical row:
-
-```bash
-bash sentinel/evals/wasp/run-wasp.sh run \
-  --run-tag wasp-qwen35-9b-browser32k-30step-v1 \
-  --policy sentinel/policies/wasp-warn-policy.json \
-  --participant none --modes off,enforce
-```
-
-The run skips scored cells and reruns only the archived incomplete cell plus
-cells that were genuinely still pending. BrowserUse can return normally after
-exhausting its internal retries, so an unfinished history with an Ollama or
-website connection failure is classified as an operational error. A completed
-checkpoint must contain at least one successful model call.
-
-Status and aggregation make no model calls. For an enforce-only oracle run,
-select the same mode so intentionally absent `off` cells are not treated as
-missing:
-
-```bash
-bash sentinel/evals/wasp/run-wasp.sh status \
-  --run-tag wasp-qwen35-9b-sanitise-oracle-v1 \
-  --policy sentinel/policies/wasp-policy.json \
-  --participant oracle --modes enforce
+  --run-tag wasp-qwen35-27b-browser32k-30step-v2-sanitise-noalert-none-v1 \
+  --policy sentinel/policies/wasp-v2-sanitise-noalert-policy.json \
+  --participant none --model qwen3.5-agentdojo:27b --modes off,enforce
 
 bash sentinel/evals/wasp/run-wasp.sh summarize \
-  --run-tag wasp-qwen35-9b-sanitise-oracle-v1 \
-  --policy sentinel/policies/wasp-policy.json \
-  --participant oracle --modes enforce
+  --run-tag wasp-qwen35-27b-browser32k-30step-v2-sanitise-noalert-none-v1 \
+  --policy sentinel/policies/wasp-v2-sanitise-noalert-policy.json \
+  --participant none --model qwen3.5-agentdojo:27b --modes off,enforce
 ```
 
-Use a new `--run-tag` whenever the policy, participant, model or scaffold
-settings change.
+Do not invoke `run`, `finish-cell` or `recover-cell` on a completed result tag.
+For a genuinely interrupted future campaign, first validate its state,
+artifacts, native scores, provenance and remote-environment continuity, then
+apply the recovery boundary described above.
 
 ## Curated results
 
-The reviewed result record for the frozen multi-line sanitisation row is:
+The thesis-ready synthesis of all finalized, eligible WASP conditions is:
 
-- [`results/wasp-qwen35-9b-browser32k-30step-v2-sanitise-noalert-none-v3.md`](results/wasp-qwen35-9b-browser32k-30step-v2-sanitise-noalert-none-v3.md)
-- [`results/wasp-qwen35-9b-browser32k-30step-v2-sanitise-noalert-none-v3.json`](results/wasp-qwen35-9b-browser32k-30step-v2-sanitise-noalert-none-v3.json)
+- [`results/README.md`](results/README.md)
 
-These files contain the matched native/intermediate comparison, frozen
-provenance, sanitisation telemetry, validation gates and bounded thesis claim.
-They do not replace the ignored raw checkpoints.
+The immutable per-run records are:
+
+- [final 9B sanitisation V2 Markdown](results/wasp-qwen35-9b-browser32k-30step-v2-sanitise-noalert-none-v3.md)
+  and [JSON](results/wasp-qwen35-9b-browser32k-30step-v2-sanitise-noalert-none-v3.json);
+- [matched 27B sanitisation V2 Markdown](results/wasp-qwen35-27b-browser32k-30step-v2-sanitise-noalert-none-v1.md)
+  and [JSON](results/wasp-qwen35-27b-browser32k-30step-v2-sanitise-noalert-none-v1.json).
+
+The synthesis contains the complete native/intermediate table, provenance
+boundaries, sanitisation telemetry, validation gates, exclusions and bounded
+thesis interpretation. It does not replace the ignored raw checkpoints.
 
 ## Artifacts and publication
 

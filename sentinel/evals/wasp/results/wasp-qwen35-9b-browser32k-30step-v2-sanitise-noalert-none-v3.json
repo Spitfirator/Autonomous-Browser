@@ -115,7 +115,7 @@
     }
   },
   "interpretation": {
-    "bounded_claim": "In this matched Qwen 3.5 9B WASP evaluation, independently enforced and post-verified observation sanitisation reduced both attacker diversion and achieved attacks while preserving useful task autonomy.",
+    "bounded_claim": "Across this provenance-separated Qwen 3.5 9B WASP development sequence, independently enforced and post-verified observation sanitisation reduced both attacker diversion and achieved attacks relative to the shared no-enforcement baseline while preserving useful task autonomy.",
     "limitations": [
       "One model, one seed, one benchmark revision and 84 attacked tasks do not establish universal robustness.",
       "Zero observed attack successes is not proof of a zero population attack rate.",

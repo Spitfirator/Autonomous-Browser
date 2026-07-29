@@ -12,15 +12,17 @@ four **verdicts**.
 | `approve`   | **Ask a human.** The action pauses at an approve/deny gate in the side panel. |
 | `handoff`   | **Hand control to a human.** The run freezes and a person drives the browser for this step, then hands control back and the agent resumes. |
 
-`approve` is a lightweight yes/no gate on one action. `handoff` is a full
-human-takeover of the live browser — used when only a person should act
-(credentials, one-time codes, CAPTCHAs, payment details).
+`approve` is a lightweight yes/no gate on one action. In enforce mode, it can
+never authorize the agent to use a recognized password, one-time code, token,
+payment value or private key through a guarded action channel.
+`handoff` is full human takeover of the live browser: the proposed agent action
+is withheld and the person performs the protected step directly.
 
 ---
 
-## Handoff: two triggers
+## Handoff: three triggers
 
-A handoff can start two ways, and only one of them lives in this policy file:
+A handoff can start three ways:
 
 1. **Agent-initiated (the primary path).** The agent is given a
    `request_human_control` tool. Whenever it hits a step only a person should do
@@ -33,9 +35,19 @@ A handoff can start two ways, and only one of them lives in this policy file:
    first touch of a matching domain even if the agent didn't ask — so a human is
    guaranteed to be in the loop on those pages regardless of the agent's judgment.
 
-Both paths converge on the same thing: the run freezes, a person drives the
-browser, then hands control back and the agent resumes from the updated page.
-So `sensitive_domains` is not the whole of "handoff" — it's the enforced subset.
+3. **Data-flow-forced.** If a proposed action contains a recognized
+   password/credential, one-time code, access token, payment value, private key
+   or secret placeholder—or an upload cannot be safely classified—dynamic risk
+   analysis returns `handoff` before a generic sensitive-domain or approval
+   rule. This applies even on a trusted domain and even if
+   `sensitive_data_verdict` is `approve`; a higher-priority hard block still
+   wins and is never weakened into a handoff.
+
+All three paths converge on the same thing: the run freezes, the original
+action does not execute, a person drives the browser, then hands control back
+and the agent resumes from the updated page. User consent for a human-only
+value therefore means entering/submitting it during takeover, not approving
+the agent to type it.
 
 ---
 
@@ -48,14 +60,15 @@ The engine checks rules top-to-bottom and returns the first one that fires:
 | 1 | `blocked_actions`                       | `block`   |
 | 2 | `domain_blocklist`                      | `block`   |
 | 3 | `domain_allowlist` (URL on nothing)     | `block`   |
-| 4 | `sensitive_domains` (first touch/run)   | `handoff` |
-| 5 | dynamic sensitive-data / high-confidence injection flow | `block` |
-| 6 | `approval_required_actions` / `_domains`| `approve` |
-| 7 | detected injection + independently amplified action | `approve` |
-| 8 | dynamic side-effect risk ≥ threshold    | `approve` |
-| 9 | default                                 | `allow`   |
+| 4 | high-confidence injection, configured hard sensitive flow, or missing URL required by active domain rules | `block` |
+| 5 | detected human-only password/one-time-code/token/payment/private-key flow | `handoff` |
+| 6 | `sensitive_domains` (first touch/run)   | `handoff` |
+| 7 | `approval_required_actions` / `_domains`| `approve` |
+| 8 | detected injection + independently amplified action | `approve` |
+| 9 | dynamic side-effect risk ≥ threshold    | `approve` |
+| 10 | default                                | `allow`   |
 
-Rule 7 is **targeted defense in depth, not a blanket gate**. On a page with an
+Rule 8 is **targeted defense in depth, not a blanket gate**. On a page with an
 active finding it holds only actions that are independently risk-amplifying:
 
 - the action crosses an origin boundary, or discloses data off the current one;
@@ -64,7 +77,7 @@ active finding it holds only actions that are independently risk-amplifying:
 - its target appears destructive or consequential.
 
 Ordinary same-origin interaction — typing into a form, clicking an unremarkable
-control — is left to the numeric risk policy in rule 8, and read-only actions
+control — is left to the numeric risk policy in rule 9, and read-only actions
 are never gated.
 
 This boundary is deliberate. An injected page is normally the same page the
@@ -77,7 +90,7 @@ exhausts the budget on none.
 
 The consequence must be stated when reporting results: **action gating does not
 cover low-impact same-origin goal hijacking.** Observation sanitisation is the
-primary control for that class; rule 7 covers cross-origin exfiltration and
+primary control for that class; rule 8 covers cross-origin exfiltration and
 independently high-impact actions.
 
 BrowserUse does not expose anchor `href` values in its live DOM text. The
@@ -120,9 +133,16 @@ ordinary `click Save` instruction into an injection.
       "enabled": true,
       "detection_threshold": 0.55,
       "block_threshold": 0.85,
-      // Browser path only. In enforce mode, remove detected untrusted
-      // page/read-state regions before the model sees them. Default: false.
-      "browser_sanitize": false,
+      // Interactive default: in enforce mode, remove detected untrusted
+      // page/read-state regions before the model sees them. Frozen benchmark
+      // policies set this explicitly when they need warn-only behavior.
+      "browser_sanitize": true,
+      // Safe default: stay quiet after a confirmed clean removal. Explicit true
+      // adds the old model warning for a historical ablation. Both values quarantine
+      // an unresolved current browser/read observation before the model call,
+      // escalate it to the operator, and require a fresh observation. Unresolved
+      // bounded extraction/history values are removed in full instead.
+      "alert_after_sanitize": false,
       // Actions hard-blocked at/above block_threshold. Defaults to the full set
       // including "done" and "request_human_control". A browser agent scored
       // from final site state should drop those two so it can still finish and
@@ -139,7 +159,10 @@ ordinary `click Save` instruction into an injection.
 
     "data_flow": {
       "enabled": true,
-      // Sensitive values may flow only to these destinations.
+      // Applies to non-human-only sensitive categories. In enforce mode,
+      // recognized passwords/credentials, one-time codes, tokens, payment values,
+      // private keys and secret placeholders force takeover, regardless of
+      // destination or verdict configuration.
       "trusted_domains": [],
       "sensitive_data_verdict": "block" // block | approve
     },
@@ -154,7 +177,9 @@ ordinary `click Save` instruction into an injection.
     },
 
     "audit": {
-      "store_screenshots": false,      // live panel is unaffected
+      // The normal model remains DOM/text-only and the extension receives no
+      // screenshots. This controls opt-in local trace files only.
+      "store_screenshots": false,
       "store_model_reasoning": false   // thinking/memory in at-rest traces
     },
 
@@ -187,22 +212,62 @@ Every domain list accepts four entry shapes, from most rigid to most precise:
   `sensitive_domains` match, that domain is marked as vouched-for **for the rest
   of that run** — the agent may act on it without re-triggering the handoff. The
   reasoning: the human was just there and vouched for the context. This trust is
-  per-run only and resets on the next run.
+  per-run only and resets on the next run. Timeout, cancellation or shutdown
+  never vouches for a domain. A recognized human-only value in a later guarded
+  agent action still triggers takeover even on a previously vouched-for domain.
+- **Human-only detection boundary.** Recognition covers recursive parameter
+  patterns, indexed password/OTP/payment fields, free-text `send_keys`,
+  sensitive `evaluate` semantics, secret-looking upload paths, and up to
+  256 KiB of authorized local UTF-8 upload text. Remote, missing, binary,
+  oversized, or unreadable uploads hand over as unclassifiable. This is not
+  universal DLP; unmarked secrets outside those deterministic checks can be
+  missed.
 - **Shadow mode.** In `mode: "shadow"` the engine evaluates every rule and logs
   the verdict it *would* have returned, but executes the action as `allow`
   anyway. Use it to measure false blocks / missed dangerous actions before
   turning on `enforce`. `off` skips prompt-boundary and verdict enforcement;
   paired redacted action auditing remains for a measurable baseline.
-- **After a denial or timeout.** A denied approval, or a handoff no human answers
-  before `handover_timeout_s`, does not silently pass — the agent is told the
-  step was refused and instructed not to retry it, so it finds another way or
-  finishes with what it has.
+- **After a denial, timeout or cancellation.** None silently passes and none
+  executes the pending action. Shutdown cancellation is recorded separately
+  from a human denial or return, does not count as human intervention and
+  cannot mint approval or vouched-for state.
 - **Allow similar is bounded consent, not an allowlist edit.** It is scoped to
   action, origin, capabilities, taint and sensitive category for this run only,
   and expires by both time and use count. The server only accepts this scope if
   the pending request explicitly offered it.
+- **Approval is revalidated.** After Allow once or Allow similar—and before
+  reuse of the same grant can execute—Sentinel re-fetches the URL and DOM
+  target, reloads the policy and recalculates risk. Execution occurs only if
+  the refreshed policy allows it or the same narrow scope is still valid.
+  Changed, missing or newly blocked context fails closed with paired decision
+  and audit records.
+- **Failed sanitisation is quarantined.** In enforce mode, `residual` and
+  `unattributable` observations are withheld before the model call. The
+  extension shows a persistent operator incident; returning control requests a
+  fresh observation and never approves the quarantined content. Timeout,
+  cancellation and shutdown fail closed.
+- **Screenshots are not an interactive channel.** The normal agent uses
+  `use_vision=false`; page screenshots and raw page titles are stripped from
+  WebSocket/replay events and never displayed in the extension. An explicit
+  `store_screenshots` opt-in writes local trace files only. Screenshot-only and
+  canvas attacks are outside current evaluated coverage.
 - **Monitoring is redacted.** Approval cards, decisions and paired action-audit
   events never receive raw detected secrets. See `../POLICY.md` for the complete
   prompt-boundary, taint, action-capability and audit model.
+- **Localhost is a deployment assumption, not a sandbox.** The control API
+  remains loopback-only with origin, consent-scope and input validation for the
+  local thesis setup. It does not protect against a compromised process running
+  as the same OS user.
 
 ---
+
+## Evidence boundary
+
+This schema describes the current runtime. Completed AgentDojo and WASP rows
+remain tied to their recorded immutable provenance. Human-only data handoff,
+unresolved-sanitisation quarantine, approval revalidation, preflight audit and
+screenshot-channel hardening were added later and are not measured by those
+completed rows. The WASP profile already used DOM/accessibility observations
+without screenshots; the later screenshot change hardens the ordinary
+interactive extension and trace path. New quantitative claims require targeted
+validation or a new run tag; do not rewrite or pool the frozen results.

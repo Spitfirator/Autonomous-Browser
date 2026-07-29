@@ -48,21 +48,31 @@ Edits apply to the agent's **very next action**, even mid-run.
     // act on that domain for the rest of the run - the human vouched for it.
     "sensitive_domains": ["accounts.google.com", "practicetestautomation.com"],
 
-    // Indirect prompt injection: page/read-state regions are always untrusted.
+    // Indirect prompt injection: page/read-state, extraction and wrapped tool
+    // result regions are always untrusted.
     // Scores >= detection_threshold taint downstream actions and reinforce the
     // model's system boundary. Protected sinks at/above block_threshold block.
     "prompt_injection": {
       "enabled": true,
       "detection_threshold": 0.55,
       "block_threshold": 0.85,
-      // Optional browser-path intervention. When true in enforce mode,
-      // detected page/read-state regions are removed before the model sees
-      // them. The default false preserves warn-only and historical runs.
-      "browser_sanitize": false
+      // In the interactive runtime, detected untrusted regions are removed
+      // before the model sees them. Frozen benchmark policies set this
+      // explicitly when they need historical warn-only behavior.
+      "browser_sanitize": true,
+      // The safe default continues silently after a confirmed clean removal.
+      // Explicit true adds the old model warning for a historical ablation. It
+      // never affects unresolved content: a current browser/read observation is
+      // quarantined for the operator, while a bounded extraction/history value
+      // is removed in full.
+      "alert_after_sanitize": false
     },
 
-    // Credentials, access tokens, payment details, private keys and secret
-    // placeholders may only flow to an explicitly trusted destination.
+    // In enforce mode, recognized passwords/credentials, one-time codes, access
+    // tokens, payment details, private keys and secret placeholders are human-only
+    // regardless of this setting or destination: the agent action is withheld and
+    // control handed over.
+    // This block/approve setting applies only to other sensitive categories.
     "data_flow": {
       "enabled": true,
       "trusted_domains": [],
@@ -81,8 +91,9 @@ Edits apply to the agent's **very next action**, even mid-run.
       "fatigue_strategy": "handoff" // or "block"
     },
 
-    // Live screenshots/reasoning still reach the side panel. At-rest trace
-    // retention is opt-in because those channels cannot be reliably redacted.
+    // The interactive model is DOM/text-only and the extension never receives
+    // page screenshots. This flag only opts an operator into screenshot files
+    // in the local trace; model reasoning retention is independently opt-in.
     "audit": {
       "store_screenshots": false,
       "store_model_reasoning": false
@@ -146,11 +157,12 @@ decision point:
 | 1 | `blocked_actions` | **block** | action refused; agent told to re-plan |
 | 2 | `domain_blocklist` | **block** | same (checked against the navigation target or current page) |
 | 3 | `domain_allowlist` | **block** | anything not on the list is refused |
-| 4 | `sensitive_domains` | **handoff** | run freezes; human takes over in the browser |
-| 5 | sensitive-data flow or high-confidence injection into a protected sink | **block** | source-to-sink flow is refused; values remain redacted in events |
-| 6 | `approval_required_actions` / `_domains` | **approve** | side-panel allow-once / allow-similar / deny gate |
-| 7 | adaptive risk score ≥ threshold | **approve** | only side-effecting actions are held; read-only inspection stays available |
-| 8 | *(default)* | **allow** | action executes |
+| 4 | high-confidence injection into a protected sink, unsafe sensitive flow, or unavailable URL needed by active domain policy | **block** | action is refused; values remain redacted in events |
+| 5 | detected password/one-time-code/token/payment/private-key data in an agent action | **handoff** | original action is withheld; the human performs the step directly |
+| 6 | `sensitive_domains` | **handoff** | run freezes; human takes over in the browser |
+| 7 | `approval_required_actions` / `_domains` | **approve** | side-panel allow-once / allow-similar / deny gate |
+| 8 | adaptive or configured approvable risk | **approve** | only side-effecting actions are held; read-only inspection stays available |
+| 9 | *(default)* | **allow** | action executes |
 
 The agent can also hand over voluntarily: it has a `request_human_control`
 action and standing instructions to use it for logins, one-time codes,
@@ -162,20 +174,37 @@ the model instead of a rule.
 Sentinel does not equate “the detector found nothing” with “the page is
 trusted.” The complete model is layered:
 
-1. In enforce mode, the system message declares browser DOM, screenshots,
-   files, URLs and tool results to be untrusted data that cannot issue
-   instructions.
-2. `GovernedLLM` extracts only `<browser_state>` / `<read_state>` regions and
-   looks for independent attack signals (authority impersonation, instruction
-   override, role reassignment, secrecy/evasion, secret exfiltration, forged
-   role/tool markup, encoded instructions). It never emits the payload text.
-3. A detected payload is stored as an origin-scoped taint with a score, signal
-   names and a short content hash. In enforce mode, the model receives a fresh
-   system-level warning that contains no attacker-controlled snippet and forged
-   protocol boundary tags inside page/read state are escaped. Shadow mode only
-   records the finding and would-be verdict; it does not alter model input.
-4. `GovernedTools` propagates that taint into every proposed action. Read-only
-   inspection is allowed; medium-confidence side effects are held; high-
+1. In enforce mode, the system message declares browser DOM/text, files, URLs
+   and tool results to be untrusted data that cannot issue instructions. The
+   ordinary interactive model does not receive page screenshots.
+2. `GovernedLLM` extracts `<browser_state>`, `<read_state>`,
+   `<webpage_content>`, and Sentinel-wrapped tool-result regions and looks for
+   independent attack signals (authority impersonation, instruction override,
+   role reassignment, secrecy/evasion, secret exfiltration, forged role/tool
+   markup, encoded instructions). It never emits the payload text.
+3. A detected payload is stored internally as an origin-scoped taint with a
+   score, signal names and a short hash; public events receive a separate
+   per-run keyed digest. When `browser_sanitize` is enabled in enforce mode,
+   `GovernedLLM` removes only attributed untrusted regions and re-runs
+   detection on what the model will receive. `removed` requires both a changed
+   region and a clear re-detection; partial or unsafe mapping is recorded as
+   `residual` or `unattributable`.
+4. Forged protocol boundary tags inside page/read state are escaped. After
+   confirmed clean removal, `alert_after_sanitize=false` continues silently;
+   explicit `true` retains the old post-removal warning as a historical
+   provenance ablation. That switch never applies to `residual` or
+   `unattributable`. For a current browser/read observation, Sentinel withholds
+   it before the model call, pauses the run and opens a persistent
+   security-incident card for the operator. The unresolved page content is not
+   converted into a model warning.
+5. Resolving the incident never approves the quarantined content. The operator
+   takes control or makes the page safe, returns control, and Sentinel obtains
+   a fresh browser observation before the model can continue. Timeout,
+   cancellation and shutdown fail closed. A bounded extraction or persistent
+   tool-result value uses whole-value removal instead: this avoids BrowserUse's
+   shorter nested extraction timeout and a loop over unchanged agent history.
+6. `GovernedTools` propagates confirmed origin taint into every proposed action.
+   Read-only inspection is allowed; medium-confidence side effects are held; high-
    confidence protected sinks (search/navigation, input/keys, upload, code/file
    writes, premature completion, injected handoff requests, and consequential
    clicks) are blocked.
@@ -183,7 +212,8 @@ trusted.” The complete model is layered:
 This deterministic detector is intentionally benchmarkable and explainable;
 it is defense in depth, not a claim that signatures can recognize every novel
 attack. The taint-and-sink layer limits what a missed or ambiguous instruction
-can do.
+can do. A quarantine is a response to a detected sanitisation failure; it does
+not prove that undetected or purely visual attacks are absent.
 
 ## Sensitive-data flow control and redaction
 
@@ -194,13 +224,27 @@ The action analyzer labels both sources and sinks:
 - capabilities/sinks: navigation, page write, data disclosure, local-file
   read/write, code execution, network read and task completion.
 
-Credentials, secret placeholders, access tokens/API keys, JWTs, private keys,
-payment data and common sensitive parameter names are detected recursively.
-Unless the target URL matches `data_flow.trusted_domains`, disclosure is
-blocked (or held if configured). Original parameters still reach the real tool
-after an allow, but the side panel, traces and approval manager receive only a
-redacted copy. A per-run keyed digest correlates an attempt and completion
-without creating a stable cross-run fingerprint of the secret.
+In enforce mode, recognized credentials/passwords, one-time codes, secret
+placeholders, access tokens/API keys, JWTs, private keys and payment data are
+human-only. Recognition covers recursive action parameters, indexed
+password/OTP/payment fields, free-text `send_keys`, sensitive `evaluate`
+semantics, secret-looking upload paths, and bounded inspection of authorized
+local text uploads. Remote, missing, binary, oversized, and unreadable uploads
+are treated as unclassifiable and handed over. The proposed agent action is not
+approved or executed—even for a trusted destination and even when
+`sensitive_data_verdict` is `approve`. Operator consent is expressed by taking
+control and entering, submitting, or uploading the value directly in the
+browser. A higher-priority hard policy or prompt-injection block still wins and
+is never weakened into a handoff. Other sensitive categories follow
+`trusted_domains` and `sensitive_data_verdict`. In every case, the side panel,
+traces and approval manager receive only a redacted copy. A per-run keyed
+digest correlates an attempt and completion without creating a stable cross-run
+fingerprint of the secret.
+
+These checks are deterministic channel guards, not universal DLP. A secret
+without a recognized value, field, action, filename, or bounded-text marker may
+still be missed. The upload scan covers at most 256 KiB of local UTF-8 text and
+binds a clean file's keyed content digest into the approval scope.
 
 ## Fatigue-resistant human approval
 
@@ -216,33 +260,72 @@ can choose:
 - **Deny** — fails closed and tells the agent not to retry.
 
 The browser/API cannot manufacture reusable consent when the original request
-did not offer it. After `max_prompts_per_run`, Sentinel stops producing approval
-cards and follows `fatigue_strategy`: one direct browser handoff (default), or a
-hard block. Timeouts and shutdown also fail closed.
+did not offer it. Approval is not a promise to execute later: after an explicit
+approval or reuse of an existing grant, Sentinel re-reads the current URL and
+DOM target, reloads policy, recalculates risk and re-evaluates immediately
+before the privileged call. It executes only if the refreshed policy allows it
+or the same narrow scope is still valid; changed or unavailable context fails
+closed with a decision and paired audit. After `max_prompts_per_run`, Sentinel
+stops producing approval cards and follows `fatigue_strategy`: one direct
+browser handoff (default), or a hard block. Denial, timeout, cancellation and
+shutdown are distinct non-executing outcomes.
 
 ## Where decisions are visible
 
 - **Side panel**: every non-allow verdict is a chip in the chat with the
-  human-readable reason; approval/handoff cards dock at the bottom.
+  human-readable reason; approval, handoff and unresolved-sanitisation incident
+  cards dock at the bottom. Page screenshots and raw page titles are never sent
+  to the extension.
 - **WebSocket** (`/ws`): each decision is an `enforcement_decision` event with
   `verdict`, `rule`, `reason`, `mode`, policy-only `decision_ms`, complete
   pre-action `enforcement_ms`, action ID, risk/factors,
   capabilities, taint labels, target origin and a keyed parameter digest.
 - **Action audit**: every attempt—including blocks and timeouts—has an
   `action_audit:attempted` event and exactly one `action_audit:completed` event
-  with outcome and duration. Payloads are redacted and raw exceptions are not
-  recorded.
+  with outcome and duration. The attempted record is emitted before fallible
+  URL/DOM/risk/policy preflight, so preflight exceptions and cancellations are
+  paired too. Payloads are redacted and raw exceptions are not recorded.
 - **Injection alerts**: `prompt_injection_detected` contains score, severity,
   signal names and content hash, never the attacker payload.
+- **Sanitisation outcomes**: `prompt_injection_sanitized` records status,
+  branch, changed/unattributable region counts, residual score and whether an
+  alert was emitted, never the removed payload.
 - **Server log**: one `[decision]` line per verdict at the decision point.
 - **Trace files**: every run writes `data/traces/<run_id>/events.jsonl` +
   `meta.json` (policy snapshot at run start, outcome, enforcement metrics).
   `steps/*.png` and free-form model thinking/memory are retained only when the
   respective `audit` flags are explicitly enabled; both are off by default.
+  Screenshot retention does not enable vision for the agent or expose frames
+  to the extension.
+
+## Local deployment boundary
+
+The control API listens on loopback for this local, non-deployed thesis
+artefact, and its existing origin, consent-scope and input validation remain
+part of the boundary. Loopback is an accepted deployment assumption, not
+same-user process isolation: another compromised process running as the same
+OS user may still call the API or modify local files. Sentinel does not claim
+to be an OS sandbox.
 
 ## Verdict vocabulary (events + traces)
 
 `allowed` · `blocked` · `approval_required` → (`allowed` | `denied_by_human` |
-`denied_timeout`) · `handoff_required` → (`handoff_returned` |
-`handoff_timeout`) · `shadow_blocked` · `shadow_approval_required` ·
+`denied_timeout` | `denied_cancelled`) · `handoff_required` →
+(`handoff_returned` | `handoff_timeout` | `handoff_cancelled`) ·
+`shadow_blocked` · `shadow_approval_required` ·
 `shadow_handoff_required` · `approval_reused`
+
+## Evidence boundary
+
+The completed AgentDojo and WASP rows in [`EVALS.md`](EVALS.md) remain frozen
+under their recorded code, policy and run provenance. The guarded secret
+handoff channels, bounded upload inspection, unresolved browser-observation
+quarantine, bounded extraction/tool-result enforcement, approval revalidation,
+explicit stop cancellation, preflight-audit and screenshot-boundary changes
+described above were added after those campaigns and are **not represented in
+their reported results**.
+The WASP profile itself already used DOM/accessibility observations without
+screenshots; the later change hardens the ordinary interactive extension and
+trace path. These changes require targeted validation or a new immutable run
+tag before supporting new quantitative claims; completed rows must not be
+rewritten or pooled.

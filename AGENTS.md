@@ -13,12 +13,51 @@ useful autonomy under the tested conditions.
 
 Read the relevant source of truth before editing:
 
+- `sentinel/THESIS-STATUS.md` for the current implementation, evidence map,
+  thesis-ready claims, and unfinished work.
 - `sentinel/README.md` for architecture and development.
 - `sentinel/THREAT-MODEL.md` for security invariants and non-claims.
 - `sentinel/POLICY.md` and `sentinel/policies/POLICY-SCHEMA.md` for policy.
-- `sentinel/EVALS.md` for metrics and AgentDojo methodology.
+- `sentinel/EVALS.md` for metrics, methodology, all completed benchmark
+  results, interpretation, and provenance limits.
 - `sentinel/evals/wasp/README.md` for WASP campaigns and recovery.
 - `DESIGN.md` for interface work.
+
+## Current research status
+
+The principal non-HITL benchmark evidence is ready to write up: AgentDojo has
+controlled component and matched end-to-end results, and WASP has browser-native
+development evidence plus a matched 27B off/enforce result. Later reruns amend
+the evidence ledger; they do not silently replace or pool completed rows.
+
+The 9B WASP structure is one shared off baseline with no enforcement, followed
+by three provenance-separated enforce rows: warning-only, sanitisation V1, and
+sanitisation V2. The latter two are the two sanitisation revisions. Do not call
+that sequence one immutable matched campaign. The 27B off/enforce row is the
+primary matched browser comparison.
+
+The current runtime includes a fail-closed unresolved-sanitisation incident,
+direct human takeover for detected secrets across guarded action channels,
+approval revalidation, explicit cancellation semantics, and a DOM-only
+interactive model path with no extension screenshot thumbnails. Page-extraction
+subcalls and wrapped tool-result text also cross the untrusted-input boundary;
+an unresolved bounded extraction/history value is removed in full rather than
+opening the browser-observation incident. These changes post-date the frozen
+benchmark rows; do not imply that the completed results measured them. No
+further benchmark campaign is currently planned or authorized.
+
+Broader HITL and plan-authority work is not complete. Basic approval, handover,
+incident, trace, and extension UI primitives exist, but do not describe the
+final HITL feature set, protocol, interface findings, or human evidence as
+finished. Benchmark participant modes such as `deny`, `none`, and deterministic
+`oracle` are scripted controls, not human participants. No WASP oracle result
+currently exists.
+
+When results or thesis-relevant features change, keep
+`sentinel/EVALS.md`, the relevant curated result index,
+`sentinel/THESIS-STATUS.md`, and `thesis/AGENTS.md` synchronized. Quantitative
+results belong in `sentinel/EVALS.md`; do not duplicate result tables in the
+status or agent-instruction files.
 
 ## Repository boundaries
 
@@ -59,6 +98,16 @@ compact curated result summaries only.
   results as untrusted.
 - Evaluate every proposed action immediately before privileged execution.
 - Do not downgrade hard policy or sensitive-data-flow blocks into approvals.
+- In enforce mode, recognized credentials, passwords, one-time codes,
+  access/API tokens, payment details, and private keys are human-only: withhold
+  the agent action and hand the browser to the user.
+  Consent is the user's direct action during takeover, not permission for the
+  agent to type or disclose the value.
+- Guard indexed sensitive fields, free-text `send_keys`, sensitive
+  `evaluate` semantics, secret-looking upload paths, and bounded local upload
+  text. Treat remote, missing, binary, oversized, or unreadable uploads as
+  unclassifiable and hand them over. These are deterministic guards, not a
+  universal data-loss-prevention claim; keep residual detector misses explicit.
 - Required authority must fail closed on silence, timeout, cancellation,
   malformed input, and shutdown.
 - Human approval must remain explicit, narrow, expiring, run-local, and
@@ -69,7 +118,12 @@ compact curated result summaries only.
   payloads, or unredacted parameters. Screenshots and model rationale remain
   omitted from persistent traces by default.
 - Do not present exposed model rationale as private chain-of-thought.
+- Browser screenshots are not model input in the interactive runner and are not
+  sent to the extension. DOM sanitisation cannot clean instructions rendered in
+  pixels. Keep any explicit local trace retention separate from model/UI paths.
 - Keep localhost origin, consent-scope, and API validation intact.
+  Localhost-only operation is the accepted thesis boundary, not protection
+  against another compromised process running as the same OS user.
 
 `PolicyEngine.evaluate(...)` is the central policy decision point. Avoid
 parallel allow/block paths that bypass it. Security-relevant changes need tests
@@ -98,9 +152,11 @@ applicable.
 - Treat a deterministic oracle as a scripted-oversight upper bound, not a
   participant study. Do not claim measured trust, workload, fatigue, usability,
   or rubber-stamping.
-- Keep provenance hiding and plan authority as separately labelled ablations;
-  do not replace or retroactively redefine the frozen exposed/action-level
-  baseline.
+- Keep optional future mechanisms separate: plan authority is a short
+  human-visible pre-run contract; provenance hiding withholds content based on
+  its untrusted source; multi-agent supervision gives one operator a queue of
+  isolated runs. Do not replace or retroactively redefine the frozen
+  exposed/action-level baseline with any of them.
 
 Prefer matched off/enforce comparisons. Describe AgentDojo as controlled
 mechanism evidence and WASP as controlled browser-native transfer and
