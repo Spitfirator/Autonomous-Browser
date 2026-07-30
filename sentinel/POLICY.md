@@ -80,8 +80,7 @@ Edits apply to the agent's **very next action**, even mid-run.
     },
 
     // Risk-based prompts plus explicit, bounded consent reuse. Once the prompt
-    // budget is spent, hand over once (or block) instead of inducing approval
-    // fatigue with more cards.
+    // budget is spent, hand over once (or block) instead of showing more cards.
     "adaptive_approvals": {
       "enabled": true,
       "approval_risk_threshold": 55,
@@ -255,7 +254,7 @@ without a recognized value, field, action, filename, or bounded-text marker may
 still be missed. The upload scan covers at most 256 KiB of local UTF-8 text and
 binds a clean file's keyed content digest into the approval scope.
 
-## Fatigue-resistant human approval
+## Bounded human approval
 
 Approval is a risk response, not a blanket prompt on every click. The operator
 can choose:

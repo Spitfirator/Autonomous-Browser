@@ -57,7 +57,6 @@ and can also be set from the dashboard.
 | `THESIS-STATUS.md` | concise thesis handoff: implementation state, evidence map, supported claims and unfinished work |
 | `EVALS.md` / `evals/` | canonical result ledger, evaluation protocol, AgentDojo campaigns and WASP browser-native adapter |
 | `demo/` | `run_scenarios.py`: scripted allowed/blocked/approval/handoff demo runs |
-| `share/` | generated share pack: traces, decision logs, screenshots |
 
 ## The middleware
 
@@ -99,7 +98,7 @@ Schema + decision order: **[POLICY.md](POLICY.md)**. Metrics: **[EVALS.md](EVALS
   `data_flow.trusted_domains` fail closed by policy; UI and traces receive only
   redacted values and per-run keyed digests. This is deterministic channel
   coverage, not universal DLP.
-- **Fatigue-resistant approval** - ordinary clicks do not prompt. Consequential target
+- **Bounded approval pressure** - ordinary clicks do not prompt. Consequential target
   semantics and other risk factors can hold an action. The operator chooses Allow once,
   a narrow/time-and-use-bounded Allow similar scope, or Deny. A per-run prompt budget
   collapses repeated cards into one direct handoff (or a hard block).

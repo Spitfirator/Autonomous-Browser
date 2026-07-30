@@ -53,6 +53,12 @@ finished. Benchmark participant modes such as `deny`, `none`, and deterministic
 `oracle` are scripted controls, not human participants. No WASP oracle result
 currently exists.
 
+Activity's security-pause count and review time, its per-decision
+`understood` ticks, and its within-run timing split are instrumentation. Treat
+them as technical telemetry or researcher walkthrough aids, not as participant
+comprehension data or a matched counterfactual estimate of running without
+enforcement.
+
 When results or thesis-relevant features change, keep
 `sentinel/EVALS.md`, the relevant curated result index,
 `sentinel/THESIS-STATUS.md`, and `thesis/AGENTS.md` synchronized. Quantitative

@@ -1,7 +1,7 @@
 # Sentinel on WASP
 
-This adapter evaluates the production Sentinel governance layer in real
-agentic browsing. It uses:
+This adapter evaluates Sentinel's benchmark-integrated governance layer in
+controlled browser-native tasks. It uses:
 
 - the official WASP prompt injector and native user/attacker oracles;
 - BrowserUse as the browser agent and privileged executor;

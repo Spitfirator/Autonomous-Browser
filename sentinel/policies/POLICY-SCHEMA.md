@@ -272,10 +272,13 @@ Every domain list accepts four entry shapes, from most rigid to most precise:
 ## Evidence boundary
 
 This schema describes the current runtime. Completed AgentDojo and WASP rows
-remain tied to their recorded immutable provenance. Human-only data handoff,
-unresolved-sanitisation quarantine, approval revalidation, preflight audit and
-screenshot-channel hardening were added later and are not measured by those
-completed rows. The WASP profile already used DOM/accessibility observations
-without screenshots; the later screenshot change hardens the ordinary
-interactive extension and trace path. New quantitative claims require targeted
-validation or a new run tag; do not rewrite or pool the frozen results.
+remain tied to their recorded immutable provenance. Guarded-secret and
+unclassifiable-upload handoff, unresolved browser-observation quarantine,
+bounded extraction/tool-result enforcement, approval revalidation, explicit
+stop cancellation, preflight audit hardening, screenshot-channel hardening and
+the special-URL observation boundary were added later and are not measured by
+those completed rows. The WASP profile already used DOM/accessibility
+observations without screenshots; the later screenshot change hardens the
+ordinary interactive extension and trace path. New quantitative claims require
+targeted validation or a new run tag; do not rewrite or pool the frozen
+results.

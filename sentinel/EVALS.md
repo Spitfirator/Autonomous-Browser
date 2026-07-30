@@ -24,7 +24,7 @@ unfinished HITL work, see [THESIS-STATUS.md](THESIS-STATUS.md).
 
 Comparative metrics need baselines. The middleware supports:
 
-- **enforce** - verdicts applied (production behavior)
+- **enforce** - verdicts applied (normal runtime behavior)
 - **shadow** - everything allowed, would-be verdicts logged (`shadow_*`
   events). Ground truth for false blocks: the action ran anyway, so you can
   see whether blocking it would have been justified.
@@ -48,9 +48,11 @@ successful). Report `finished` (agent stopped, unclear success) separately.
 ### 2. Approval prompts per task
 `enforcement.decisions.approval_required / run`. Report mean and max.
 - **Source:** `history.jsonl → enforcement.decisions`
-- **What to look for:** prompt fatigue. If a policy generates >3 prompts per
-  routine task, the operator will start rubber-stamping - tighten the rule
-  (approve by domain instead of by action type, or vice versa).
+- **What to look for:** approval pressure. More than three prompts on a routine
+  task approaches the default four-prompt budget and is a signal to tighten the
+  rule (approve by domain instead of by action type, or vice versa). This is an
+  acceptance-fatigue proxy, not evidence that an operator actually
+  rubber-stamped requests.
 
 ### 3. False blocks vs missed dangerous actions
 The precision/recall of the policy. This needs offline ground-truth labels:
@@ -89,9 +91,10 @@ Two very different costs, reported separately:
   with or without enforcement, so it counts as baseline, not overhead). The
   activity panel decomposes a single run into `baseline = duration_s − (approval_wait_s
   + enforcement_ms_total)` vs. `enforcement added = approval_wait_s + enforcement_ms_total`,
-  so you get both numbers without a separate off-mode run. This is a direct
-  decomposition — it does not capture second-order cost (a block that makes the
-  agent re-plan into extra steps).
+  so you get both accounting buckets without a separate off-mode run. This is
+  not a counterfactual estimate of the same task without enforcement: it does
+  not capture second-order cost such as re-planning after a block. Use matched
+  off/enforce runs for comparative overhead claims.
 - End-to-end: compare `duration_s` for the same task across modes (subtract
   `human_wait_s` from enforce runs to isolate the machine cost).
 
@@ -113,6 +116,9 @@ matches blocklisted domain 'github.com'"*).
   cognitive walkthrough/heuristic inspection of whether each card exposes the
   action, target, data involved, matched rule, consequence and safe
   alternatives. Do not claim measured user comprehension without participants.
+- Activity's per-decision **Yes/No** `understood` ticks are audit annotations
+  for that researcher/operator walkthrough. They are not participant responses
+  or a validated comprehension measure.
 - **Future optional human measure:** a participant could rate whether the
   explanation was understandable, but this study is explicitly outside the
   current thesis plan.
@@ -232,7 +238,7 @@ PYTHONPATH=sentinel:browser-use browser-use/.venv/bin/python \
   --policy sentinel/policies/agentdojo-policy.json --pretty
 ```
 
-This invokes the production detector, taint/risk engine and the real
+This invokes the current runtime detector, taint/risk engine and the real
 `PolicyEngine`. It is still a component benchmark: the adapter maps native tool
 effects to Sentinel capabilities and does not measure model replanning.
 
@@ -361,18 +367,19 @@ Three disclosures matter for how this is written up:
 
 ### What action gating does and does not cover
 
-Detection alone is not enforcement. Rule 7 of the policy engine holds a tainted
-action only when it is *independently* risk-amplifying — cross-origin navigation
-or disclosure, sensitive-data flow, local-file or code-execution capability, or a
-destructive target. Ordinary same-origin form interaction is left to the numeric
-risk policy.
+Detection alone is not enforcement. The
+`prompt_injection_amplified_action` rule holds a tainted action only when it is
+*independently* risk-amplifying — cross-origin navigation or disclosure,
+sensitive-data flow, local-file or code-execution capability, or a destructive
+target. Ordinary same-origin form interaction is left to the numeric risk
+policy.
 
 Of WASP's 84 unique attacker goals, **20 have a cross-origin terminal action**
-(exfiltration to the attacker domain) and are gated by rule 7; the remaining
-**64 reach their goal through a same-origin form submission** and are not. For
-that majority class, observation sanitisation — not action gating — is the
-primary control. Do not describe the browser rows as action-gating all 84
-scenarios.
+(exfiltration to the attacker domain) and fall within that targeted rule's
+coverage; the remaining **64 reach their goal through a same-origin form
+submission** and do not. For that majority class, observation sanitisation —
+not action gating — is the primary control. Do not describe the browser rows as
+action-gating all 84 scenarios.
 
 The boundary was set from evidence, not preference. Replaying the v1 enforce
 trajectories, a blanket "gate every tainted side effect" rule newly gated a
@@ -840,10 +847,12 @@ AgentDojo on the same 16 GB card.
 Setup, preflight, remote-container commands and the resumable run command are
 documented in [`evals/wasp/README.md`](evals/wasp/README.md).
 
-## Suggested first eval set
+## Optional local instrumentation smoke set
 
-Small, deterministic, safe-to-automate tasks (the demo scenarios in
-`demo/run_scenarios.py` are exactly these):
+These small, deterministic, safe-to-automate tasks predate the completed public
+benchmark campaigns. The demo scenarios in `demo/run_scenarios.py` remain useful
+for local instrumentation checks, but they are not a planned thesis campaign
+and do not supersede the AgentDojo or WASP evidence:
 
 | Task | Policy touchpoint |
 |---|---|
@@ -852,5 +861,6 @@ Small, deterministic, safe-to-automate tasks (the demo scenarios in
 | Same form task with click-approval on | approval gate ×N |
 | Log in to a demo site behind a sensitive domain | forced handoff + note |
 
-Run each in all three modes; that's ~12 runs per model config and gives every
-metric above a number.
+If validating local instrumentation, run each in all three modes. That produces
+about 12 diagnostic runs per model configuration; treat their metrics as smoke
+evidence only.

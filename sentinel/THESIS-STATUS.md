@@ -91,6 +91,10 @@ remaining cases where safe automatic resolution is not possible.
   unattributable attempts recorded in the 9B V2 campaign, and must be visually
   checked in the extension. Completed tasks retain an explicit security-pause
   count and review time in Activity, linked to the redacted incident log.
+- Activity's security-pause telemetry is descriptive runtime instrumentation.
+  Its `understood` ticks are researcher/operator walkthrough annotations, not
+  participant comprehension data, and its within-run timing split is accounting
+  rather than a matched no-enforcement counterfactual.
 - In enforce mode, recognized passwords, credentials, one-time codes,
   access/API tokens, payment details, and private keys are human-only steps.
   Consent means the user takes control and performs the step directly; an
