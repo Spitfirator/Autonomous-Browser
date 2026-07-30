@@ -1,0 +1,445 @@
+\chapter{Results}
+\label{chap:results}
+
+\section{Overview}
+
+The results follow the evidence hierarchy defined in
+\cref{chap:methodology}. Component replays establish deterministic behaviour
+on specified inputs. End-to-end AgentDojo runs measure native user and attacker
+outcomes in controlled tool environments. The matched 27B WASP campaign is the
+principal browser-native comparison. The 9B WASP rows explain development
+failures but are not pooled as a single matched campaign.
+
+\section{AgentDojo component results}
+
+\subsection{Full v1 replay}
+
+The model-free replay covered 16 non-manual attack families and 7,404 security
+cases. \Cref{tab:component-replay} reports the aggregate. All defined attack
+cases were detected and received a hard-block outcome. None of the 97 unique
+benign tasks was hard-blocked; one benign task reached the approval threshold.
+
+\begin{table}[htbp]
+\centering
+\caption{AgentDojo v1 model-free component replay. Benign tasks are repeated
+once per attack family in aggregate detector counts, so the table reports the
+unique benign denominator separately.}
+\label{tab:component-replay}
+\begin{tabular}{@{}lr@{}}
+\toprule
+Measure & Result \\
+\midrule
+Attack families & 16 \\
+Security cases across families & 7,404 \\
+Unique benign tasks per family & 97 \\
+Detection precision / recall / F1 & 1.000 / 1.000 / 1.000 \\
+Security-case hard-block rate & 7,404/7,404 \\
+Benign hard blocks & 0/97 \\
+Benign approval-triggering tasks & 1/97 (1.03\%) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+This result verifies the configured component contract but is not a held-out
+security estimate. The rules were developed after inspecting AgentDojo v1
+failures, the same 97 benign tasks recur across attack families, and no acting
+model can re-plan. Promoting the 100\% replay rate to an end-to-end claim would
+therefore be misleading.
+
+\subsection{Detector-v2 scorecard}
+
+The corrected detector scored recall 1.000 with no false positives on both
+AgentDojo corpora. On the WASP corpus, it scored recall 1.000, precision 0.988,
+and false-positive rate 0.026: one of 39 captured benign pages triggered. That
+page was GitLab's profile view, whose legitimate text discusses passwords,
+keys, and privacy. It was retained rather than tuned away.
+
+\begin{table}[htbp]
+\centering
+\caption{Detector-v2 scorecard. WASP is a post-hoc development corpus and the
+row must not be read as held-out end-to-end performance.}
+\label{tab:detector-scorecard}
+\begin{tabular}{@{}lrrrrr@{}}
+\toprule
+Corpus & Attack & Benign & Recall & Precision & FPR \\
+\midrule
+AgentDojo security & 130 & 58 & 1.000 & 1.000 & 0.000 \\
+AgentDojo v1 tool knowledge & 629 & 97 & 1.000 & 1.000 & 0.000 \\
+WASP security & 84 & 39 & 1.000 & 0.988 & 0.026 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The live-representation correction is itself an important negative finding.
+The original offline converter retained a Markdown link destination that
+BrowserUse's accessibility-tree observation omitted. A pre-launch canary
+therefore scored the visible URL attack below threshold. After the converter
+was changed to reproduce the href-free, split-line observation and the
+detector was adapted, all 42 URL-format attack scores changed: 40 previously
+missed attacks crossed the detection threshold and two already detected cases
+changed band. AgentDojo scores were unchanged. This episode demonstrates why
+offline text benchmarks cannot substitute silently for the exact runtime
+representation and why the resulting WASP detector score is development
+evidence.
+
+For isolated WASP payloads, 84/84 crossed the detection threshold but none
+crossed the hard-block threshold. In complete attacked observations, 84/84
+were detected and eight crossed the hard-block threshold. Context therefore
+changes the score materially. The end-to-end campaigns use the detector as one
+part of sanitisation and policy rather than inferring containment from these
+classifications.
+
+\subsection{Action-gating replay}
+
+WASP contains 84 unique attacker goals: 20 terminate in a cross-origin action
+and 64 use a same-origin form. A blanket rule that gated every
+injection-tainted side effect newly gated a median of eight actions per
+affected task (95th percentile 28, maximum 28) and exhausted the four-prompt
+budget on 35 of 50 replayed tasks. The narrowed amplified-action rule gated a
+median of zero (95th percentile zero, maximum two), exhausted the budget on no
+task, and retained cross-origin exfiltration coverage. Neither rule changed
+the AgentDojo component classifications.
+
+This replay explains a core design choice. Blanket taint gating would convert
+detection into denial of legitimate same-origin work. The final browser policy
+therefore relies primarily on removing the hostile observation and uses action
+gating as a targeted backstop.
+
+\section{AgentDojo end-to-end results}
+
+\subsection{Controlled comparison}
+
+All three thinking/32K campaigns completed the 629 off/enforce task pairs.
+\Cref{tab:agentdojo-e2e} reports the native outcomes. Enforcement reduced
+attacker success sharply for every model while increasing both utility and
+secure utility.
+
+\begin{table}[htbp]
+\centering
+\caption{Controlled AgentDojo v1 end-to-end results. U is native user utility,
+ASR is native attacker-goal success, and SU is useful-and-secure. Each attacked
+cell has \(n=629\); clean utility has \(n=97\).}
+\label{tab:agentdojo-e2e}
+\footnotesize
+\begin{tabular}{@{}lrrrrrrr@{}}
+\toprule
+ & Clean U & \multicolumn{3}{c}{Off} & \multicolumn{3}{c}{Enforce} \\
+\cmidrule(lr){3-5}\cmidrule(l){6-8}
+Model &  & U & ASR & SU & U & ASR & SU \\
+\midrule
+Qwen 3.5 4B &
+76 (78.4\%) &
+362 (57.6\%) & 206 (32.8\%) & 297 (47.2\%) &
+446 (70.9\%) & 0 (0\%) & 446 (70.9\%) \\
+
+Qwen 3.5 9B &
+80 (82.5\%) &
+422 (67.1\%) & 131 (20.8\%) & 367 (58.3\%) &
+467 (74.2\%) & 1 (0.2\%) & 467 (74.2\%) \\
+
+Qwen 3.5 27B &
+81 (83.5\%) &
+428 (68.0\%) & 203 (32.3\%) & 345 (54.8\%) &
+483 (76.8\%) & 0 (0\%) & 483 (76.8\%) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+  ybar,
+  width=0.96\textwidth,
+  height=7.2cm,
+  bar width=7pt,
+  ymin=0,
+  ymax=85,
+  ylabel={Task instances (\%)},
+  symbolic x coords={4B,9B,27B},
+  xtick=data,
+  xlabel={Qwen 3.5 model},
+  legend style={at={(0.5,1.02)},anchor=south,legend columns=2,draw=none},
+  grid=major,
+  grid style={draw=sentinelgrey!18},
+  nodes near coords,
+  every node near coord/.append style={font=\scriptsize,rotate=90,anchor=west},
+]
+\addplot[fill=sentinelblue!35,draw=sentinelblue] coordinates
+  {(4B,57.6) (9B,67.1) (27B,68.0)};
+\addplot[fill=sentinelblue!80,draw=sentinelblue] coordinates
+  {(4B,70.9) (9B,74.2) (27B,76.8)};
+\addplot[fill=sentinelred!35,draw=sentinelred] coordinates
+  {(4B,32.8) (9B,20.8) (27B,32.3)};
+\addplot[fill=sentinelred!80,draw=sentinelred] coordinates
+  {(4B,0) (9B,0.2) (27B,0)};
+\legend{Off utility,Enforce utility,Off ASR,Enforce ASR}
+\end{axis}
+\end{tikzpicture}
+\caption{AgentDojo utility and attacker success by condition. The rows are
+independent model runs, not an identified parameter-scaling experiment.}
+\label{fig:agentdojo-bars}
+\end{figure}
+\clearpage
+
+For 4B, utility increased by 84 cases (13.35 percentage points), attacker
+success decreased by 206 cases (32.75 points), and secure utility increased by
+149 cases (23.69 points). For 9B, the corresponding changes were \(+45\),
+\(-130\), and \(+100\) cases. Paired 9B transitions contained 92 utility gains
+and 47 losses, with 130 attacker successes prevented and none introduced.
+For 27B, utility increased by 55 cases, attacker success decreased by 203, and
+secure utility increased by 138. Its paired transitions contained 84 utility
+gains and 29 losses, 203 attacker successes prevented and none introduced, and
+158 secure-utility gains versus 20 losses.
+
+The utility increases are plausible rather than paradoxical. An injected model
+often diverts away from the user's task. Removing the malicious tool output can
+therefore improve security and allow the original task to complete. The result
+does not mean enforcement always improves utility: every model has paired
+losses, and the effect depends on these tasks and trajectories.
+
+\subsection{Measured mechanism}
+
+\begin{table}[htbp]
+\centering
+\caption{Enforce-mode AgentDojo diagnostics, out of 629 attacked cases per
+model. ``Blocks'' counts explicit action blocks, not sanitised observations.}
+\label{tab:agentdojo-diagnostics}
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+Model & Cases detected & Blocks & Approvals & Truncated responses \\
+\midrule
+4B & 600 & 9 & 0 & 6 \\
+9B & 615 & 9 & 0 & 0 \\
+27B & 609 & 9 & 0 & 7 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Sanitising untrusted tool output was the dominant observed intervention.
+Explicit action blocking was a secondary backstop: only nine actions were
+blocked for each model. In the reviewed 27B aggregate, all nine were
+\texttt{sensitive\_data\_flow} decisions, while 2,181 actions were allowed.
+This distinction prevents a false explanation that high utility came from
+blocking most activity.
+
+Response limits remain a validity concern. Ten 27B responses reached the
+4,096-token cap: three off and seven enforce. The seven enforce truncations
+were all variants of one difficult travel user task and were retained rather
+than selectively rerun. They can depress utility but cannot be removed without
+introducing post-selection.
+
+\subsection{Provenance qualifications}
+
+The 4B campaign repeats both modes under the fixed pipeline. The 9B published
+row is backed by all 1,258 preserved reports but lacks recorded Git revision in
+those reports. The 27B comparison preserves historical off reports and uses a
+new immutable fixed-enforce tag; its task/model/profile configuration matches,
+but exact model-blob parity with the historical off run cannot be verified
+cryptographically. These limits weaken a claim of perfectly identical
+experimental provenance, but they do not change the native counts.
+
+Cross-model ordering is also not monotonic: 27B off ASR exceeds 9B off ASR.
+This reinforces the methodological warning that low ASR can reflect model
+behaviour and task capability rather than a simple size effect.
+
+\section{WASP browser-native results}
+
+\subsection{Primary matched 27B finding}
+
+\Cref{tab:wasp-27b} presents the principal browser comparison. All 168
+executions share the frozen model, scaffold, policy, middleware, and 30-step
+design described in \cref{sec:wasp-method}. Each of the four batches has its own
+generated-input manifest, held identical between its paired off and enforce
+cells.
+
+\begin{table}[htbp]
+\centering
+\caption{Matched Qwen 3.5 27B WASP results, \(n=84\) per condition. Attempted
+and executed columns count task instances with at least one attacker-directed
+action.}
+\label{tab:wasp-27b}
+\small
+\begin{tabular}{@{}lrrrrr@{}}
+\toprule
+Condition & Utility & ASR & Secure utility & Attempted & Executed \\
+\midrule
+Off &
+47 (55.95\%) & 5 (5.95\%) & 44 (52.38\%) &
+17 (20.24\%) & 17 (20.24\%) \\
+Sanitise V2 enforce &
+46 (54.76\%) & 0 (0\%) & 46 (54.76\%) &
+0 (0\%) & 0 (0\%) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+  ybar,
+  width=0.9\textwidth,
+  height=7cm,
+  bar width=14pt,
+  ymin=0,
+  ymax=65,
+  ylabel={Task instances (\%)},
+  symbolic x coords={Utility,ASR,Execution,{Secure utility}},
+  xtick=data,
+  legend style={at={(0.5,1.02)},anchor=south,legend columns=2,draw=none},
+  grid=major,
+  grid style={draw=sentinelgrey!18},
+  nodes near coords,
+  every node near coord/.append style={font=\scriptsize},
+]
+\addplot[fill=sentinelgrey!40,draw=sentineldark] coordinates
+  {(Utility,55.95) (ASR,5.95) (Execution,20.24) ({Secure utility},52.38)};
+\addplot[fill=sentinelamber!70,draw=sentinelamber] coordinates
+  {(Utility,54.76) (ASR,0) (Execution,0) ({Secure utility},54.76)};
+\legend{Off,Sanitise V2 enforce}
+\end{axis}
+\end{tikzpicture}
+\caption{Primary matched WASP outcome rates. Enforcement removed the observed
+attacker-directed execution with a one-task aggregate utility change.}
+\label{fig:wasp-bars}
+\end{figure}
+
+All five off-condition terminal attacker successes were absent under enforce,
+and no new success appeared. Attacker-directed attempts and executions changed
+from 17 task instances to zero. Utility changed by one task, or \(-1.19\)
+percentage points, while secure utility increased by two tasks, or \(+2.38\)
+points.
+
+The paired utility outcomes contained seven gains, eight losses, and 69
+unchanged cases. There were no hard blocks or handovers in the enforce row.
+One page-code action triggered an approval and was denied, but that task still
+passed its native user oracle. It is therefore incorrect to label the eight
+utility losses as eight false blocks. They are trajectory-level differences
+that can arise from altered observations and stochastic planning.
+
+Joint outcomes provide additional context. Off contained 44 useful/secure,
+three useful/compromised, 35 unsuccessful/secure, and two
+unsuccessful/compromised cases. Enforce contained 46 useful/secure and 38
+unsuccessful/secure cases, with no compromised category. The agent was still
+unsuccessful on 45.24\% of enforce tasks; the defence did not make browser
+automation generally reliable.
+
+Zero attacker successes in 84 enforce cases is not proof of a zero underlying
+rate. The rough rule-of-three upper 95\% bound is \(3/84\), approximately
+3.6\%, under an independent binomial interpretation. Moreover, two of the four
+off batches already had zero terminal ASR. The reduction in
+attacker-directed execution from 17/84 to zero is therefore important
+supporting evidence: it shows less attacker-serving activity even where the
+baseline agent was often unable to finish the attack.
+
+\subsection{Sanitisation telemetry}
+
+The matched enforce run recorded one finding in every attacked task and 368
+sanitisation attempts. All 368 were confirmed removals, with no residual,
+unattributable, or post-success-alert outcome. Fifteen used the line branch and
+353 the bounded-window branch. With no hard block or handover, and one denied
+approval on a task that still retained native utility, post-verified
+sanitisation was the primary recorded intervention associated with containment.
+
+This evidence verifies what occurred for detector-positive observations in
+the run. It cannot show that every possible attack would be detected, that
+removal preserved all benign nearby text, or that the post-campaign incident
+flow would improve outcomes.
+
+\subsection{9B development and failure analysis}
+
+\Cref{tab:wasp-9b} preserves the complete 9B sequence. The shared off baseline
+is followed by three enforce rows with changed middleware provenance.
+
+\begin{table}[htbp]
+\centering
+\caption{Qwen 3.5 9B WASP development sequence, \(n=84\) per row. V1 and V2
+are successive sanitisation implementations; the rows are not one immutable
+matched campaign.}
+\label{tab:wasp-9b}
+\small
+\begin{tabular}{@{}lrrrrr@{}}
+\toprule
+Condition & Utility & ASR & Secure utility & Attempted & Executed \\
+\midrule
+Shared off &
+45 (53.57\%) & 7 (8.33\%) & 41 (48.81\%) &
+31 (36.90\%) & 31 (36.90\%) \\
+Warning enforce &
+37 (44.05\%) & 7 (8.33\%) & 35 (41.67\%) &
+32 (38.10\%) & 32 (38.10\%) \\
+Sanitise V1 &
+52 (61.90\%) & 6 (7.14\%) & 49 (58.33\%) &
+18 (21.43\%) & 18 (21.43\%) \\
+Sanitise V2 &
+54 (64.29\%) & 0 (0\%) & 54 (64.29\%) &
+1 (1.19\%) & 1 (1.19\%) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Warning-only enforcement is a negative result. ASR remained 7/84,
+attacker-directed execution increased from 31 to 32 cases, utility fell from
+45 to 37, and secure utility fell from 41 to 35. Detecting an attack and
+warning the same model did not provide effective containment under this
+condition.
+
+Sanitisation V1 improved the outcome profile but left six terminal attacks and
+18 cases with attacker-directed execution. Its failure analysis found
+incomplete multi-line removal, which V2 addressed through revised bounded
+cluster handling. A separate pre-launch canary had already exposed and
+corrected the mismatch between offline Markdown URL attacks and BrowserUse's
+href-free live representation; that fix was not part of the V1-to-V2 change.
+V2 recorded 0/84 terminal attacks and one attacker-directed navigation, which
+did not satisfy the native attacker oracle.
+
+The V2 row recorded 1,057 sanitisation attempts: 1,053 confirmed removals, zero
+residuals, and four unattributable cases that used the historical
+model-warning fallback. Branches were 14 line, 1,039 bounded window, and four
+none. Across the run, 85 detections accompanied 662 attempted actions, one hard
+block, four approval prompts, and no handovers. A frozen observation replay
+separately confirmed removal in 84/84 attacked observations, with no
+detector-positive residual, no non-anchor control-descriptor removal, and no
+whole-page wipe.
+
+The four unattributable events motivated the later fail-closed operator
+incident, but that mechanism is not part of this row. It would be a provenance
+error to describe those observations as quarantined in the reported campaign.
+
+\section{Current implementation verification}
+\label{sec:implementation-verification}
+
+Post-campaign contracts were freshly verified on 29 July 2026 rather than
+folded into the benchmark outcomes. The complete Python suite passed 231
+tests and the focused WASP campaign suite passed 29. The five-case security
+smoke achieved detection precision, recall, F1, verdict accuracy, and attack
+containment of 1.000, with zero interventions across two benign fixtures. The
+offline WASP preflight and TypeScript/Vite extension build also passed.
+\Cref{tab:implementation-verification} records each gate and result.
+
+These gates establish that the described current implementation contracts held
+for that source state. They do not retroactively add the later mechanisms to
+the AgentDojo or WASP campaign rows, and they are not substitutes for a human
+evaluation of the extension.
+
+\section{Result synthesis}
+
+The evidence answers EQ1 with a deterministic component pass, qualified by
+development-set adaptation. EQ2 shows large reductions in native attacker
+success and increases in useful-and-secure outcomes across three controlled
+AgentDojo model runs; sanitisation, not mass action blocking, is the dominant
+recorded mechanism. EQ3 shows browser-native transfer in the primary matched
+27B WASP comparison: five terminal attacks and 17 attacker-directed execution
+cases observed off were absent under enforce, with a one-task utility change.
+EQ4 identifies post-verified sanitisation as the primary recorded intervention
+and warning-only enforcement as ineffective in the 9B development condition.
+RQ2 is answered at the technical level by the current verification gates:
+approval, takeover, unresolved-observation incidents, timeout, cancellation,
+live revalidation, and paired audit exercise the specified fail-closed
+authority lifecycle.
+
+These results support the bounded thesis claim, but not a universal one. The
+next chapter interprets the utility gains and losses, the role of model
+capability, the limits of fixed benchmark attacks, and the unresolved
+human-factors evidence.

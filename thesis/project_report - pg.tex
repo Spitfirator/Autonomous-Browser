@@ -1,0 +1,164 @@
+\documentclass[10pt,a4paper]{report}
+
+% The official UCL project-report template is retained as the compilation root.
+% The class options above make its existing 10-point size and A4 output explicit.
+\usepackage[margin=25mm,headheight=14pt]{geometry}
+\usepackage{setspace}
+\usepackage{amsmath,amssymb}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{microtype}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage{tabularx}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,fit,positioning,shapes.geometric}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usepackage{xcolor}
+\usepackage[hidelinks]{hyperref}
+\usepackage[capitalise,noabbrev]{cleveref}
+
+\definecolor{sentineldark}{HTML}{17202A}
+\definecolor{sentinelamber}{HTML}{D97706}
+\definecolor{sentinelred}{HTML}{B42318}
+\definecolor{sentinelblue}{HTML}{2563EB}
+\definecolor{sentinelgrey}{HTML}{667085}
+
+\hypersetup{
+  pdftitle={Design and Implementation of Enforcement Middleware for Securing Web Agents},
+  pdfauthor={Hector Gittos},
+  pdfsubject={MSc Information Security dissertation},
+  pdfkeywords={browser agents, prompt injection, runtime enforcement, reference monitor, human in the loop}
+}
+
+\graphicspath{{./}}
+\setlength{\emergencystretch}{2em}
+\setlength{\parindent}{1.5em}
+\setlength{\parskip}{0pt}
+\setlist{nosep}
+\renewcommand{\arraystretch}{1.15}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+
+\newcommand{\systemname}{\textsc{Sentinel}}
+\newcommand{\studentname}{Hector Gittos}
+\newcommand{\degreeprogramme}{MSc Information Security}
+\newcommand{\supervisorname}{\textit{Supervisor name to be confirmed}}
+\newcommand{\submissiondate}{September 2026}
+\newcommand{\rqone}{Can a separate enforcement layer reduce unsafe browser-agent actions without stopping the agent from doing useful work?}
+\newcommand{\rqtwo}{Under what conditions should an independent runtime withhold a browser-agent action or observation, and what fail-closed protocol should govern approval, takeover, and return of control?}
+
+\begin{document}
+% At 10pt this retains approximately one-and-a-half visual line spacing while
+% keeping the complete main text within the 50-page working limit.
+\setstretch{1.20}
+
+\hypersetup{pageanchor=false}
+\begin{titlepage}
+  \centering
+  \includegraphics[width=0.28\textwidth]{ucl_logo.png}\par
+  \vspace{1.5cm}
+  {\Huge\bfseries Design and Implementation of Enforcement Middleware for
+  Securing Web Agents\par}
+  \vspace{0.5cm}
+  {\Large \systemname: independent runtime governance for browser agents\par}
+  \vfill
+  {\Large \studentname\par}
+  \vspace{0.6cm}
+  {\large \degreeprogramme\par}
+  \vspace{0.6cm}
+  {\large Supervisor: \supervisorname\par}
+  \vspace{0.6cm}
+  {\large Submission date: \submissiondate\par}
+  \vfill
+  \begin{minipage}{0.88\textwidth}
+    \small
+    \textbf{Declaration.}
+    This report is submitted as part requirement for the
+    \degreeprogramme\ at University College London. It is substantially the
+    result of my own work except where explicitly indicated in the text.
+
+    \medskip
+    \textbf{Distribution statement.}
+    The report may be freely copied and distributed provided the source is
+    explicitly acknowledged.
+  \end{minipage}
+\end{titlepage}
+
+\pagenumbering{roman}
+\hypersetup{pageanchor=true}
+
+\chapter*{Abstract}
+\addcontentsline{toc}{chapter}{Abstract}
+
+Large-language-model agents can operate web browsers on a user's behalf, but
+the same page content that informs their decisions can also contain adversarial
+instructions. This creates a structural conflict: an agent is expected to
+interpret untrusted data and simultaneously decide whether that data is
+authoritative. This dissertation presents \systemname, an independent runtime
+enforcement layer placed between a browser agent and its privileged executor.
+\systemname\ treats the model and browser-derived content as untrusted,
+mediates observations before model calls, and evaluates every model-proposed
+privileged tool action immediately before execution. Its mechanisms combine
+deterministic prompt-injection detection, attributable sanitisation and clean re-detection,
+origin-scoped taint, data-flow checks, policy rules, bounded human approval,
+direct takeover for protected steps, and privacy-preserving audit.
+A Manifest V3 Chrome extension exposes these controls through a reconnect-safe
+side panel, an in-page ownership layer, and an inspectable Activity dashboard.
+
+The evaluation separates mechanism evidence from browser-native transfer.
+Across matched AgentDojo campaigns containing 629 attacked task pairs per
+model, enforcement reduced native attacker success from 206 to 0 cases for
+Qwen 3.5 4B, from 131 to 1 for 9B, and from 203 to 0 for 27B. Utility increased
+in all three enforce conditions, although these independent runs do not
+identify a causal effect of model size. In the principal matched WASP
+comparison, 84 attacked browser tasks were run in each condition with Qwen 3.5
+27B. Post-verified observation sanitisation reduced terminal attacker success
+from 5/84 to 0/84 and task instances with attacker-directed execution from
+17/84 to 0/84, while native utility changed from 47/84 to 46/84. A separate 9B
+development sequence found that warning the model left attack success
+unchanged; the final sanitisation row recorded 0/84 terminal successes and one
+attacker-directed execution, but it was not a fresh matched comparison.
+
+The results support a bounded conclusion: under the tested conditions,
+independent runtime enforcement reduced evaluated policy violations while
+preserving useful autonomy. They do not establish universal prompt-injection
+robustness, deployment readiness, or human-factors effectiveness. The
+dissertation therefore argues for complete mediation at that governed tool
+boundary and fail-closed selective authority, while identifying visual inputs,
+adaptive attacks, policy specification, and evaluated human oversight as
+necessary future work.
+
+\begingroup
+\small
+\tableofcontents
+\endgroup
+\listoffigures
+\listoftables
+\clearpage
+
+\pagenumbering{arabic}
+
+\include{chapters/01-introduction}
+\include{chapters/02-background}
+\include{chapters/03-threat-model}
+\include{chapters/04-design}
+\include{chapters/05-governance-interface}
+\include{chapters/05-methodology}
+\include{chapters/06-results}
+\include{chapters/07-discussion}
+\include{chapters/08-conclusion}
+
+\appendix
+\include{chapters/appendix-assurance}
+
+\clearpage
+\phantomsection
+\addcontentsline{toc}{chapter}{Bibliography}
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

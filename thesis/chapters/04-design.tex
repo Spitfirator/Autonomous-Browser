@@ -1,0 +1,469 @@
+\chapter{System design and implementation}
+\label{chap:design}
+
+\section{Design principles}
+
+\systemname\ is a local research prototype that governs an existing browser
+agent rather than replacing its planner. Five principles turn the objectives
+in \cref{sec:security-objectives} into implementation choices.
+
+\begin{enumerate}
+  \item \textbf{Keep policy outside the acting model.} The model receives
+  guidance and errors, but only the middleware can call the privileged tool.
+
+  \item \textbf{Mediate both sides of the reasoning loop.} Observation
+  handling reduces known hostile influence before inference; execution
+  handling constrains effects even when influence remains.
+
+  \item \textbf{Treat consent as scoped authority, not advice.} An approval is
+  bound to the reviewed live context, expires, and is checked again before
+  execution. Secrets that should not enter the model's action are completed by
+  the human rather than ``approved'' for disclosure.
+
+  \item \textbf{Fail closed at lifecycle boundaries.} Missing context,
+  unresolved sanitisation, silence, timeout, stop, cancellation, or malformed
+  authority must not become implicit permission.
+
+  \item \textbf{Make security evidence inspectable without reproducing
+  sensitive content.} Decisions expose rules, risk factors, outcomes, and
+  run-local digests; raw values, payloads, screenshots, and private model
+  rationale are excluded by default.
+\end{enumerate}
+
+These principles produce the runtime composition in
+\cref{fig:architecture}. The BrowserUse agent remains responsible for
+planning and recovery. \systemname\ owns the two narrow points through which
+untrusted observations and privileged effects pass.
+
+\begin{figure}[htbp]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+  font=\small,
+  node distance=9mm and 13mm,
+  box/.style={draw,rounded corners=2pt,align=center,minimum height=10mm,minimum width=30mm,fill=white},
+  trusted/.style={box,draw=sentinelblue,very thick},
+  untrusted/.style={box,draw=sentinelred,very thick},
+  guard/.style={box,draw=sentinelamber,very thick,fill=sentinelamber!8},
+  presentation/.style={box,draw=sentinelgrey,dashed,fill=sentinelgrey!6},
+  store/.style={box,draw=sentinelgrey,dashed},
+  flow/.style={-{Latex[length=2.5mm]},thick},
+  event/.style={-{Latex[length=2.2mm]},dashed,draw=sentinelgrey},
+  transport/.style={<->,>=Latex,thick,draw=sentinelgrey}
+]
+  \node[trusted] (operator) {Operator\\request and authority};
+  \node[guard,right=of operator] (runner) {AgentRunner\\run context};
+  \node[untrusted,right=of runner] (model) {Untrusted model\\and planner};
+  \node[guard,right=of model] (tools) {GovernedTools\\pre-execution gate};
+  \node[trusted,right=of tools] (browser) {Privileged browser\\and tools};
+
+  \node[guard,below=of model] (llmguard) {GovernedLLM\\observation boundary};
+  \node[guard,below=of tools] (policy) {PolicyEngine\\single decision point};
+  \node[presentation,below=of operator] (ui) {Extension UI\\presentation/transport};
+  \node[store,below=of runner] (audit) {Redacted audit,\\history, and traces};
+
+  \draw[flow] (operator) -- node[above,font=\scriptsize]{goal} (runner);
+  \draw[flow] (runner) -- (model);
+  \draw[flow] (model) -- node[above,font=\scriptsize]{proposed} (tools);
+  \draw[flow] (tools) -- node[above,font=\scriptsize]{allowed} (browser);
+  \draw[flow] (browser.south) |- node[pos=0.25,right,font=\scriptsize]{observation} (llmguard.east);
+  \draw[flow] (llmguard) -- (model);
+  \draw[flow] (tools) -- (policy);
+  \draw[flow] (policy) -- (tools);
+  \draw[flow] (operator) -- node[left,font=\scriptsize]{input} (ui);
+  \draw[transport] (runner.south west) --
+    node[above,sloped,font=\scriptsize]{state/response} (ui.east);
+  \draw[event] (runner) -- (audit);
+  \draw[event] (llmguard) -- (audit);
+  \draw[event] (tools) -- (audit);
+\end{tikzpicture}}
+\caption{\systemname's runtime composition. Blue components hold authority or
+perform privileged execution; red is the untrusted decision maker; amber
+components form the runtime governance layer. Grey dashed components present
+or store redacted state rather than deciding policy. Dashed arrows carry
+privacy-preserving telemetry, not raw page content.}
+\label{fig:architecture}
+\end{figure}
+
+\section{Runtime composition}
+
+\subsection{Run construction and budgets}
+
+The Python backend exposes a loopback-only REST and WebSocket service to a
+Manifest V3 Chrome extension. Starting a task creates a fresh run identifier
+and \texttt{RunContext}, which holds the model-call budget and counters,
+latency counters, origin-scoped prompt findings, approval grants, handed-over
+domain patterns, intervention timing, and a random HMAC key.
+\texttt{AgentRunner} separately owns the maximum-step budget and cancellation
+state.
+
+The runner constructs a BrowserUse \texttt{Agent}~\cite{zunic2026browseruse} with a
+\texttt{GovernedLLM} in place of the raw chat model and
+\texttt{GovernedTools} in place of the ordinary tool registry. Policy-blocked
+tools are removed from the model schema in enforce mode, but the runtime check
+remains necessary because policy can change mid-run and shadow mode must
+observe actions that would have been blocked. Step and LLM timeouts are set
+longer than approval and takeover windows so that \systemname, rather than an
+upstream generic timeout, owns the terminal outcome.
+
+The model-call budget has a small grace allowance for an orderly terminal
+response; the runner requests a graceful stop at the configured limit and
+retains a hard backstop. A run-local cancellation predicate is checked before
+and after authority waits and immediately before the tool call. This closes
+the race in which an operator resolves a card just as another interface
+requests Stop.
+
+\subsection{Observation modality}
+
+The ordinary interactive agent is configured with
+\texttt{use\_vision=false}. BrowserUse can still capture frames for internal
+history even in non-visual mode, so \systemname\ replaces that screenshot
+service with a discard implementation. If an operator explicitly enables local
+trace screenshots, the step callback can write the current frame to disk, but
+the event hub strips it from WebSocket and replay data. Raw page titles are
+also removed because live pages have placed full redirect URLs and tokens in
+the title field.
+
+Defence in depth is applied again at the model wrapper. In the supported
+interactive path, image parts attached to the current BrowserUse state despite
+the runner setting are removed in all policy modes. Image-bearing tool results
+are replaced with a fixed marker rather than forwarding pixels, OCR-derived
+instructions, or attachments on the next turn. This is a capability trade-off,
+not visual attack detection.
+
+\section{Observation governance}
+\label{sec:observation-governance}
+
+\subsection{Untrusted regions}
+
+BrowserUse constructs messages containing several representations:
+\texttt{browser\_state}, \texttt{read\_state}, page-extraction
+\texttt{webpage\_content}, and accumulated action results. \systemname\ wraps
+tool-result strings in a \texttt{sentinel\_tool\_result} region and escapes
+forged copies of its protocol tags. On every model call, the wrapper extracts
+only these untrusted regions for detection. The operator task and system
+instructions are not scanned as though they were page content.
+
+Before policy mode is considered, model metadata omits HTTP(S) queries and
+fragments; Activity and traces may retain benign values but mask recognised
+sensitive ones. For non-web schemes (\texttt{data:}, \texttt{javascript:},
+\texttt{blob:}, and \texttt{file:}), the complete suffix is withheld from both
+model metadata and telemetry. This mode-independent boundary prevents inline
+documents and local paths from being exposed.
+
+\subsection{Detection}
+
+The detector is deterministic and multi-signal. It normalises text while
+preserving line structure and searches for bounded evidence such as:
+
+\begin{itemize}
+  \item impersonation of system, developer, user, or tool authority;
+  \item instructions to ignore, override, or replace the existing task;
+  \item role reassignment and task-precondition claims;
+  \item secrecy, evasion, and requests to suppress warnings;
+  \item secret exfiltration or generic transfer to an external destination;
+  \item forged protocol markup or encoded instructions; and
+  \item urgency/compliance language when combined with stronger signals.
+\end{itemize}
+
+Each finding contains a score, severity, signal names, origin, and an internal
+content hash. Events receive a separate digest keyed to the run, preventing a
+stable cross-run fingerprint. Detection at or above the configured threshold
+adds sticky taint for the current origin. A later clean viewport cannot prove
+that earlier content did not affect model memory, so it does not silently erase
+the finding. A repeated origin-and-content hash is coalesced. A new content
+hash on an origin that has already alerted re-emits only if its score is at
+least \(0.15\) higher.
+
+This explainable signature design was chosen for reproducibility and targeted
+sanitisation, not because it is intrinsically stronger than a learned
+classifier. Its post-hoc adaptation and residual attack surface are evaluated
+as limitations.
+
+\subsection{Attributable sanitisation and re-detection}
+
+When browser sanitisation is enabled in enforce mode, a positive finding does
+not trigger global string replacement. The wrapper first maps the evidence
+back to a bounded untrusted region. Line-based rules remove an attributable
+instruction line or cluster; a bounded-window fallback handles attacks split
+across an accessibility-tree link label and adjacent text. The implementation
+records which branch ran and how many regions were targeted, changed, or
+unattributable.
+
+Removal is only an intermediate state. The wrapper reconstructs the exact
+messages to be sent and repeats detection over their untrusted regions. A
+sanitisation outcome is:
+
+\begin{description}[style=nextline,leftmargin=24mm]
+  \item[\texttt{removed}] at least one attributable region changed and the
+  reconstructed observation is detector-clear;
+  \item[\texttt{residual}] a change occurred but the resulting observation
+  remains detector-positive; or
+  \item[\texttt{unattributable}] a finding could not be mapped and removed
+  safely.
+\end{description}
+
+A confirmed \texttt{removed} outcome can continue without a model-facing
+warning. The historical warning switch remains only to reproduce an earlier
+ablation. This detail is important: telling an untrusted model that an attack
+was found asks the component under influence to make another security
+decision. The 9B WASP warning-only result later shows that this fallback was
+not effective.
+
+\subsection{Unresolved content}
+
+For a current browser/read observation, \texttt{residual} or
+\texttt{unattributable} content is replaced with a fixed marker before any
+provider call and associated with a security-incident handover. The extension
+shows only the redacted origin, severity, and sanitisation status. It does not
+show the attacker text or offer an ``approve'' button. Returning control means
+that the operator has inspected or changed the page; BrowserUse receives a
+benign interruption and captures a fresh observation. It does not reuse or
+authorise the quarantined message. Timeout, cancellation, shutdown, or absence
+of an operator channel stops the unsafe continuation.
+
+Page-extraction subcalls and persistent tool history require a different
+lifecycle. Extraction has a shorter nested timeout, and an unchanged history
+item can reappear after a page refresh. Opening the full browser incident here
+could cause a nested timeout or an endless sequence of incidents. The wrapper
+therefore removes the complete unresolved bounded value and inserts a fixed
+marker. The policy still retains origin taint. This is a deliberate
+availability/security trade-off: the model loses that value, but known
+unresolved content is not forwarded.
+
+\section{Action governance}
+\label{sec:action-governance}
+
+\subsection{Attempt-before-preflight audit}
+
+Every \texttt{act} invocation receives a random action identifier. Before
+reading the current URL, inspecting the DOM, scanning a file, or loading live
+policy, \systemname\ emits an \texttt{attempted} audit containing the action
+name and a run-keyed parameter digest. This ordering means an exception in
+preflight cannot make the action disappear from the record. A guarded
+completion function then emits at most one terminal outcome on every return or
+exception path.
+
+\subsection{Live preflight}
+
+Preflight obtains the current page URL, bounded target-element semantics, a
+fresh policy snapshot, destination trust, and any active origin finding. It
+classifies the action parameters and builds a deterministic
+\texttt{RiskAssessment} containing:
+
+\begin{itemize}
+  \item numerical score and named factors;
+  \item recommendation (\texttt{allow}, \texttt{approve}, \texttt{handoff}, or
+  \texttt{block});
+  \item capabilities and taint labels;
+  \item sensitive-data categories and redacted parameters;
+  \item target origin; and
+  \item run-keyed parameter and approval-scope digests.
+\end{itemize}
+
+If enforce-mode domain policy needs the current page but the URL is absent or
+hostless, the assessment becomes a hard \texttt{missing\_current\_url} block.
+The system does not interpret missing context as ``no policy matched''.
+
+Local uploads receive bounded content inspection before the final policy pass.
+Only paths already authorised by BrowserUse, downloaded in the current
+session, or resolved within its managed file directory are eligible. The file
+is opened without following symbolic links and must be a regular UTF-8 text
+file no larger than 256 KiB. Sensitive categories are extracted without
+logging the content, and a keyed digest binds a clean file to the approval
+scope. A remote, missing, binary, oversized, unreadable, or otherwise
+unclassifiable upload is handed to the human.
+
+\subsection{Risk and amplified actions}
+
+Base risk varies by tool capability. Sensitive parameters add typed taint and
+a large score increase. An active injection finding increases score, with
+additional factors for an external side effect, a cross-origin destination, a
+query-bearing navigation, local file access, page code, or a consequential
+target. High-confidence injection into a configured protected sink is blocked.
+
+A lower-confidence injected workflow is not automatically blocked at every
+side effect. Instead, the
+\texttt{prompt\_injection\_amplified\_action} rule requires independent
+amplification: cross-origin navigation or disclosure, sensitive data, local
+file access, code execution, or a consequential/destructive target. Ordinary
+same-origin form interaction continues through the numeric risk policy. This
+choice is empirical. Replaying the first WASP trajectories with a blanket
+``gate every tainted side effect'' rule exhausted the four-prompt budget on 35
+of 50 tasks, while the narrowed rule exhausted it on none. Observation
+sanitisation therefore remains the primary control for WASP's 64 same-origin
+terminal goals; targeted action gating covers the 20 cross-origin goals and
+acts as defence in depth elsewhere.
+
+\subsection{Policy decision order}
+
+\texttt{PolicyEngine.evaluate} is the central decision method; each invocation
+applies the first-match order in \cref{tab:policy-order}. Upload inspection and
+approval revalidation may invoke it again before execution, without allowing a
+weaker interaction mechanism to override a stronger rule.
+
+\begin{table}[htbp]
+\centering
+\caption{Central policy decision order.}
+\label{tab:policy-order}
+\small
+\begin{tabularx}{\textwidth}{@{}r L{0.29\textwidth}L{0.13\textwidth}Y@{}}
+\toprule
+Order & Condition & Verdict & Security purpose \\
+\midrule
+1 & Blocked action type & Block & Live backstop for tools removed from the
+schema. \\
+2 & Non-web autonomous navigation scheme & Block & Prevent embedded code,
+local-resource, and external-handler URLs bypassing host policy. \\
+3 & Domain blocklist & Block & Explicit prohibition wins over weaker rules. \\
+4 & Domain allowlist miss & Block & Fail-safe default outside configured
+origins. \\
+5 & Dynamic hard risk or missing required context & Block & Enforce injection
+sink and unsafe data-flow decisions. \\
+6 & Recognised human-only sensitive category & Handoff & Withhold the agent
+action; the operator performs the step. \\
+7 & Sensitive domain on first touch & Handoff & Give direct control at a
+configured boundary. \\
+8 & Configured action or domain approval & Approve & Obtain narrow explicit
+consent. \\
+9 & Adaptive approvable risk & Approve & Gate consequential ambiguity without
+blocking read-only recovery. \\
+10 & No rule matched & Allow & Execute under the current policy. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+In off mode, the engine returns allow and observation enforcement is disabled,
+while privacy-preserving action audit remains. In shadow mode, it records the
+would-be verdict without sanitising or warning the model or enforcing the
+execution verdict. Mode-independent privacy filtering, image withholding, and
+tool-result wrapping still transform input. This supports false-block analysis
+without silently converting a baseline into an enforced run.
+
+\subsection{Domain and navigation enforcement}
+
+Domain entries can be keywords, exact domains including subdomains, host globs,
+or scheme-aware origins. Rules are evaluated against a navigation target or
+the current page for page-local actions. The same configuration is mirrored
+into BrowserUse's navigation watchdog, which reacts to actual browser events.
+This second net catches redirects, popups, link clicks, and page-script
+navigation that do not appear as a direct model \texttt{navigate} call.
+
+The pre-action policy and watchdog have different observation points, so their
+composition is intentional rather than duplicate code. The policy explains
+and audits the model proposal; the watchdog constrains navigation effects that
+emerge inside the browser.
+
+\section{Selective human authority}
+\label{sec:human-authority}
+
+\subsection{Approval}
+
+An approvable action creates a server-owned request and pauses the current
+step. Its card shows redacted parameters, origin, risk factors, policy reason,
+and a countdown. The operator can:
+
+\begin{itemize}
+  \item \textbf{Allow once}, authorising only the pending action;
+  \item \textbf{Allow similar}, creating a bounded run-local grant; or
+  \item \textbf{Deny}, causing a non-executing error that tells the agent not to
+  retry the same request.
+\end{itemize}
+
+The reusable grant binds action type, target origin and navigation path,
+capabilities, taint class, sensitive categories, and a keyed fingerprint of
+the target element. Code, file writes, and uploads also bind exact parameter or
+content digests. The grant expires after a configured time or use count.
+Neither the extension nor the API may select a reusable scope when the
+original server request did not offer it.
+
+After approval or grant reuse, \systemname\ repeats the complete preflight. The
+latest URL, target fingerprint, parameter digest, policy, and decision must
+remain within the original scope. A newly blocked action, a changed target, or
+unavailable context is recorded as \texttt{approval\_revalidation} and does not
+execute. If the new context reveals human-only sensitive data, the flow
+upgrades to direct takeover rather than treating the old approval as consent.
+
+The default prompt budget is four per run. Once exhausted, the system stops
+creating approval cards. Each later approvable action uses the configured
+fail-closed outcome: direct handover for that action or block. This limits
+prompt volume technically; it is not evidence that real operators would
+otherwise rubber-stamp.
+
+\subsection{Direct takeover}
+
+Takeover has two entry points. The model can voluntarily request help for a
+login, CAPTCHA, verification code, payment, or personal detail. Policy can
+also intercept an action or first access to a sensitive domain. In the latter
+case the proposed agent action is explicitly not executed. The runner pauses
+subsequent agent progress, while the content script supplies best-effort input
+arbitration, shows an in-page control state, and lets the operator return
+control when the protected step is complete. The page layer is cooperative UI:
+it cannot pre-empt an already executing browser step or prevent page scripts
+from changing the document.
+
+A completed sensitive-domain handover clears only the matched domain pattern
+for the remainder of that run. It does not clear prompt-injection taint or
+override hard policy. An optional operator note becomes ordinary model context;
+only the event copy is redacted, so the note must not contain protected values.
+The intercepted agent action is withheld, but takeover is not a general
+post-handoff confidentiality guarantee: non-password values entered into the
+page can reappear in a later DOM or accessibility observation. Timeout and
+cancellation yield distinct audit outcomes and no authority.
+
+\subsection{Security incident}
+
+An unresolved observation uses the handover transport but not the ordinary
+task-help semantics. The incident card persists across reconnects, contains no
+attacker text, offers no approval, and cannot be dismissed by the normal
+pause/resume control. Incident wait time is recorded separately from login or
+CAPTCHA takeover because it is enforcement-added review, not an intrinsic task
+step. Activity's incident count and review time, together with its
+per-policy-decision \texttt{understood} annotations, are technical telemetry
+and researcher walkthrough aids; they are not participant data.
+
+\section{Audit, privacy, and operator interfaces}
+
+Each enforcement decision includes verdict, rule, reason, mode, policy-only
+decision latency, complete pre-action latency, action identifier, risk factors,
+capabilities, taint labels, target origin, and a keyed parameter digest.
+Prompt-injection events contain only score, severity, signal names, and a
+run-keyed finding digest. Sanitisation events contain branch and outcome
+counts, not removed text. Action audits join attempted and terminal records by
+identifier and expose outcome and duration.
+
+The extension presents a chat-like run view, docked approval/takeover/incident
+cards, live policy editing, and an Activity view over completed runs. It is an
+operator interface rather than the policy authority: the server checks origin,
+request identifiers, pending state, and permitted response scope. Policies
+edited in the dashboard apply on the next model/action boundary.
+
+\Cref{chap:governance-interface} describes the current prototype control plane,
+including its snapshot and reconnect protocol, in-page ownership state,
+approval revalidation, incident recovery, dashboard, and fail-closed client
+failure semantics.
+
+Run-start trace metadata stores the policy snapshot, model, and provider.
+\texttt{TaskDone} adds usage and aggregate enforcement counters; errors, stops,
+and budget ends store these only in \texttt{HistoryStore}. Event parameters are
+redacted recursively. Action-audit exceptions retain only type names; run-level
+messages are redacted and bounded. Run-keyed HMACs correlate attempts and
+completions without cross-run secret linkage. Screenshot and free-form
+rationale persistence are opt-in and default off. Displayed model summaries are
+exposed outputs, not private chain-of-thought.
+
+\section{Implementation chronology and evidence boundary}
+\label{sec:implementation-chronology}
+
+The current implementation is more defensive than the exact versions used in
+the frozen benchmarks. \Cref{tab:chronology} records the mechanism-by-mechanism
+chronology so that a present-day design description cannot be misread as
+retrospective experimental provenance.
+
+This chronology is a methodological constraint. Current source code can
+establish how \systemname\ now behaves and tests can validate those contracts,
+but only frozen artefacts establish what a completed campaign measured. The
+next chapter expands the operator-facing control plane.
+\Cref{chap:methodology,chap:results} then derive the evaluation and each result
+from recorded policy, model, scaffold, and middleware provenance rather than
+from the latest repository state.

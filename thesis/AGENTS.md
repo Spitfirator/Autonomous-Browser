@@ -69,15 +69,14 @@ The possible future features are easy to confuse:
 - Keep the template's current 10-point type. Do not override it with an older
   generic 12-point instruction.
 - Treat 50 pages as the working limit for the complete main dissertation,
-  including the HITL chapter when it is eventually written.
-- Keep the complete submission, including any future appendices, at or below
-  100 pages. No appendix exists yet.
+  including the current HITL and Chrome-extension chapter.
+- The current technical assurance appendix is part of the submission. Keep the
+  complete submission, including appendices, at or below 100 pages.
 - Plan and monitor the page budget while writing; do not defer length control
   until the final edit.
 - `project_plan.tex` is the thesis outline, not the official report template.
-- Manage references with BibTeX. There is no `.bib` or Zotero library yet, so
-  create and populate a bibliography only from sources that have actually been
-  verified; never invent placeholder citation records.
+- Manage references with BibTeX in `references.bib`. Retain only sources that
+  have actually been verified; never invent placeholder citation records.
 
 ## Structure and argument
 
@@ -153,6 +152,10 @@ to the evidence presented.
   fixes, DOM-only interactive model path, and special-URL observation boundary
   as implementation changes, not as results measured by the frozen AgentDojo
   or WASP rows.
+- Treat Activity's security-pause count and review time as runtime telemetry.
+  Its `understood` ticks are researcher/operator walkthrough annotations, not
+  participant comprehension data; its within-run timing split is accounting,
+  not a matched estimate of execution without enforcement.
 - Treat HITL, plan authority, provenance hiding, and deterministic oracle work
   as unfinished unless a separate frozen implementation and evaluation artifact
   establishes otherwise. Scripted benchmark participant modes are not humans.

@@ -1,0 +1,188 @@
+\documentclass[10pt,a4paper]{article}
+
+\usepackage[margin=25mm]{geometry}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+\usepackage{longtable}
+\usepackage{microtype}
+
+\title{Dissertation plan: Sentinel}
+\author{Hector Gittos}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{Working title and thesis}
+
+\textbf{Working title:} \emph{Design and Implementation of Enforcement
+Middleware for Securing Web Agents}.
+
+\textbf{Thesis:} Browser agents should not be relied upon to police the same
+untrusted content that determines their actions.  A separate, executor-side
+runtime can instead mediate observations, data flow, and privileged actions.
+The dissertation tests the bounded claim that this architecture can reduce
+evaluated policy violations while preserving useful autonomy under the tested
+conditions.  It does not claim to solve prompt injection or establish
+deployment readiness.
+
+\section{Research questions}
+
+\begin{enumerate}[label=\textbf{RQ\arabic*:},leftmargin=18mm]
+  \item Can a separate enforcement layer reduce unsafe browser-agent actions
+  without stopping the agent from doing useful work?
+  \item Under what conditions should an independent runtime withhold a
+  browser-agent action or observation, and what fail-closed protocol should
+  govern approval, takeover, and return of control?
+\end{enumerate}
+
+RQ1 is answered empirically using AgentDojo and WASP. RQ2 is answered as a
+design, implementation, and protocol-verification result. Human comprehension,
+workload, trust, and approval behaviour are separate HCI questions that this
+dissertation does not claim to answer.
+
+\section{Original contributions}
+
+\begin{enumerate}
+  \item An executor-side reference-monitor architecture that treats the model
+  and every browser-derived observation as untrusted and applies policy
+  immediately before privileged execution.
+  \item A layered observation boundary combining deterministic detection,
+  attributable sanitisation, clean re-detection, sticky origin-scoped taint,
+  and fail-closed handling of unresolved content.
+  \item A selective-authority mechanism for hard blocks, bounded approval,
+  direct human takeover, cancellation, revalidation, and privacy-preserving
+  audit.
+  \item A two-stage evaluation that uses AgentDojo for controlled mechanism
+  evidence and WASP for browser-native transfer and failure analysis, reporting
+  utility and secure utility alongside attack success and attacker-directed
+  execution.
+\end{enumerate}
+
+\section{Chapter plan and page budget}
+
+The official report root is \texttt{project\_report - pg.tex}.  It retains the
+template's 10-point type and targets no more than 50 pages for the complete
+main dissertation.  The page allocations below include chapter-opening space,
+figures, and tables; references are budgeted separately.
+
+\begin{longtable}{@{}p{0.06\textwidth}p{0.55\textwidth}r@{}}
+\toprule
+ & Purpose & Target pages \\
+\midrule
+\endhead
+1 & Introduction: problem, motivation, questions, contributions, scope, and
+argumentative route. & 4 \\
+2 & Background and related work: browser agents, indirect prompt injection,
+model-level defences, reference monitors, information flow, benchmarks, and
+human authority.  Establish the precise gap. & 6 \\
+3 & Threat model and requirements: assets, actors, trust boundaries,
+capabilities, invariants, assumptions, and non-claims. & 5 \\
+4 & Sentinel design and implementation: runtime composition, observation
+boundary, taint and risk analysis, policy order, approvals and handover,
+revalidation, audit, privacy, and lifecycle failure handling. & 7 \\
+5 & Human authority and Chrome extension: approval, takeover, security
+incident, reconnect protocol, in-page ownership, Activity, privacy, and
+fail-closed interface semantics. & 7 \\
+6 & Evaluation methodology: questions and hypotheses, AgentDojo and WASP
+designs, metrics, provenance, reproducibility, and validity controls. & 6 \\
+7 & Results: component replay, controlled AgentDojo end-to-end campaigns,
+matched 27B WASP comparison, 9B development sequence, and mechanism telemetry.
+& 7 \\
+8 & Discussion: interpretation, utility/security interaction, failure
+analysis, RQ answers, limitations, ethics, and unmeasured human outcomes. & 6 \\
+9 & Conclusion: demonstrated contributions and tightly bounded future work. &
+2 \\
+ & \textbf{Main-text total} & \textbf{50} \\
+\midrule
+ & Technical assurance appendix (outside the main-text limit) & 2 \\
+ & References (outside the main-text limit) & 4--5 \\
+\midrule
+ & \textbf{Expected complete submission} & \textbf{56--57} \\
+\bottomrule
+\end{longtable}
+
+\section{Claim--evidence map}
+
+\begin{longtable}{@{}p{0.28\textwidth}p{0.40\textwidth}p{0.24\textwidth}@{}}
+\toprule
+Claim & Primary evidence & Required qualification \\
+\midrule
+\endhead
+Sentinel mediates privileged actions independently of the acting model. &
+\texttt{server/runner.py}, \texttt{governed\_tools.py}, and
+\texttt{policy.py}; tests of allow, block, approval, handover, timeout,
+cancellation, and audit pairing. & The browser/tool implementation remains in
+the trusted computing base. \\
+
+Post-verified observation sanitisation is the principal measured containment
+mechanism. & AgentDojo enforcement telemetry and the matched WASP 27B
+sanitisation events; warning-only 9B negative result. & Deterministic
+signatures were adapted using development corpora and cannot establish
+held-out universal detection. \\
+
+AgentDojo enforcement reduced native attacker success while preserving or
+improving utility in the tested runs. & Frozen 4B, 9B, and 27B paired
+thinking/32K summaries, 629 pairs per model. & Independent descriptive model
+runs; no causal model-size inference. \\
+
+The mechanism transferred to browser-native tasks. & Matched WASP 27B
+off/enforce run: 84 attacked cases per condition, unchanged native oracles and
+matched generated inputs. & One seed and one benchmark revision; zero observed
+success is not a zero population rate. \\
+
+Warning the model is not sufficient. & 9B shared off baseline and
+provenance-separated warning-only row. & Engineering and development evidence,
+not
+one immutable matched campaign. \\
+
+Selective human authority is fail closed and bounded in the implementation. &
+Approval and handover managers, scope binding, timeout/cancellation paths,
+revalidation, security-incident flow, and tests. & No participant evidence for
+comprehension, workload, fatigue, trust, or usability. \\
+\bottomrule
+\end{longtable}
+
+\section{Evidence boundaries that must remain explicit}
+
+\begin{itemize}
+  \item Use the matched Qwen 3.5 27B WASP row as the principal browser-native
+  comparison.  Use the 9B sequence only as provenance-separated development
+  and failure-analysis evidence.
+  \item Report native user utility, secure utility, native attack success,
+  attacker-directed attempts and executions, interventions, and provenance
+  together.  Low attack success alone is not security evidence.
+  \item Treat the detector corpora as development evidence where signatures
+  were adapted after inspection.  Do not convert scorecard performance into
+  an end-to-end claim.
+  \item Distinguish frozen campaign behaviour from later implementation:
+  unresolved-observation quarantine, bounded extraction/tool-result removal,
+  human-only secret takeover, approval revalidation, lifecycle hardening,
+  screenshot exclusion in the ordinary runner, and the special-URL boundary
+  post-date the benchmark rows.
+  \item Do not describe scripted benchmark participant modes as humans.  No
+  WASP oracle campaign or participant study exists.
+  \item Activity's security-pause timing and per-decision
+  \texttt{understood} ticks are technical instrumentation and walkthrough
+  annotations, not behavioural evidence.
+\end{itemize}
+
+\section{Submission-quality gates}
+
+\begin{enumerate}
+  \item Every external factual claim has a verified primary or peer-reviewed
+  source in BibTeX; no placeholder or guessed citation records remain.
+  \item Every numerical result is checked against a curated JSON/Markdown
+  result artifact and its frozen provenance.
+  \item Terminology, denominators, policy modes, and measured/post-campaign
+  boundaries are consistent across chapters.
+  \item The official root compiles with Tectonic without undefined
+  references, missing citations, overfull boxes, or placeholder text.
+  \item The compiled PDF is at most 50 main-text pages and 100 pages in total,
+  and every page is rendered and visually inspected for layout defects.
+  \item Title-page identity, degree, supervisor, submission date, declaration,
+  and distribution wording are confirmed by the author before submission.
+\end{enumerate}
+
+\end{document}

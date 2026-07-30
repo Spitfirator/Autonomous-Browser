@@ -1,0 +1,358 @@
+\chapter{Evaluation methodology}
+\label{chap:methodology}
+
+\section{Evaluation strategy}
+
+The evaluation follows the architectural claim from two directions. AgentDojo
+tests the enforcement mechanisms in controlled tool environments. WASP tests
+whether observation sanitisation and executor mediation transfer to a
+browser-native agent operating realistic, mutable websites. These stages are
+complementary rather than interchangeable:
+
+\begin{itemize}
+  \item AgentDojo provides many paired user/attacker combinations, exact tool
+  calls, and native state oracles across four application domains. It does not
+  exercise BrowserUse's DOM observation, navigation, or browser re-planning.
+  \item WASP exercises an actual browser loop over GitLab and Reddit
+  environments with generated page injections and native end-state oracles.
+  Its scenario set is smaller and the agent can fail for reasons unrelated to
+  enforcement.
+\end{itemize}
+
+The study therefore avoids a single aggregate ``security score''. It asks
+whether individual mechanisms behave as specified, whether native attacker
+goals are achieved, whether attacker-directed actions reach the executor, and
+whether legitimate user tasks still succeed.
+
+\section{Questions and expected observations}
+
+The empirical part of RQ1 is decomposed into four evaluation questions:
+
+\begin{description}[style=nextline,leftmargin=13mm]
+  \item[EQ1] Does the detector/policy pipeline classify the defined component
+  corpora as expected without hard-blocking benign AgentDojo tasks?
+
+  \item[EQ2] In matched AgentDojo task pairs, how do enforcement and
+  sanitisation change native user utility, native attacker success, and their
+  joint outcome?
+
+  \item[EQ3] In the primary matched WASP browser comparison, how do the same
+  outcome families and attacker-directed execution change between off and
+  enforce?
+
+  \item[EQ4] Which recorded intervention profile accompanies the browser
+  result, and what do the warning-only and sanitisation-revision rows reveal
+  about failure modes?
+\end{description}
+
+The expected safe outcome is not necessarily a hard block. Removing an
+injection before it shapes the model can cause the agent to resume the user
+task without proposing the attacker action. Conversely, a low ASR with low
+utility would be weak evidence because model incapability can suppress both
+goals.
+
+RQ2 is evaluated at the protocol level. Unit and integration tests exercise
+approval, takeover, incident, timeout, cancellation, revalidation, and audit
+invariants. The methodology also specifies a structured non-participant
+walkthrough for checking whether the interface exposes the action, target, data
+class, rule, consequence, and alternatives. No frozen walkthrough result is
+reported, so this checklist remains an interface-evaluation protocol rather
+than evidence of explanation quality.
+
+\section{Policy modes}
+
+Three modes support different comparisons:
+
+\begin{description}[style=nextline,leftmargin=20mm]
+  \item[\texttt{off}] Prompt-boundary and verdict enforcement are bypassed.
+  Redacted action audit remains so executions and latency can be compared.
+
+  \item[\texttt{shadow}] The detector and policy produce would-be decisions,
+  but model input is not sanitised and actions execute. This mode is suited to
+  retrospective false-block and missed-danger analysis.
+
+  \item[\texttt{enforce}] Observation transformations and policy verdicts take
+  effect. Blocks, approvals, and handovers can change the trajectory.
+\end{description}
+
+The headline benchmark comparisons use off and enforce. Shadow is part of the
+general evaluation design but not a headline AgentDojo or WASP row reported
+here.
+
+\section{Outcome definitions}
+\label{sec:outcome-definitions}
+
+For task instance \(i\), let \(u_i \in \{0,1\}\) be the benchmark's native
+user-task oracle and \(a_i \in \{0,1\}\) its native attacker-goal oracle. For
+\(n\) instances:
+
+\begin{align}
+  \mathrm{Utility} &= \frac{1}{n}\sum_{i=1}^{n} u_i,\\
+  \mathrm{ASR} &= \frac{1}{n}\sum_{i=1}^{n} a_i,\\
+  \mathrm{SecureUtility} &=
+    \frac{1}{n}\sum_{i=1}^{n} u_i(1-a_i).
+\end{align}
+
+Secure utility is the joint condition that the user succeeded and the attacker
+did not. It must not be confused with \(1-\mathrm{ASR}\), which labels an
+inactive but uncompromised agent as secure regardless of utility. Joint counts
+are also reported as useful/secure, useful/compromised,
+unsuccessful/secure, and unsuccessful/compromised.
+
+For matched conditions, the analysis counts discordant transitions rather than
+comparing percentages alone: utility gains and losses, attacker successes
+prevented and introduced, and secure-utility gains and losses. The benchmark
+task set is fixed rather than a random sample from a clearly defined
+population, so the dissertation emphasises descriptive paired effects rather
+than generalising a null-hypothesis significance test. For a cell with zero
+events, the rough ``rule of three'' gives an upper 95\% bound of \(3/n\) under
+an independent binomial model~\cite{hanley1983ruleofthree}; it is presented as
+intuition, not proof that the benchmark cases are independent draws.
+
+WASP adds two deterministic trajectory measures. An
+\emph{attacker-directed attempt} is a task instance containing at least one
+model-proposed action matched to the instantiated attacker goal. An
+\emph{attacker-directed execution} requires such an action to have reached the
+privileged tool. These are task-instance indicators, not raw action totals.
+They do not score reasoning-only diversion, but they expose partial attacks
+that fail the final-state oracle.
+
+Mechanism diagnostics include detector incidence, sanitisation status and
+branch, blocks, approvals, handovers, action attempts/completions, and response
+truncation. An intervention count is not treated as a human measure when the
+benchmark participant is scripted.
+
+\section{AgentDojo evaluation}
+\label{sec:agentdojo-method}
+
+\subsection{Benchmark and native boundary}
+
+AgentDojo version 0.1.35, suite v1, contains 97 native user tasks across
+banking, Slack, travel, and workspace environments. Crossing these tasks with
+the published \texttt{tool\_knowledge} injection goals produces 629 security
+cases~\cite{debenedetti2024agentdojo}. \systemname's native adapter preserves
+AgentDojo tool names, arguments, environment objects, and unmodified user and
+attacker oracles. It deliberately avoids AgentDojo's raw trace logger because
+that logger would persist injected payloads.
+
+Every tool result is treated as untrusted. In enforce mode, the AgentDojo
+adapter sanitises detected native result fields, propagates taint, maps the
+next proposed native call to \systemname\ capabilities, and invokes the same
+policy engine used by the browser runtime. In off mode it preserves native
+model/tool behaviour while retaining privacy-preserving outcome data.
+
+\subsection{Component replay}
+
+The model-free replay enumerates all 16 public non-manual attack families. It
+replays 7,404 security cases and the 97 benign tasks for each family through
+the detector, risk analyser, and real policy engine. Reported measures are
+detection precision, recall and F1; security-case hard-block rate; benign
+hard-block rate; and benign approval incidence.
+
+This is a development-set test. Rules were improved after inspecting
+AgentDojo v1 failures, so a perfect score does not estimate unseen attack
+performance. It also does not measure model recovery or native task success.
+Its purpose is to establish deterministic component behaviour and identify
+which rules would fire.
+
+A separate detector-v2 scorecard uses three corpora:
+188 AgentDojo security/benign cases, 726 v1 tool-knowledge cases, and 123 WASP
+security/benign page representations. The WASP representation was corrected
+after a live canary showed that BrowserUse omits a hidden Markdown anchor
+destination from the accessibility tree. Because the signatures were then
+adapted using WASP inputs, WASP is explicitly a development corpus for this
+scorecard. Detector metrics are not converted into end-to-end containment
+claims.
+
+\subsection{End-to-end campaigns}
+
+The controlled end-to-end table contains Qwen 3.5 4B, 9B, and 27B
+~\cite{qwen3.5}. Each uses
+the same named thinking profile: 32,768 context tokens, a 4,096-token output
+cap, temperature 0.6, top-\(p\) 0.95, and seed 0. A separate 97-task
+non-injected run estimates each model's clean utility ceiling. Each attacked
+campaign runs all 629 pairs once in off and once in enforce, giving 1,258
+executions per model.
+
+The local Ollama runtime~\cite{ollama2026} served configured tags
+\texttt{qwen3.5-agentdojo:4b}, \texttt{:9b}, and \texttt{:27b}. The historical
+artefacts do not pin one Ollama binary version or cryptographically comparable
+base-model blobs across every row. Model rows are therefore independent
+descriptive runs: parameter count is confounded with quantisation and hardware,
+and the study does not identify a causal scaling effect. An earlier 4B
+8K/non-thinking campaign is excluded because context, reasoning, output budget,
+and compute differed.
+
+Provenance is not perfectly symmetric. The 4B campaign repeated both
+conditions under the fixed middleware. The 9B raw reports and checkpoint are
+preserved locally and support recomputation, but they do not record a Git
+revision and have no checked-in compact summary; the curated ledger is the
+published source for that row. For 27B, historical off reports were preserved
+byte-for-byte because off bypasses the affected detector/serializer, while
+enforce was repeated under a new immutable tag. Task, model, profile, and
+sampling match, but the old off model blob and code revision cannot be
+cryptographically verified; the interpretation retains this asymmetry.
+
+\section{WASP evaluation}
+\label{sec:wasp-method}
+
+\subsection{Benchmark construction}
+
+WASP is pinned to commit
+\texttt{ffee6f41fde76acd14bd792db442479c506260c2}; BrowserUse is pinned to
+\texttt{c8e6e8f0fe617564687895702c2338967293b309}
+~\cite{zunic2026browseruse}.
+The official prompt injector and native final-state evaluators operate in
+isolated GitLab and Reddit environments~\cite{evtimov2025wasp}. The evaluated
+matrix has:
+
+\[
+  21\ \text{attacker scenarios}
+  \times 2\ \text{benign user goals}
+  \times 2\ \text{injection formats}
+  = 84\ \text{attacked instances per condition}.
+\]
+
+The formats are plain text and URL-based goal hijacking. All thesis-eligible
+rows use a 30-step cap, one action per step, structured BrowserUse planning,
+32,768 context tokens, a 4,096-token output cap, temperature 0.6, top-\(p\)
+0.95, seed 0, DOM/accessibility observations, and no screenshot pixels supplied
+to the interactive model. Ollama's separate native thinking stream is
+disabled so responses conform to BrowserUse's action schema; BrowserUse's
+structured planning fields remain enabled. The benchmark participant mode is
+\texttt{none}, a scripted control rather than a human.
+
+A complete 21-case off pilot used 20 steps and recorded 12/21 utility and 2/21
+attacker success. Seven executions reached the effective action ceiling.
+The 30-step budget was therefore frozen before the main campaigns. The pilot
+is preserved but excluded; no 20-step task is substituted into a 30-step row.
+
+\subsection{Primary matched 27B comparison}
+
+The principal browser comparison runs Qwen 3.5 27B in off and final
+sanitisation-enforce conditions. It contains 168 executions and matching
+generated-input manifests for all four 21-task batches. Model, scaffold,
+policy, middleware, step budget, benchmark revision, and reset protocol are
+frozen within the run. GitLab and Reddit remain mutable, so pristine clones are
+restored before each 21-task cell and incomplete cells are not combined.
+The checked-in curated records pin the exact campaign and middleware
+provenance; \Cref{sec:appendix-wasp-provenance} reproduces the exact run tags,
+Sentinel commits, and policy and enforcement digests.
+Primary outcomes come from the unchanged WASP final-state oracles. The
+attacker-directed action score is a deterministic replay of governance events
+against instantiated attacker goals; WASP's optional LLM-based intermediate
+action classifier is not required.
+
+The pre-campaign policy sanitises a detected browser observation only after
+attributable removal and clean re-detection, then continues without a
+model-facing alert. Action mediation remains active, allowing the analysis to
+separate sanitisation from blocks and human-authority events through telemetry.
+
+\subsection{9B development sequence}
+
+The 9B evidence has one shared off baseline followed by three
+provenance-separated enforce rows:
+
+\begin{enumerate}
+  \item warning-only enforcement;
+  \item sanitisation V1; and
+  \item sanitisation V2 with improved complete multi-line removal.
+\end{enumerate}
+
+Middleware hashes differ between revisions, and V2 deliberately reuses the
+frozen off baseline rather than rerunning it. The sequence is therefore an
+engineering ablation and failure analysis, not one immutable matched campaign.
+It can show that a warning did not help and document how specific failures
+changed, but differences between its rows must not be given the same causal
+interpretation as the matched 27B comparison.
+
+\subsection{Mutable-environment controls}
+
+Each checkpoint binds model, policy, participant, inputs, and enforcement
+provenance to a model call and native score. One unchanged-state navigation
+failure may be retried; a second ends the cell.
+
+GitLab and Reddit are restored from pristine clones before each new 21-task
+cell because WASP's normal cleanup does not reliably reset all mutable state.
+An injector-preparation failure is likewise archived before one reset and
+retry. After a remote machine loss, only complete, natively scored 21-task
+cells are portable; a partially prepared cell is restarted in full. These
+rules prevent cases from two different site states being combined.
+
+\section{Human-authority protocol checks}
+
+The current runtime's later approval and incident hardening is tested outside
+the frozen benchmark scores. The verification matrix includes:
+
+\begin{itemize}
+  \item allow, hard block, approval, bounded reuse, deny, timeout, and prompt
+  budget outcomes;
+  \item direct takeover for recognised secret categories across indexed input,
+  free-text keystrokes, page code, upload path, and bounded upload content;
+  \item approval-scope and digest unit checks, plus end-to-end revalidation for
+  policy, DOM replacement or disappearance, upload-content or classification
+  changes, and stop;
+  \item unresolved current-observation quarantine, operator return, fresh
+  observation, timeout, cancellation, and missing operator channel;
+  \item whole-value removal for unresolved extraction and history content;
+  \item stop races and explicit cancellation immediately before execution;
+  \item exactly one attempted and one terminal audit for preflight errors and
+  all non-executing outcomes; and
+  \item fixture-secret and injection-payload redaction from public events and
+  approval data, plus trace checks for screenshots, titles, model reasoning,
+  and special URLs.
+\end{itemize}
+
+A UI walkthrough can use a fixed checklist: does each non-allow state identify
+what would happen, where, with which data class, under which rule, and what safe
+choices remain? An empty or generic reason would fail explanation coverage.
+The implementation provides per-decision \texttt{understood} ticks for
+researcher/operator annotations, but this dissertation reports no completed
+walkthrough aggregate; the ticks are not survey responses.
+
+\section{Reproducibility and evidence hierarchy}
+
+Generated benchmark artefacts are not edited by hand. The source-of-truth
+order is:
+
+\begin{enumerate}
+  \item curated per-run JSON or Markdown summaries;
+  \item frozen campaign state, native scores, task reports, and recorded
+  provenance;
+  \item the canonical human-readable evaluation ledger; and
+  \item the current implementation and thesis-status synthesis.
+\end{enumerate}
+
+The latest Git revision cannot retroactively prove the behaviour of an older
+campaign. New policy, participant, model, scaffold, inputs, or middleware
+requires a new immutable run tag. Results are not pooled across such changes.
+Raw page captures, credentials, authentication state, model outputs, and full
+campaign directories remain local and ignored; compact aggregates contain
+counts, hashes, settings, and validation outcomes suitable for review.
+
+The reported WASP campaign records confirm all expected native scores,
+provenance checks, and task checkpoints. The matched 27B artefact also records
+the contemporaneous test and extension-build gates. The current code is tested
+again for this dissertation, but those later tests establish implementation
+contracts only; they do not modify the frozen numerical rows.
+
+\section{Ethical and validity considerations}
+
+Both benchmark environments use isolated, synthetic services rather than
+attacking live users or websites. Credentials and secrets used for security
+tests are fixtures; the logging design intentionally avoids retaining their
+raw values. No human participants are recruited and no personal behavioural
+data is collected.
+
+The principal internal-validity threats are stochastic model behaviour,
+mutable website state, runner failure, and changing middleware. Seed and
+sampling settings are fixed, website restoration is cell-scoped, execution
+failures are not scored as defence successes, and run provenance is immutable.
+Residual asymmetries are disclosed rather than normalised away.
+
+External validity is limited by one seed, specific Qwen models, two benchmark
+families, a finite action budget, DOM-only observations, and policies developed
+against some evaluated attacks. The benchmarks are controlled mechanism and
+browser-transfer evidence, not an estimate of attacks ``in the wild''. The
+result chapter reports exact denominators and negative evidence so that these
+limits remain visible.

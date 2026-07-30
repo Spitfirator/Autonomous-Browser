@@ -1,0 +1,447 @@
+\chapter{Background and related work}
+\label{chap:background}
+
+\section{From language models to browser agents}
+
+An LLM agent places a generative model in a feedback loop of goals,
+observations, decisions, tool calls, and results. ReAct made this
+reasoning--action interleaving explicit, while Toolformer studied when and how
+models invoke tools~\cite{yao2023react,schick2023toolformer}. Tool schemas,
+observation construction, memory, timeouts, execution semantics, and error
+handling therefore form part of the agent, not merely its plumbing, and can
+change both capability and security.
+
+Browser agents apply this loop to URLs, page representations, interactive
+elements, and sometimes screenshots, with actions spanning navigation, input,
+downloads, uploads, extraction, and code execution. Because the executor may
+inherit an authenticated browser profile, these actions also inherit user
+privilege. WebArena and VisualWebArena provide realistic stateful web tasks and
+functional end-state evaluators~\cite{zhou2024webarena,
+koh2024visualwebarena}; WorkArena does so for enterprise knowledge work
+~\cite{drouin2024workarena}. They expose two premises used here: completion
+requires native state evaluation, and observations contain data outside the
+user's control. A browser agent must interpret that data, but the page has no
+authority to redefine the user's objective.
+
+\section{Prompt injection and the confused authority boundary}
+
+\subsection{Direct and indirect attacks}
+
+Prompt injection exploits instructions and data sharing one model input. Perez
+and Ribeiro systematised direct instruction-override attacks and introduced
+PromptInject~\cite{perez2022ignore}. Direct injection matters to application
+policy, but is not the principal threat here because the operator is the root
+authority for the browser task.
+
+In an \emph{indirect} attack, instructions arrive through retrieved content.
+Greshake et al. demonstrated this pattern and impacts including data theft and
+propagation~\cite{greshake2023indirect}. Pages, email, documents, tool results,
+or memory can deliver an injection that the user may never see, while the
+agent acts with the user's session.
+
+Unlike parser injection, natural-language agents intentionally interpret novel
+instructions and contextual data through the same statistical model. A
+conventional parser can rely on a grammar and typed separation between code
+and parameters; a browser agent is deliberately expected to understand
+previously unseen prose. Markers can help, but pages can imitate them and the
+model must still infer authority. Formalisations and benchmarks identify this
+instruction--data confusion as a core mechanism
+~\cite{liu2024formalizing,yi2025bipia}.
+
+\subsection{Agent-specific consequences}
+
+For an agent, injection can redirect a sequence of tool calls towards a
+terminal goal---for example, disclosing data, changing a setting, or creating
+a public resource---even when no single action appears extraordinary.
+Intermediate diversion therefore matters alongside final attacker success; an
+agent may take attacker-directed actions without completing the attack, while
+an incapable model may show low attack success because it completes neither
+malicious nor benign tasks.
+
+AgentDojo pairs user and attacker goals in executable tool environments
+~\cite{debenedetti2024agentdojo}; InjecAgent spans multiple tool-integrated
+applications~\cite{zhan2024injecagent}; and WASP distinguishes starting an
+attacker-directed browser trajectory from achieving its terminal objective
+~\cite{evtimov2025wasp}. ST-WebAgentBench instead measures broader policy
+compliance through Completion Under Policy and Risk Ratio
+~\cite{levy2026stwebagentbench}, so it is complementary rather than a comparable
+result row. These distinctions motivate reporting utility, attack success,
+secure utility, and attacker-directed attempts and executions.
+
+\subsection{Stored, second-order, and visual channels}
+
+The current page is not the only untrusted observation. An apparently safe
+action can return attacker-controlled text that is stored in history and shown
+on a later turn; extracted page content may also cross a secondary model call,
+and memory can preserve malicious state across queries. Protecting only the
+first browser-state message therefore leaves equivalent second-order paths
+unmediated.
+
+Multimodal agents add a pixel channel: adversarial images can steer
+vision-language models~\cite{bailey2024imagehijacks}, and visual prompt
+injections can redirect GUI and browser agents~\cite{cao2026vpibench}. A DOM
+filter cannot remove rendered words from screenshots. \systemname\ therefore
+excludes screenshots from its ordinary model path and accepts the resulting
+capability cost. A future system would need to mediate the visual channel
+independently; visual security remains outside the evaluated claim here.
+
+\section{Defence families}
+
+No single defence family dominates across utility, attacker adaptation, model
+access, and deployability. \Cref{tab:defence-families} summarises the most
+relevant approaches and the boundary each leaves.
+
+\begin{table}[htbp]
+\centering
+\caption{Author's analytical synthesis of prompt-injection defence families
+and their relationship to this work. ``Model-independent'' means that the
+mechanism does not require retraining the acting model; it does not imply
+perfect security.}
+\label{tab:defence-families}
+\small
+\begin{tabularx}{\textwidth}{@{}L{0.19\textwidth}Y Y@{}}
+\toprule
+Family & Principal strength & Principal limitation \\
+\midrule
+Prompt instruction and delimiting &
+Low deployment cost; can reinforce provenance and improve empirical
+robustness. &
+The exposed model remains responsible for respecting the boundary; attacker
+text can imitate natural-language markers. \\
+
+Spotlighting and input transformation &
+Adds a persistent provenance cue to untrusted tokens without model
+retraining~\cite{hines2024spotlighting}. &
+Still depends on model interpretation; encoding can reduce utility and does
+not itself constrain tool effects. \\
+
+Detection and sanitisation &
+Model-independent, auditable, and can remove known attacks before exposure. &
+Classifiers and signatures have false positives, misses, attribution failures,
+and adaptive-attack risk. \\
+
+Adversarial or structured training &
+Can teach a model to privilege a formal prompt channel, as in
+StruQ~\cite{chen2025struq}, or an instruction hierarchy
+~\cite{wallace2024instructionhierarchy}. &
+Requires model access or provider adoption; empirical robustness may not
+transfer to new attacks and does not provide an executor policy. \\
+
+Tool isolation and capability control &
+Restricts consequences even if reasoning is compromised; can give strong
+guarantees for authorised flows. &
+Needs an explicit task/control representation and can reject tasks whose
+authority is underspecified. \\
+
+Human approval &
+Adds authority for ambiguous consequential actions. &
+Frequent, vague, or poorly timed prompts cause inattention; humans can approve
+attacker-shaped requests and delays reduce autonomy. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Prompting, provenance cues, and trained separation}
+
+Simple system reminders are attractive because they work with closed models.
+BIPIA evaluates reminders, boundary awareness, in-context examples, and
+adversarial training across indirect-injection tasks
+~\cite{yi2025bipia}. Spotlighting transforms untrusted text
+through delimiting, datamarking, or encoding; its experiments found large
+reductions in attack success on document tasks, with a capability cost for
+some encoded inputs~\cite{hines2024spotlighting}. These methods inform
+\systemname's explicit
+untrusted-region markers, but markers are treated as defence in depth rather
+than an authority boundary.
+
+StruQ uses a secure front end and a specially trained model so that prompt and
+data channels have different learned semantics~\cite{chen2025struq}. The
+instruction-hierarchy preprint similarly trains models to prioritise
+privileged instructions over lower-trust input
+~\cite{wallace2024instructionhierarchy}. These approaches address the model's
+internal interpretation and can complement a runtime monitor. They do not,
+however, make an arbitrary proposed side effect authorised, and they may not
+be available for a chosen hosted or open model.
+
+\subsection{Detection and its limits}
+
+Detection creates an inspectable classification boundary before the acting
+model and can trigger sanitisation or policy. Formal evaluations show that
+attack and defence rankings vary across models, tasks, and transformations
+~\cite{liu2024formalizing}. A finite corpus cannot cover changes in wording,
+encoding, placement, or benign context; detector-only security therefore faces
+distribution shift.
+
+Removal before model exposure is prior art. Chen et al. separate injection
+detection from segmentation- and extraction-based removal, while DataFilter
+learns task-conditioned removal before a black-box backend
+~\cite{chen2025detectremove,wang2026datafilter}. \systemname\ does not claim
+removal as novel. It transforms attributable text, re-detects the exact
+reconstructed model input, and records \emph{removed}, \emph{residual}, or
+\emph{unattributable}. Current unresolved browser content is withheld before
+the model call; the frozen rows measured earlier revisions
+(\Cref{chap:methodology}).
+
+Because \systemname's signatures were revised after WASP failures, the detector
+score is development evidence, not an unbiased estimate of generalisation.
+Targeted optimisation has bypassed defences that appeared stronger against
+fixed attacks~\cite{zhan2025adaptive}. \systemname\ therefore uses detection
+for observation handling and taint, with static policy, data-flow checks, and
+executor mediation retained as independent layers.
+
+\subsection{System-level separation}
+
+Recent system work moves enforcement away from the acting model. AI Agents
+with Formal Security Guarantees represents security requirements as
+trace-based constraints enforced around an agent
+~\cite{balunovic2024formalsecurity}. IsolateGPT gives LLM-integrated
+components process-like isolation and mediated communication
+~\cite{wu2025isolategpt}. Contextual Agent Security generates a
+purpose-specific policy that a deterministic runtime applies to tool calls
+~\cite{tsai2025contextual}. AgentSpec supplies a lightweight DSL of trigger,
+predicate, and enforcement rules evaluated at discrete execution points
+~\cite{wang2026agentspec}. These systems differ in trusted abstraction and
+integration cost, but share the premise that privileged effects need an
+authority boundary outside unconstrained model reasoning.
+
+CaMeL is the closest architectural comparison. It extracts a control-flow
+program from the trusted query, processes untrusted data through constrained
+components, and uses capabilities to prevent unauthorised flows
+~\cite{debenedetti2025camel}. This design offers a stronger route to
+security-by-construction for tasks that can be represented in its restricted
+program. It also reports a utility boundary: some AgentDojo tasks cannot be
+solved under the extracted secure flow. \systemname\ occupies a different
+point in the design space. It preserves an existing free-form browser-agent
+loop and interposes at runtime, accepting weaker guarantees in exchange for
+drop-in compatibility and dynamic re-planning.
+
+Information-flow and capability systems make a different trade. Fides tracks
+confidentiality and integrity labels, enforces deterministic flow policy, and
+selectively hides information from the planner~\cite{costa2025fides}. ACE adds
+trusted abstract planning, static flow analysis, and execution barriers
+~\cite{li2026ace}. The \emph{tacit} harness instead has an agent emit code for a
+capability-safe Scala execution model whose type system tracks effects and
+classified values~\cite{odersky2026tracked}. These approaches provide stronger
+structural guarantees inside their execution models than \systemname's
+pattern-bounded taint and free-form browser loop.
+
+Three newer systems sharpen this comparison. DRIFT derives a minimal function
+trajectory and parameter checklist before exposure, then validates deviations
+and masks instructions that its Injection Isolator judges to conflict with the
+trusted user query before they enter the memory stream~\cite{li2025drift}. The
+Progent preprint expresses least privilege as symbolic tool-and-argument rules
+and uses satisfiability solving to distinguish automatic narrowing from
+approval-requiring privilege expansion~\cite{shi2025progent}. PRUDENTIA makes
+planning policy-aware over Fides and evaluates
+autonomy under fixed security policies using task-completion-at-intervention-
+budget (\(\mathrm{TCR}@k\)) and a proxy HITL-load count
+~\cite{costa2025fides,kolluri2026prudentia}. Those metrics assume a compliant
+reviewer rather than measuring participant behaviour. \systemname\ does not
+inherit these plan-derived, symbolic, or information-flow guarantees; differing
+models, policies, scaffolds, and metrics preclude headline-result comparison.
+
+A recent ICSE-NIER vision paper derives labelled data-flow and tool-sequence
+specifications from system hazards and demonstrates their feasibility in
+Alloy~\cite{doshi2026verifiablysafe}. Its external runtime engine remains
+future work, making it a formal specification direction rather than a deployed
+comparison.
+
+AgentDojo's tool-filter defence is another form of capability reduction:
+tools irrelevant to the user task are removed before the model can call them
+~\cite{debenedetti2024agentdojo}. ToolEmu evaluates safety risks in tool-using
+agents and demonstrates the value of executable environment feedback rather
+than response-only judgement~\cite{ruan2024toolemu}. \systemname\ builds on
+these insights but makes tool availability only one policy control. It also
+mediates allowed tools at execution time because a broadly useful browser tool
+such as \texttt{click} can produce benign or destructive effects depending on
+the live target.
+
+\Cref{tab:system-comparison} locates \systemname\ within this design space.
+The comparison is architectural rather than a benchmark ranking: the systems
+use different threat models, models, tasks, and evaluators. In particular,
+stronger structural guarantees within a restricted execution model should not
+be compared numerically with \systemname's detector-led empirical results.
+
+\begin{table}[htbp]
+\centering
+\caption{Closest system-level approaches and the design point studied here.}
+\label{tab:system-comparison}
+\small
+\begin{tabularx}{\textwidth}{@{}L{0.18\textwidth}L{0.31\textwidth}Y@{}}
+\toprule
+Approach & Trusted structure & Relationship to this dissertation \\
+\midrule
+Formal Security Guarantees &
+Trace policy and hard constraints &
+Establishes execution-time policy as a route to formal guarantees within the
+specified trace model; it does not supply this browser extension or its
+operator protocol~\cite{balunovic2024formalsecurity}. \\
+
+IsolateGPT &
+Isolated application components and mediated interfaces &
+Provides stronger process-like separation for LLM applications; requires
+applications to adopt its component architecture
+~\cite{wu2025isolategpt}. \\
+
+Contextual Agent Security and AgentSpec &
+Generated purpose policy or trigger--predicate DSL &
+Share executor-side policy enforcement while placing more authority in a
+generated task policy or portable rule language
+~\cite{tsai2025contextual,wang2026agentspec}. \\
+
+CaMeL, Fides, ACE, and \emph{tacit} &
+Trusted control or abstract plan, labelled flow, types, and capabilities &
+Offer stronger security-by-construction for representable tasks; constrain
+the execution model and expose task-feasibility boundaries
+~\cite{debenedetti2025camel,costa2025fides,li2026ace,
+odersky2026tracked}. \\
+
+\systemname &
+Configured policy, live browser context, typed taint, and bounded operator
+authority &
+Preserves an existing free-form BrowserUse loop and adds post-verified
+observation handling, mediation of model-proposed privileged tool actions, a
+Chrome control plane, and two-level empirical evaluation. Guarantees are
+correspondingly narrower. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Other work targets semantic alignment between a trusted task and proposed
+effects. Task Shield checks whether an action follows from the user task
+~\cite{jia2025taskshield}; MELON detects untrusted influence by comparing
+normal and masked executions~\cite{zhu2025melon}; and IPIGuard constrains calls
+with a tool-dependency graph planned before exposure
+~\cite{an2025ipiguard}. These approaches address a weakness of static
+browser policy: a same-origin form submission may be syntactically normal yet
+serve an attacker. They also introduce a task or model-derived abstraction
+whose errors must be evaluated. \systemname\ therefore treats semantic
+alignment as complementary future composition rather than claiming that its
+numeric risk score infers arbitrary user intent.
+
+\section{Classical protection principles}
+
+\subsection{Reference monitors and complete mediation}
+
+The reference-monitor concept requires a mechanism that is always invoked,
+protected from the subject it constrains, and sufficiently small and
+well-defined to analyse~\cite{anderson1972computersecurity}. Saltzer and
+Schroeder's principles of complete mediation, least privilege,
+fail-safe defaults, and economy of mechanism remain directly applicable
+~\cite{saltzer1975protection}. A language model is a poor reference monitor
+for its own actions: the attacker can influence its internal state, and its
+decisions are probabilistic. An executor-side wrapper can at least satisfy
+the structural part of complete mediation by ensuring that every
+model-proposed privileged call in the wrapped scaffold crosses one policy
+decision point.
+
+\systemname\ is not a formally verified reference monitor. Its trusted
+computing base includes the Python middleware, local configuration, browser
+automation library, and browser itself. Its natural-language risk
+classification is incomplete. Nevertheless, the reference-monitor framing
+provides testable engineering requirements: there must be no parallel
+execution path, live policy must be checked immediately before use, and
+failure to obtain required context or authority must deny execution.
+
+\subsection{Information flow and taint}
+
+Information-flow control reasons about where data originates and which sinks it
+may reach. Denning's lattice model formalised how security labels constrain
+flows between objects~\cite{denning1976lattice}. Browser-agent semantics are
+less precise: values are embedded in model messages and free-form action
+parameters, while page interactions can disclose data without an explicit
+network API. \systemname\ therefore uses a pragmatic dynamic taint model rather
+than claiming non-interference. Browser observations receive
+\texttt{untrusted\_web}; detector findings add
+\texttt{prompt\_injection\_suspected}; recognised values add typed
+\texttt{sensitive:*} labels; and uploads add \texttt{local\_file}. Actions are
+classified by capabilities such as navigation, page write, disclosure, local
+file access, and code execution.
+
+This design supports source--sink policies but cannot infer all semantics.
+Typing into a same-origin form may be essential to the user task or may
+complete an attack. A page can also change behaviour after a decision.
+Consequently, taint is combined with live target metadata, static domain
+policy, numeric risk, and human authority. The implementation claims
+deterministic coverage of specified channels, not universal data-loss
+prevention.
+
+\section{Human authority and warning design}
+
+Human involvement is often proposed as the final answer to uncertain agent
+behaviour, but a prompt is not automatically meaningful consent. Cranor's
+human-in-the-loop framework separates communication, processing, application,
+and feedback; failure at any stage can invalidate the control
+~\cite{cranor2008humanloop}. Browser-warning studies likewise show that
+presentation and interruption matter: Sunshine et al. found differences
+between SSL-warning designs~\cite{sunshine2009cryingwolf}, while Akhawe and
+Felt found adherence varied with interface and exposure rate
+~\cite{akhawe2013warningland}.
+
+Recent computer-use-agent studies sharpen this warning. A mixed-methods study
+of four oversight strategies with 48 participants found that oversight
+structure shaped exposure to problematic actions more reliably than correction
+once an action became visible; plan-based conditions reduced occurrence but
+did not produce equally strong gains in intervention success, and no strategy
+was uniformly best~\cite{chen2026oversightstrategies}. Across three user
+studies, Grunde-McLaughlin et al. found ordinary action traces cumbersome to
+review. Their revised interface reduced error-finding time but did not
+meaningfully improve final accuracy and could increase confidence without
+correctness~\cite{grundemclaughlin2026overseeing}. These preprints are not
+evidence about \systemname, but they show why more checkpoints or more trace
+detail are not sufficient oversight designs.
+
+Selective authority is therefore a choice about the type and level of
+automation. Information acquisition, analysis, decision selection, and action
+implementation can be allocated differently between human and machine
+~\cite{parasuraman2000automation}. \systemname\ keeps routine acquisition and
+action automatic while returning specific contextual decisions or protected
+action implementation to the operator. Its prompts identify the action,
+current page, policy reason, risk factors, and redacted parameters; approvals
+are scope-bound, expiring, and revalidated; and direct takeover withholds
+protected entry from the agent. The prompt budget bounds interruptions
+technically, while permission research motivates avoiding frequent,
+context-poor requests~\cite{felt2012permission}.
+
+The implementation is not evidence that users make better decisions. No
+participant study was conducted, and a deterministic benchmark ``participant''
+is not a person. This dissertation evaluates whether the authority protocol
+fails closed and whether the interface exposes the information required for a
+cognitive walkthrough. Real comprehension, workload, trust, fatigue, and
+rubber-stamping remain empirical questions.
+
+\section{Research gap}
+
+The literature contains three distinguishable strands whose evaluations answer
+different questions. Prompt-injection benchmarks measure attacker and user
+outcomes in tool and browser environments
+~\cite{debenedetti2024agentdojo,evtimov2025wasp}. Human-agent research compares
+plans, confirmations, traces, monitoring, and takeover as ways to organise
+supervision~\cite{chen2026oversightstrategies,
+grundemclaughlin2026overseeing}. Runtime systems express and enforce action or
+data-flow constraints outside unconstrained model reasoning
+~\cite{debenedetti2025camel,costa2025fides,wang2026agentspec,
+odersky2026tracked}. Approval controls and runtime policy therefore already
+exist; the defensible gap is not that nobody has added a human to a browser
+agent.
+
+PRUDENTIA already partially bridges system-level security and oversight: over
+Fides, it makes planning policy-aware, adds richer HITL interactions, and
+evaluates task completion against autonomy and HITL-load budgets in AgentDojo
+and WASP~\cite{kolluri2026prudentia}. Its evaluation uses non-participant
+metrics that assume compliant human decisions; it does not measure human
+decision quality or evaluate an operator-facing browser control plane. The
+strands are therefore not wholly separate, and novelty cannot rest on combining
+their labels.
+
+The gap studied here is the integration of those concerns around a free-form
+browser loop: a trusted user task, post-verified observation handling,
+independent live pre-execution mediation, selective human authority, and
+post-action accountability. The contribution is not a new approval dialogue
+but a browser-specific governed loop that connects the exact observations
+shown to the model with whether its privileged actions execute. Its two-level
+evaluation measures security and utility, while technical protocol checks
+establish the authority semantics. The architecture makes joint evaluation of
+human attention possible, but this dissertation does not misreport that future
+participant evidence as a completed result. The next chapter defines the
+boundary precisely.

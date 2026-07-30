@@ -1,0 +1,101 @@
+\chapter{Conclusion}
+\label{chap:conclusion}
+
+Browser agents combine useful autonomy with an unusual security problem: the
+environment they must understand can also contain instructions designed to
+redirect them. Asking the acting model to distinguish authority from data is
+valuable defence in depth, but it leaves the final security decision with the
+component exposed to the attack. This dissertation investigated a different
+allocation of responsibility through \systemname, an independent governance
+layer between a BrowserUse agent and its privileged executor.
+
+\systemname\ applies two boundaries. At the observation boundary, it treats
+page, extraction, and tool-result content as untrusted; detects defined
+prompt-injection signals; removes attributable regions; and re-detects the
+exact text that would reach the model. Known unresolved current observations
+are withheld for operator inspection, while bounded extraction/history values
+are removed in full. The ordinary model path excludes screenshot pixels
+because DOM sanitisation cannot secure them. At the action boundary,
+\systemname\ rebuilds live context, propagates origin-scoped taint, classifies
+capabilities and sensitive data, and sends every model-proposed privileged
+tool action entering the governed boundary through one policy engine
+immediately before execution.
+
+The authority design distinguishes refusal, approval, and takeover. Hard
+policy and unsafe flows cannot be weakened into consent. Recognised
+credentials, one-time codes, access tokens, payment data, private keys, unsafe
+free-text keystrokes, and unclassifiable uploads are completed by the operator
+directly. Other ambiguous consequential actions can receive a narrow, expiring,
+run-local approval. Fresh preflight recomputes risk and policy, then revalidates
+the URL, parameter digest, and bound scope. Silence, timeout, stop, cancellation,
+and missing context fail closed. Every such governed tool attempt receives a
+redacted start and terminal audit record.
+
+These authority states are realised in a Manifest V3 Chrome extension rather
+than left as backend-only mechanisms. Its side panel presents the live task
+and docked approval, takeover, and incident cards; its closed-shadow in-page
+layer makes human/agent ownership explicit; and its Activity dashboard exposes
+redacted decisions and within-run intervention timing. Pending requests remain
+server-owned and are replayed after reconnect, so client loss cannot become
+consent.
+
+The evaluation answers RQ1 positively within its defined scope. Across three
+629-pair AgentDojo campaigns, enforce-mode attacker success was 0, 1, and 0
+cases for Qwen 3.5 4B, 9B, and 27B, compared with 206, 131, and 203 off.
+Utility and secure utility increased for every model. In the principal matched
+WASP comparison, terminal attacker success changed from 5/84 to 0/84 and task
+instances with attacker-directed execution from 17/84 to 0/84; utility changed
+from 47/84 to 46/84 and secure utility from 44/84 to 46/84. The enforce row
+recorded 368 post-verified sanitisation removals, no hard blocks or handovers,
+and one denied approval on a task that retained utility; sanitisation was
+therefore the primary recorded intervention, not an exclusive causal
+attribution. The 9B development sequence supplies important negative evidence:
+warning the model left ASR unchanged and reduced utility. The final
+sanitisation row recorded 0/84 terminal successes against 7/84 in the shared
+off baseline, with one attacker-directed execution; because middleware changed,
+that difference is development evidence rather than a matched effect.
+
+RQ2 receives a bounded technical answer. Authority should transfer when an
+effect is ambiguous and consequential, when protected data should remain
+outside agent action, when a configured sensitive boundary is reached, or when
+a known suspicious observation cannot be cleaned. The implemented protocol
+makes that transfer explicit, bounded, and fail closed. No participant study
+establishes whether people understand or use it effectively, so the
+dissertation makes no claim about trust, workload, fatigue, comprehension,
+usability, or rubber-stamping.
+
+The demonstrated contributions are therefore specific:
+
+\begin{enumerate}
+  \item an executor-side composition that mediates model-proposed privileged
+  tool actions at the governed boundary of an existing dynamic browser-agent
+  loop;
+  \item a post-verified observation boundary with explicit unresolved-content
+  semantics and sticky provenance;
+  \item a selective-authority lifecycle with attempted and terminal audit for
+  those governed actions, realised as a reconnect-safe Chrome extension control
+  plane for browser effects;
+  and
+  \item a provenance-conscious evaluation connecting controlled AgentDojo
+  mechanism evidence to matched WASP browser-native transfer and transparent
+  development failures.
+\end{enumerate}
+
+These contributions do not make \systemname\ a universal prompt-injection
+solution. The signatures were adapted using evaluated corpora, visual attacks
+are excluded, one seed and a finite set of models were tested, same-origin
+semantics remain difficult, and several current hardening mechanisms post-date
+the frozen results. The trusted computing base also includes the middleware,
+browser library, browser, local policy, and prototype loopback boundary.
+
+The broader conclusion is architectural. A capable agent can remain a
+probabilistic planner without becoming the sole source of authority for its
+own privileged effects. Observation handling can reduce hostile influence;
+deterministic policy and data-flow rules can enforce non-negotiable
+constraints; and the operator can receive control only where judgement or
+private input is genuinely required. Future work should test this composition
+against frozen adaptive attacks, add a separately secured visual path, evaluate
+plan authority, and study real operator behaviour. Until then, the evidence
+supports the narrow thesis stated at the outset: independent runtime
+enforcement can reduce evaluated policy violations while preserving useful
+autonomy under the tested conditions.

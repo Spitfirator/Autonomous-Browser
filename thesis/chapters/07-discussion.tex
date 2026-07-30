@@ -1,0 +1,372 @@
+\chapter{Discussion}
+\label{chap:discussion}
+
+\section{Answering the research questions}
+
+\subsection{RQ1: security without eliminating useful work}
+
+Within the evaluated boundary, the answer to RQ1 is yes. A separate
+enforcement layer reduced unsafe outcomes without stopping the tested agents
+from performing useful tasks. This conclusion rests on three linked results,
+not on the detector score alone.
+
+First, the AgentDojo campaigns show consistent changes across native paired
+oracles. Enforce ASR was 0/629 for 4B, 1/629 for 9B, and 0/629 for 27B, compared
+with 206, 131, and 203 successes off. Secure utility increased by 149, 100, and
+138 cases. Every enforce run recorded only nine explicit blocks. In the
+reviewed 27B row, 2,181 actions were allowed, of which 2,074 completed and 107
+ended in tool errors. The evidence therefore describes selective containment
+rather than a system rendered secure by refusing to act.
+
+Second, the principal matched WASP comparison transfers the mechanism to a
+different scaffold and an actual browser. The 17 off-condition task instances
+with attacker-directed execution fell to zero, as did the five terminal
+attacks, while utility changed from 47/84 to 46/84. The eight paired utility
+losses prevent a claim that enforcement is cost-free, but seven gains and an
+increase in secure utility show that the cost is not captured by the aggregate
+one-task reduction alone.
+
+Third, mechanism telemetry makes the causal account plausible. In the matched
+WASP enforce row, 368 detector-positive observations were changed and
+re-detected clean; there were no hard blocks and one denied approval on a task
+that ultimately succeeded. In AgentDojo, detected tool outputs were sanitised
+in most attack cases and explicit blocks were rare. Thus the common measured
+intervention was hostile-observation removal before the next model decision.
+
+The conclusion remains conditional. The detector was adapted using benchmark
+failures, one seed was used, visual input was excluded, and fixed cases do not
+represent an adaptive attacker. The experiments show that this instantiation
+worked on these suites; they do not establish that executor mediation plus a
+signature detector will contain arbitrary prompt injection.
+
+\subsection{RQ2: when and how to withhold and transfer authority}
+
+The design supplies a technical answer to RQ2. The runtime should withhold an
+action or observation---and transfer authority only where policy permits---when:
+
+\begin{itemize}
+  \item policy prohibits the effect outright, in which case no human approval
+  should weaken the block;
+  \item an action contains a recognised credential, one-time code, access
+  token, payment value, private key, unsafe free-text keystroke, or
+  unclassifiable upload, in which case the human should perform the step
+  directly;
+  \item a consequential but policy-permissible action remains ambiguous,
+  requiring narrow approval;
+  \item the configured sensitive-domain boundary is reached, or the model
+  requests help for an intrinsically human step; or
+  \item a detected current observation cannot be sanitised and verified, in
+  which case the observation should be withheld and the operator should inspect
+  or leave the page.
+\end{itemize}
+
+The implementation also answers ``how'' at the protocol level: explicit
+server-owned state, redacted reasons, no approval for hard blocks or
+quarantined content, scope binding, expiry and use caps, live revalidation,
+fresh observation after an incident, and fail-closed timeout/cancellation.
+This is stronger than an advisory confirmation dialog because authority is
+represented and checked at the execution boundary.
+
+The matched WASP enforce row produced one denied approval and no handovers.
+This is consistent with automatic containment requiring few authority
+transfers in that campaign, but it is not a HITL result: no human participated,
+and one scripted decision cannot establish attention demand, usability, or
+operator behaviour.
+
+The separate human-effectiveness question remains open. The dissertation has
+not shown that operators understand the cards, respond at an acceptable rate,
+avoid automation bias, or experience tolerable workload. Bainbridge's classic
+``ironies of automation'' warn that a person asked to intervene only during
+rare abnormal states may be poorly prepared to do so
+~\cite{bainbridge1983ironies}. Selective prompts reduce frequency but may also
+increase surprise and the expertise required at the moment of takeover.
+Consequently, RQ2 is answered as an implemented and testable authority design;
+behavioural effectiveness remains future HCI work.
+
+\section{Why utility can improve under enforcement}
+
+Security mechanisms are normally expected to impose a utility cost. The
+AgentDojo result instead shows net utility gains for all three models. The
+joint outcome categories explain why. An indirect injection is not merely an
+extra unsafe action at the end of an otherwise successful trajectory; it can
+consume steps, alter memory, and make the agent abandon the user's goal.
+Removing that diversion can recover useful completion.
+
+This observation has two implications. First, benign clean utility is not a
+sufficient baseline for the cost of enforcement under attack. It estimates
+model capability without adversarial content, whereas the relevant paired
+effect compares two trajectories over the same attacked task. Second, an
+enforcement design should allow recovery. A hard error on every tainted action
+can cause repeated replanning and budget exhaustion. Sanitising the source
+before it shapes the plan can be less disruptive than repeatedly vetoing its
+effects.
+
+The utility gains must not be universalised. AgentDojo tool results have
+structured malicious fields that are amenable to removal. In WASP, aggregate
+utility fell by one despite seven paired gains. Sanitisation can delete
+legitimate nearby content, alter the page representation, or interact with
+stochastic planning. Reporting both gains and losses avoids turning a favourable
+aggregate into a claim of free security.
+
+\section{Security by incompetence and intermediate effects}
+
+WASP's original analysis describes ``security by incompetence'': an agent may
+begin serving an attacker yet fail to complete the terminal goal
+~\cite{evtimov2025wasp}. The present off rows exhibit the same issue. Only
+5/84 matched 27B tasks achieved the attacker goal, but 17/84 executed at least
+one attacker-directed action. Two of four off batches had zero terminal
+success, even without enforcement.
+
+This makes ASR necessary but insufficient. Native final-state oracles have high
+construct validity for the defined goal, but they hide partial disclosure,
+unwanted navigation, and attempts that fail because the agent is incapable.
+The deterministic attempt/execution replay narrows this blind spot without
+using model rationale. It remains conservative: it matches instantiated action
+effects and cannot identify reasoning-only diversion or a semantically related
+action outside its ground truth.
+
+The distinction also affects future model comparisons. A more capable agent
+may increase both utility and attack completion. The non-monotonic off ASR
+across 4B, 9B, and 27B shows why parameter count cannot be interpreted as a
+security axis without controlled capability and scaffold analysis.
+
+\section{Why warning-only enforcement failed}
+
+The 9B warning row is one of the most informative results. Detection occurred,
+but ASR remained 7/84, attacker-directed execution increased by one case, and
+utility fell by eight. A warning asks the same model that processed the attack
+to reinterpret its state and comply with a higher-level reminder. This can
+work empirically in some prompts, as BIPIA and spotlighting demonstrate
+~\cite{yi2025bipia,hines2024spotlighting}, but it does not create a separate
+authority decision.
+
+Post-verified sanitisation changes the information available for the next
+decision instead. It is still detector-dependent and can remove legitimate
+data, but it does not require the model to ``choose'' not to follow a detected
+instruction that remains in context. The descriptive difference from V1 to V2
+motivated the post-condition: incomplete multi-line removal left browser
+attacks available, although the middleware revisions are not a matched causal
+comparison. A separate pre-launch canary had already corrected the offline
+Markdown versus href-free live-browser representation mismatch.
+
+The later incident path follows the same logic. If removal cannot establish
+its configured post-condition, warning is not a safe fallback. Withholding the
+known unresolved observation is a fail-safe default. Whether operators can
+resolve such incidents effectively remains unevaluated.
+
+\section{Action policy: backstop rather than universal semantic judge}
+
+It is tempting to require approval for every side effect after any detector
+finding. The replay shows why that rule is counterproductive in a browser:
+most WASP attacker goals use the same forms and buttons that legitimate user
+tasks require. Blanket gating exceeded the prompt budget on 70\% of the
+50 replayed tasks. A system that responds by blocking after budget exhaustion
+would obtain a low ASR partly through denied service.
+
+The narrowed amplified-action rule focuses on independently dangerous sinks:
+cross-origin flow, sensitive data, local files, code, and consequential
+targets. This is a pragmatic policy, not a complete semantic solution. The
+remaining 64 same-origin WASP terminal actions depend primarily on successful
+observation sanitisation. If detection misses a task-relevant, natural-looking
+instruction, the numeric policy may permit it.
+
+Task-alignment monitors offer an alternative. Task Shield checks proposed
+actions against the user task~\cite{jia2025taskshield}; MELON compares normal
+execution with a masked re-execution to detect influence
+~\cite{zhu2025melon}; IPIGuard constrains calls using a tool-dependency graph
+planned before untrusted exposure~\cite{an2025ipiguard}. These mechanisms can
+capture same-origin misalignment without enumerating every prohibited target,
+but they introduce another model or plan abstraction whose own errors affect
+utility. A promising composition is to use deterministic policy for
+non-negotiable invariants and a separately isolated alignment component for
+semantic ambiguity.
+
+\section{Relationship to system-level prior work}
+
+\systemname\ should not be characterised as the first runtime policy layer for
+agents. Prior work checks trace policies before execution, isolates agent
+components, and enforces capabilities. AI Agents with Formal Security
+Guarantees uses trace-based policies and hard constraints
+~\cite{balunovic2024formalsecurity}. IsolateGPT applies process-like isolation
+and mediated interfaces to LLM applications~\cite{wu2025isolategpt}.
+Contextual Agent Security generates purpose-specific policies for deterministic
+enforcement~\cite{tsai2025contextual}. CaMeL extracts trusted control and data
+flows and provides capability-based protection
+~\cite{debenedetti2025camel}. ACE extends this design direction with trusted
+abstract planning, static flow checks, and execution-time barriers
+~\cite{li2026ace}.
+
+These systems seek stronger structural guarantees than a detector-led drop-in
+wrapper. Their price is a more constrained agent architecture, a trusted plan,
+or explicit component boundaries. \systemname's contribution is narrower: it
+instantiates and evaluates a particular executor-side composition for an
+existing dynamic browser loop. It mediates model-proposed privileged tool
+actions at the governed executor boundary and gives each such attempt a
+privacy-preserving terminal audit record. It combines that boundary with
+post-verified observation sanitisation, current-page policy, scoped human
+authority, and evidence across AgentDojo and pinned WASP conditions. Its value
+is empirical and integrational rather than a claim of originating runtime
+enforcement.
+
+Classical execution-monitor theory also bounds the contribution. Schneider
+shows that execution monitors enforce only particular classes of policies by
+observing and terminating executions~\cite{schneider2000enforceable}; edit
+automata extend this model by suppressing or inserting actions
+~\cite{ligatti2005editautomata}. \systemname\ suppresses tool calls, inserts
+authority waits, and edits observations, but does not prove that its
+natural-language policy captures all desired trace properties.
+
+\section{Limitations}
+\label{sec:discussion-limitations}
+
+\subsection{Detector adaptation and adaptive attackers}
+
+The detector is the largest construct-validity limitation. Its signatures were
+revised after AgentDojo and WASP failures, and the live URL-representation
+correction changed 40 missed WASP classifications. This transparent
+development process improves the artefact but invalidates a held-out
+generalisation claim. Peer-reviewed adaptive-attack work bypassed all eight
+tested indirect-injection defences with attack-specific optimisation
+~\cite{zhan2025adaptive}. The deterministic scorecard should therefore be read
+as regression coverage for known families.
+
+Sanitisation inherits the detector's misses. Clean re-detection proves only
+that the rewritten input no longer triggers the same configured boundary.
+Detection-and-removal research similarly treats segmentation quality and
+attack detection as separable problems~\cite{chen2025detectremove}. A natural
+instruction that carries attacker intent without detectable override language
+can remain.
+
+\subsection{Modality and representation}
+
+The reported agents receive DOM/accessibility text; no screenshot pixels are
+supplied to the interactive model. This
+removes a major injection channel but also makes some visually grounded tasks
+impossible, as VisualWebArena illustrates~\cite{koh2024visualwebarena}. Image
+hijacks and visual prompt injection show that enabling vision without an
+independent guard would expand the threat model
+~\cite{bailey2024imagehijacks,cao2026vpibench}. Browser representation is also
+lossy: hidden hrefs, pseudo-elements, canvas text, and script behaviour may not
+appear in the accessibility tree, while visible benign context can trigger a
+signature.
+
+\subsection{Policy and semantic gaps}
+
+Sensitive-data detection recognises configured patterns, field semantics, and
+bounded upload text; it is not universal DLP. Generic same-origin form actions
+remain difficult to classify. Domain policy cannot establish what server-side
+code will do after an allowed click. Browser navigation watchdogs reduce
+redirect and popup bypass but do not create transaction isolation.
+
+The operator's initial goal may itself be underspecified. A request such as
+``handle my messages'' delegates choices that no detector can derive safely.
+Plan authority could make allowed origins, expected data, prohibited effects,
+and likely human steps explicit before execution. It is not implemented in the
+evaluated system and must not be retroactively attributed to the results.
+
+\subsection{Experimental scope and provenance}
+
+The experiments use Qwen 3.5 models, one seed, fixed generation settings,
+AgentDojo v1, one pinned WASP revision, a 30-step browser budget, and particular
+policies. Model providers, browser scaffolds, and websites can change outcomes.
+The 9B WASP sequence changes middleware and is not a matched causal
+comparison. AgentDojo 27B combines historical off reports with a
+provenance-separated fixed-enforce rerun; 9B reports lack a Git revision.
+
+No multiplicity correction was applied because no inferential tests or
+\(p\)-values are claimed. Nevertheless, the many reported outcomes increase
+the risk of selective interpretation. Publishing all finalised rows, negative
+warning evidence, utility losses, truncations, and exclusions is the
+mitigation.
+
+\subsection{Current implementation versus measured implementation}
+
+The frozen WASP profiles already used \texttt{use\_vision=false}. The
+fail-closed unresolved-observation incident, bounded extraction/history
+removal, human-only secret takeover, upload checks, approval revalidation,
+stop-race handling, and special-URL boundary were added after those campaigns.
+Later screenshot-channel hardening closed separate extension-thumbnail,
+image-bearing-result, and trace paths that the non-visual profile alone did
+not specify. Current tests can show that these paths behave as described; they
+cannot establish their effect on benchmark utility or attack success. A future
+quantitative result requires a new immutable run tag and cannot be pooled with
+the current tables.
+
+\subsection{Human factors and deployment}
+
+There is no participant evaluation. Approval counts, response time, security
+pause duration, and \texttt{understood} ticks are instrumentation rather than
+evidence of comprehension or workload. A local origin-checked loopback API is
+acceptable for a research prototype but not isolation from a compromised
+same-user process. Secrets may also reach a remote model provider through
+content that is not recognised as sensitive; the system does not prove all
+model traffic remains on-device.
+
+\section{Ethical and operational implications}
+
+Independent enforcement can preserve user authority, but it can also remove
+content, block legitimate work, or transfer decisions to a user who lacks
+context. A submission-ready system claim must expose these costs. The interface
+therefore reports why a decision occurred without reproducing an attack or
+secret, and the evaluation reports utility losses beside security gains.
+
+An operator takeover withholds the intercepted agent action, but it changes the
+division of labour: the user is asked to resume control at precisely the
+difficult point. It is not a post-handoff secrecy proof; non-password values
+entered into the page can reappear in later DOM or accessibility observations.
+Deployments should provide a clear browser state, an escape route, and a
+post-handover account of what the agent will do next. High-risk domains may be
+unsuitable for autonomous action even with \systemname; hard policy should
+remain available.
+
+All attacks in this study run against isolated benchmark environments. Raw
+authentication state, DOM captures, injected payloads, and campaign
+directories are kept out of the public repository. Curated summaries preserve
+enough provenance for claims without distributing credentials or unnecessary
+page data.
+
+\section{Future work}
+
+The next research steps follow directly from the limitations.
+
+\begin{enumerate}
+  \item \textbf{Freeze before evaluating adaptive and held-out attacks.}
+  Detector and policy must be frozen, then tested against unseen prompt
+  families, paraphrases, task-relevant social engineering, and optimisation
+  targeted at the full middleware. Multiple seeds and agent scaffolds should be
+  included.
+
+  \item \textbf{Evaluate plan authority as a separate mechanism.} A short
+  operator-visible pre-run contract should name intended sites, data classes,
+  permitted and prohibited effects, likely human steps, and stop conditions.
+  Its policy value and utility cost must be compared under a new run tag.
+
+  \item \textbf{Design a visual observation boundary.} Raw screenshots should
+  not simply be enabled. Candidate designs include a separately isolated
+  visual interpreter that emits bounded element geometry, OCR with provenance,
+  multimodal attack detection, pixel-region redaction, and stricter action
+  authority whenever the model relied on unverified pixels.
+
+  \item \textbf{Conduct staged human evaluation.} Begin with expert cognitive
+  walkthroughs and deterministic queue simulations, then obtain ethics
+  approval for a participant study asking whether runtime governance allocates
+  attention to the small subset of decisions requiring contextual authority,
+  while preserving useful autonomy. Measure comprehension, response quality,
+  workload, habituation, and takeover recovery. Scripted oracle modes should
+  remain labelled as upper bounds, not humans.
+
+  \item \textbf{Strengthen structural policy.} Combine deterministic invariants
+  with a trusted plan or dependency graph, formalise trace properties where
+  possible, and isolate browser effects in transactional or disposable
+  environments. System-level information-flow designs and privilege-control
+  work provide useful comparators.
+
+  \item \textbf{Harden deployment boundaries.} Authenticate local control,
+  separate processes and privileges, protect configuration and trace keys,
+  define provider-data policy, and evaluate browser/library compromise.
+\end{enumerate}
+
+The priority is not another unqualified benchmark campaign. Each mechanism
+should first have a precise claim, frozen implementation, adversary model, and
+success criterion so that new evidence extends rather than obscures the
+current result.

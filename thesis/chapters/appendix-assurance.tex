@@ -1,0 +1,132 @@
+\chapter{Technical assurance and provenance details}
+\label{app:assurance}
+
+This appendix preserves the detailed assurance evidence referenced by the main
+argument without obscuring its research through-line. It does not add new
+experimental rows or extend the claims of the frozen campaigns.
+
+\section{Implementation chronology}
+
+\begin{table}[!h]
+\centering
+\caption{Relationship between mechanisms and frozen benchmark evidence.}
+\label{tab:chronology}
+\small
+\begin{tabularx}{\textwidth}{@{}L{0.34\textwidth}L{0.24\textwidth}Y@{}}
+\toprule
+Mechanism & Status in reported campaigns & Interpretation \\
+\midrule
+Executor-side policy and action audit & Present &
+Directly represented in AgentDojo and WASP telemetry under each run's recorded
+version. \\
+
+AgentDojo tool-result sanitisation & Present in controlled AgentDojo runs &
+Primary recorded intervention in those tool-agent campaigns. \\
+
+WASP browser observation sanitisation and post-verification & Present in
+sanitisation rows &
+Primary recorded intervention in the final browser rows. \\
+
+DOM/accessibility-only WASP profile & Present &
+No reported WASP row supplied screenshot pixels to the interactive model. \\
+
+Unresolved current-observation operator incident & Added after campaigns &
+Implemented and tested, but the four 9B V2 unattributable events used the
+historical model-warning fallback. \\
+
+Bounded extraction/history whole-value removal & Added after campaigns &
+Current implementation fact only. \\
+
+Human-only detected-secret takeover and bounded upload inspection & Added
+after campaigns & Current channel-guard fact, not measured benchmark outcome. \\
+
+Approval revalidation, explicit stop-cancellation, preflight-audit hardening,
+extension-thumbnail, image-bearing-result and trace-path hardening, and the
+special-URL boundary & Added after campaigns & Current implementation facts
+requiring a new run tag for a quantitative claim. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\clearpage
+\section{Authority failure matrix}
+
+\begingroup
+\small
+\begin{longtable}{@{}L{0.28\textwidth}L{0.66\textwidth}@{}}
+\caption{Fail-closed extension and authority behaviour.}
+\label{tab:interface-failures}\\
+\toprule
+Failure or race & Runtime outcome \\
+\midrule
+Panel closes or WebSocket disconnects &
+The server request remains pending; a reconnecting snapshot replays it. \\
+Approval or handover expires &
+The server emits a timeout resolution; the withheld agent action does not
+execute. \\
+Stop or forced reset during a wait &
+Outstanding futures resolve as cancelled; cards cannot survive as apparent
+authority. \\
+Live context or policy changes after approval &
+Fresh preflight recomputes risk and policy, then verifies URL, parameter digest,
+and bound scope. Relaxation may permit an unchanged action; scope changes or a
+new block or handoff prevent it. \\
+Malformed, stale, or duplicate response &
+The API cannot resolve a missing or completed request identifier. \\
+Extension/operator channel unavailable when authority is required &
+The governed path blocks or terminates according to policy rather than
+continuing autonomously. \\
+Unresolved browser observation &
+The provider call is skipped, the observation is discarded, and only a fresh
+observation can resume progress. \\
+\bottomrule
+\end{longtable}
+\endgroup
+
+\section{Submission-time implementation gates}
+
+\begingroup
+\small
+\begin{longtable}{@{}L{0.31\textwidth}L{0.63\textwidth}@{}}
+\caption{Fresh verification of the post-campaign implementation on 29 July
+2026.}
+\label{tab:implementation-verification}\\
+\toprule
+Gate & Result \\
+\midrule
+Complete Sentinel Python suite & 231 passed \\
+Deterministic security smoke & 5/5 expected cases; detection F1 and verdict
+accuracy 1.000; 0/2 benign interventions \\
+WASP campaign contract suite & 29 passed \\
+WASP offline preflight & Pinned source, 21 scenarios, reset policy, and
+Python dependency checks passed \\
+Chrome extension production build & TypeScript check and Vite build passed \\
+\bottomrule
+\end{longtable}
+\endgroup
+
+\clearpage
+\section{Exact WASP run provenance}
+\label{sec:appendix-wasp-provenance}
+
+\begingroup
+\small
+\begin{description}[style=nextline,leftmargin=35mm]
+  \item[Primary 27B tag]
+  \texttt{wasp-qwen35-27b-browser32k-30step-v2-sanitise-noalert-none-v1}
+  \item[27B Sentinel commit]
+  \texttt{6c71df2b8e274d843571b20897489b6ad478bd10}
+  \item[Final 9B tag]
+  \texttt{wasp-qwen35-9b-browser32k-30step-v2-sanitise-noalert-none-v3}
+  \item[9B Sentinel commit]
+  \texttt{3ca50cae923b4621b4703f2308d52050cff8f038}
+  \item[Policy SHA-256]
+  \texttt{32d0f0a17798dd27fbe03ec1e5221e38d66e6ebfc9a743266581e890c3c7617f}
+  \item[Enforcement SHA-256]
+  \texttt{20ddf4c0b632215b7cd494cdea0998d1b89fa023c326473ea655adfd199c0322}
+  \item[WASP commit]
+  \texttt{ffee6f41fde76acd14bd792db442479c506260c2}
+  \item[BrowserUse commit]
+  \texttt{c8e6e8f0fe617564687895702c2338967293b309}
+\end{description}
+\endgroup
