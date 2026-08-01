@@ -410,13 +410,16 @@ error to describe those observations as quarantined in the reported campaign.
 \section{Current implementation verification}
 \label{sec:implementation-verification}
 
-Post-campaign contracts were freshly verified on 29 July 2026 rather than
+Post-campaign contracts were freshly verified on 30 July 2026 rather than
 folded into the benchmark outcomes. The complete Python suite passed 231
 tests and the focused WASP campaign suite passed 29. The five-case security
 smoke achieved detection precision, recall, F1, verdict accuracy, and attack
 containment of 1.000, with zero interventions across two benign fixtures. The
 offline WASP preflight and TypeScript/Vite extension build also passed.
-\Cref{tab:implementation-verification} records each gate and result.
+\Cref{tab:implementation-verification} records each gate and result. A
+machine-readable record binds the commands, outputs, tool versions, repository
+revision, and relevant-source manifest to this verification
+(\texttt{sentinel/evals/submission-validation-20260730.json}).
 
 These gates establish that the described current implementation contracts held
 for that source state. They do not retroactively add the later mechanisms to
@@ -434,10 +437,13 @@ recorded mechanism. EQ3 shows browser-native transfer in the primary matched
 cases observed off were absent under enforce, with a one-task utility change.
 EQ4 identifies post-verified sanitisation as the primary recorded intervention
 and warning-only enforcement as ineffective in the 9B development condition.
-RQ2 is answered at the technical level by the current verification gates:
-approval, takeover, unresolved-observation incidents, timeout, cancellation,
-live revalidation, and paired audit exercise the specified fail-closed
-authority lifecycle.
+RQ2 receives a bounded technical answer from the design and current
+verification gates: approval, takeover, unresolved-observation incidents,
+timeout, cancellation, live revalidation, and paired audit exercise selected
+server-owned parts of the specified fail-closed authority lifecycle. Rendered
+fixture states demonstrate the implemented client presentation, but reconnect,
+accessibility, schema equivalence, explanation quality, and human use remain
+unevaluated.
 
 These results support the bounded thesis claim, but not a universal one. The
 next chapter interprets the utility gains and losses, the role of model

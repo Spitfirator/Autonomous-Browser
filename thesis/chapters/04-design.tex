@@ -37,11 +37,11 @@ untrusted observations and privileged effects pass.
 
 \begin{figure}[htbp]
 \centering
-\resizebox{\textwidth}{!}{%
 \begin{tikzpicture}[
-  font=\small,
-  node distance=9mm and 13mm,
-  box/.style={draw,rounded corners=2pt,align=center,minimum height=10mm,minimum width=30mm,fill=white},
+  font=\footnotesize,
+  node distance=8mm and 3.5mm,
+  box/.style={draw,rounded corners=2pt,align=center,minimum height=11mm,
+    text width=20mm,inner sep=1.7pt,fill=white},
   trusted/.style={box,draw=sentinelblue,very thick},
   untrusted/.style={box,draw=sentinelred,very thick},
   guard/.style={box,draw=sentinelamber,very thick,fill=sentinelamber!8},
@@ -52,31 +52,30 @@ untrusted observations and privileged effects pass.
   transport/.style={<->,>=Latex,thick,draw=sentinelgrey}
 ]
   \node[trusted] (operator) {Operator\\request and authority};
-  \node[guard,right=of operator] (runner) {AgentRunner\\run context};
-  \node[untrusted,right=of runner] (model) {Untrusted model\\and planner};
-  \node[guard,right=of model] (tools) {GovernedTools\\pre-execution gate};
-  \node[trusted,right=of tools] (browser) {Privileged browser\\and tools};
+  \node[guard,right=3.5mm of operator] (runner) {AgentRunner\\run context};
+  \node[untrusted,right=3.5mm of runner] (model) {Untrusted model\\and planner};
+  \node[guard,right=3.5mm of model] (tools) {GovernedTools\\pre-execution gate};
+  \node[trusted,right=3.5mm of tools] (browser) {Privileged browser\\and tools};
 
   \node[guard,below=of model] (llmguard) {GovernedLLM\\observation boundary};
-  \node[guard,below=of tools] (policy) {PolicyEngine\\single decision point};
-  \node[presentation,below=of operator] (ui) {Extension UI\\presentation/transport};
+  \node[guard,below=of tools] (policy) {PolicyEngine\\single decision\\point};
+  \node[presentation,below=of operator] (ui) {Extension UI\\presentation/\\transport};
   \node[store,below=of runner] (audit) {Redacted audit,\\history, and traces};
 
-  \draw[flow] (operator) -- node[above,font=\scriptsize]{goal} (runner);
+  \draw[flow] (operator) -- (runner);
   \draw[flow] (runner) -- (model);
-  \draw[flow] (model) -- node[above,font=\scriptsize]{proposed} (tools);
-  \draw[flow] (tools) -- node[above,font=\scriptsize]{allowed} (browser);
-  \draw[flow] (browser.south) |- node[pos=0.25,right,font=\scriptsize]{observation} (llmguard.east);
+  \draw[flow] (model) -- (tools);
+  \draw[flow] (tools) -- (browser);
+  \draw[flow] (browser.south) -- node[right,font=\scriptsize]{observation}
+    ++(0,-22mm) -| (llmguard.south);
   \draw[flow] (llmguard) -- (model);
   \draw[flow] (tools) -- (policy);
   \draw[flow] (policy) -- (tools);
   \draw[flow] (operator) -- node[left,font=\scriptsize]{input} (ui);
-  \draw[transport] (runner.south west) --
-    node[above,sloped,font=\scriptsize]{state/response} (ui.east);
+  \draw[transport] (runner.south west) -- (ui.east);
   \draw[event] (runner) -- (audit);
   \draw[event] (llmguard) -- (audit);
-  \draw[event] (tools) -- (audit);
-\end{tikzpicture}}
+\end{tikzpicture}
 \caption{\systemname's runtime composition. Blue components hold authority or
 perform privileged execution; red is the untrusted decision maker; amber
 components form the runtime governance layer. Grey dashed components present
@@ -357,100 +356,49 @@ emerge inside the browser.
 \section{Selective human authority}
 \label{sec:human-authority}
 
-\subsection{Approval}
+\systemname\ distinguishes three operator paths; \Cref{chap:governance-interface}
+specifies their presentation and failure semantics.
 
-An approvable action creates a server-owned request and pauses the current
-step. Its card shows redacted parameters, origin, risk factors, policy reason,
-and a countdown. The operator can:
+\begin{description}[style=nextline,leftmargin=28mm]
+  \item[Narrow approval]
+  A server-owned request pauses the tool step and offers only the scope the
+  policy decision created. A reusable grant remains run-local, expiring, and
+  bound to action, origin, capabilities, taint, protected-data categories,
+  target fingerprint, and applicable parameter/content digests. Approval or
+  grant reuse restarts the complete live preflight; changed or unavailable
+  context does not execute. A prompt budget converts later requests to the
+  configured fail-closed handoff or block.
 
-\begin{itemize}
-  \item \textbf{Allow once}, authorising only the pending action;
-  \item \textbf{Allow similar}, creating a bounded run-local grant; or
-  \item \textbf{Deny}, causing a non-executing error that tells the agent not to
-  retry the same request.
-\end{itemize}
+  \item[Direct takeover]
+  The model may request help for an intrinsically human step, while policy
+  mandates takeover for recognised protected values and unclassifiable uploads.
+  The proposed agent action is withheld and the operator acts in the page.
+  Returning control clears neither prompt-injection taint nor hard policy, and
+  it does not prove that a later DOM observation omits the value entered.
 
-The reusable grant binds action type, target origin and navigation path,
-capabilities, taint class, sensitive categories, and a keyed fingerprint of
-the target element. Code, file writes, and uploads also bind exact parameter or
-content digests. The grant expires after a configured time or use count.
-Neither the extension nor the API may select a reusable scope when the
-original server request did not offer it.
-
-After approval or grant reuse, \systemname\ repeats the complete preflight. The
-latest URL, target fingerprint, parameter digest, policy, and decision must
-remain within the original scope. A newly blocked action, a changed target, or
-unavailable context is recorded as \texttt{approval\_revalidation} and does not
-execute. If the new context reveals human-only sensitive data, the flow
-upgrades to direct takeover rather than treating the old approval as consent.
-
-The default prompt budget is four per run. Once exhausted, the system stops
-creating approval cards. Each later approvable action uses the configured
-fail-closed outcome: direct handover for that action or block. This limits
-prompt volume technically; it is not evidence that real operators would
-otherwise rubber-stamp.
-
-\subsection{Direct takeover}
-
-Takeover has two entry points. The model can voluntarily request help for a
-login, CAPTCHA, verification code, payment, or personal detail. Policy can
-also intercept an action or first access to a sensitive domain. In the latter
-case the proposed agent action is explicitly not executed. The runner pauses
-subsequent agent progress, while the content script supplies best-effort input
-arbitration, shows an in-page control state, and lets the operator return
-control when the protected step is complete. The page layer is cooperative UI:
-it cannot pre-empt an already executing browser step or prevent page scripts
-from changing the document.
-
-A completed sensitive-domain handover clears only the matched domain pattern
-for the remainder of that run. It does not clear prompt-injection taint or
-override hard policy. An optional operator note becomes ordinary model context;
-only the event copy is redacted, so the note must not contain protected values.
-The intercepted agent action is withheld, but takeover is not a general
-post-handoff confidentiality guarantee: non-password values entered into the
-page can reappear in a later DOM or accessibility observation. Timeout and
-cancellation yield distinct audit outcomes and no authority.
-
-\subsection{Security incident}
-
-An unresolved observation uses the handover transport but not the ordinary
-task-help semantics. The incident card persists across reconnects, contains no
-attacker text, offers no approval, and cannot be dismissed by the normal
-pause/resume control. Incident wait time is recorded separately from login or
-CAPTCHA takeover because it is enforcement-added review, not an intrinsic task
-step. Activity's incident count and review time, together with its
-per-policy-decision \texttt{understood} annotations, are technical telemetry
-and researcher walkthrough aids; they are not participant data.
+  \item[Security incident]
+  A residual or unattributable current-page observation uses the same
+  server-owned wait transport but exposes no attacker text or approval. The
+  quarantined input is discarded; only a new browser capture can continue.
+  Incident counts, review time, and local \texttt{understood} annotations are
+  technical telemetry, not participant evidence.
+\end{description}
 
 \section{Audit, privacy, and operator interfaces}
 
-Each enforcement decision includes verdict, rule, reason, mode, policy-only
-decision latency, complete pre-action latency, action identifier, risk factors,
-capabilities, taint labels, target origin, and a keyed parameter digest.
-Prompt-injection events contain only score, severity, signal names, and a
-run-keyed finding digest. Sanitisation events contain branch and outcome
-counts, not removed text. Action audits join attempted and terminal records by
-identifier and expose outcome and duration.
+Decision and action-audit events retain verdict, rule, redacted reason, bounded
+risk/taint/capability metadata, latency, target origin, outcome, and run-keyed
+digests. Detector and sanitisation events retain signals and branch/count
+telemetry rather than payloads or removed text. Recursive redaction applies
+again at history and trace views; screenshots and free-form rationale
+persistence default off.
 
-The extension presents a chat-like run view, docked approval/takeover/incident
-cards, live policy editing, and an Activity view over completed runs. It is an
-operator interface rather than the policy authority: the server checks origin,
-request identifiers, pending state, and permitted response scope. Policies
-edited in the dashboard apply on the next model/action boundary.
-
-\Cref{chap:governance-interface} describes the current prototype control plane,
-including its snapshot and reconnect protocol, in-page ownership state,
-approval revalidation, incident recovery, dashboard, and fail-closed client
-failure semantics.
-
-Run-start trace metadata stores the policy snapshot, model, and provider.
-\texttt{TaskDone} adds usage and aggregate enforcement counters; errors, stops,
-and budget ends store these only in \texttt{HistoryStore}. Event parameters are
-redacted recursively. Action-audit exceptions retain only type names; run-level
-messages are redacted and bounded. Run-keyed HMACs correlate attempts and
-completions without cross-run secret linkage. Screenshot and free-form
-rationale persistence are opt-in and default off. Displayed model summaries are
-exposed outputs, not private chain-of-thought.
+The extension presents this server-owned state but cannot mint authority.
+Run-start traces bind policy, model, and provider; terminal history adds usage
+and aggregate enforcement counters. Run-keyed HMACs join attempts and
+completions without stable cross-run linkage. \Cref{chap:governance-interface}
+expands the control plane, its privacy limits, and its independently
+non-authorising client-failure semantics.
 
 \section{Implementation chronology and evidence boundary}
 \label{sec:implementation-chronology}

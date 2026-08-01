@@ -264,47 +264,85 @@ be compared numerically with \systemname's detector-led empirical results.
 
 \begin{table}[htbp]
 \centering
-\caption{Closest system-level approaches and the design point studied here.}
+\caption{Threat, authority, assurance, and evaluation comparison with the
+strongest adjacent system designs. ``Assurance'' is conditional on each
+approach's trusted basis and expressible policy; this is not a benchmark
+ranking.}
 \label{tab:system-comparison}
-\small
-\begin{tabularx}{\textwidth}{@{}L{0.18\textwidth}L{0.31\textwidth}Y@{}}
+\begingroup
+\footnotesize
+\setlength{\tabcolsep}{3.2pt}
+\renewcommand{\arraystretch}{1.10}
+\begin{tabularx}{\textwidth}{@{}L{0.14\textwidth}L{0.20\textwidth}L{0.17\textwidth}L{0.18\textwidth}Y@{}}
 \toprule
-Approach & Trusted structure & Relationship to this dissertation \\
+Approach &
+Threat and trusted basis &
+Enforcement point &
+Conditional assurance &
+Evaluation emphasis and relation to \systemname \\
 \midrule
-Formal Security Guarantees &
-Trace policy and hard constraints &
-Establishes execution-time policy as a route to formal guarantees within the
-specified trace model; it does not supply this browser extension or its
-operator protocol~\cite{balunovic2024formalsecurity}. \\
+Formal Security Guarantees~\cite{balunovic2024formalsecurity} &
+Policy-violating agent traces; trusted formal trace policy &
+Immediately before effects along the execution trace &
+Formal conformance for properties expressible in the specified model &
+Stronger proof claim, but no browser-observation boundary or operator-facing
+authority protocol. \\
 
-IsolateGPT &
-Isolated application components and mediated interfaces &
-Provides stronger process-like separation for LLM applications; requires
-applications to adopt its component architecture
-~\cite{wu2025isolategpt}. \\
+IsolateGPT~\cite{wu2025isolategpt} &
+Untrusted application content and components; trusted isolation architecture &
+Mediated interfaces between isolated components &
+Process-like separation and capability confinement &
+Stronger structural isolation; requires applications to adopt its component
+model rather than wrapping a free-form browser loop. \\
 
-Contextual Agent Security and AgentSpec &
-Generated purpose policy or trigger--predicate DSL &
-Share executor-side policy enforcement while placing more authority in a
-generated task policy or portable rule language
-~\cite{tsai2025contextual,wang2026agentspec}. \\
+CaMeL, ACE, and \emph{tacit}
+~\cite{debenedetti2025camel,li2026ace,odersky2026tracked} &
+Untrusted data influencing control or data flow; trusted plan, labels, types,
+and capabilities &
+Structured control/data-flow or capability-safe executor &
+Stronger information-flow or type-based guarantees for representable tasks &
+Security-by-construction exposes feasibility boundaries that
+\systemname's model-generated browser trajectory does not inherit. \\
 
-CaMeL, Fides, ACE, and \emph{tacit} &
-Trusted control or abstract plan, labelled flow, types, and capabilities &
-Offer stronger security-by-construction for representable tasks; constrain
-the execution model and expose task-feasibility boundaries
-~\cite{debenedetti2025camel,costa2025fides,li2026ace,
-odersky2026tracked}. \\
+AgentSpec and Progent~\cite{wang2026agentspec,shi2025progent} &
+Unsafe tool sequences, arguments, or privilege expansion; trusted specification
+or solver &
+Planning and runtime tool-call boundaries &
+Policy conformance or least privilege within expressible symbolic rules &
+More portable or symbolic policy; less direct treatment of mutable DOM
+observations and target-element semantics. \\
+
+Fides and \mbox{\scriptsize PRUDENTIA}%
+~\cite{costa2025fides,kolluri2026prudentia} &
+Provenance-sensitive information access under a declared policy; trusted
+abstract or policy-aware plan &
+Information disclosure during planning and execution &
+Plan-conditioned information flow plus bounded proxy intervention load &
+Closest joint security/autonomy comparison: Fides is evaluated in AgentDojo,
+while PRUDENTIA builds on it and evaluates AgentDojo and WASP; their scripted
+reviewer metrics are not evidence of human decision quality. \\
+
+DRIFT, Task Shield, MELON, and IPIGuard
+~\cite{li2025drift,jia2025taskshield,zhu2025melon,an2025ipiguard} &
+Task misalignment or indirect influence; trusted user task or pre-exposure
+trajectory abstraction &
+Observation masking, trajectory validation, or action alignment &
+Semantic containment to the extent that the task abstraction and detector are
+correct &
+Potentially stronger intent sensitivity than static browser policy, but adds a
+model- or task-derived abstraction whose failures require evaluation. \\
 
 \systemname &
-Configured policy, live browser context, typed taint, and bounded operator
-authority &
-Preserves an existing free-form BrowserUse loop and adds post-verified
-observation handling, mediation of model-proposed privileged tool actions, a
-Chrome control plane, and two-level empirical evaluation. Guarantees are
-correspondingly narrower. \\
+Untrusted model and browser-derived content; trusted middleware, configured
+policy, executor, and bounded operator authority &
+Exact pre-model observation and immediate pre-tool execution boundaries &
+Deterministic channel and fail-closed invariants; empirical rather than formal
+robustness &
+Preserves BrowserUse's free-form loop and combines AgentDojo, matched WASP, and
+protocol tests; no held-out adaptive, full reconnect, or human evaluation. \\
 \bottomrule
 \end{tabularx}
+\endgroup
 \end{table}
 
 Other work targets semantic alignment between a trusted task and proposed
@@ -441,7 +479,7 @@ post-action accountability. The contribution is not a new approval dialogue
 but a browser-specific governed loop that connects the exact observations
 shown to the model with whether its privileged actions execute. Its two-level
 evaluation measures security and utility, while technical protocol checks
-establish the authority semantics. The architecture makes joint evaluation of
+support selected authority semantics. The architecture makes joint evaluation of
 human attention possible, but this dissertation does not misreport that future
 participant evidence as a completed result. The next chapter defines the
 boundary precisely.

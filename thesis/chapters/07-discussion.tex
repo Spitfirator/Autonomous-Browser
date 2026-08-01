@@ -10,8 +10,8 @@ enforcement layer reduced unsafe outcomes without stopping the tested agents
 from performing useful tasks. This conclusion rests on three linked results,
 not on the detector score alone.
 
-First, the AgentDojo campaigns show consistent changes across native paired
-oracles. Enforce ASR was 0/629 for 4B, 1/629 for 9B, and 0/629 for 27B, compared
+First, the AgentDojo paired task comparisons show consistent changes across
+native oracles. Enforce ASR was 0/629 for 4B, 1/629 for 9B, and 0/629 for 27B, compared
 with 206, 131, and 203 successes off. Secure utility increased by 149, 100, and
 138 cases. Every enforce run recorded only nine explicit blocks. In the
 reviewed 27B row, 2,181 actions were allowed, of which 2,074 completed and 107
@@ -41,8 +41,9 @@ signature detector will contain arbitrary prompt injection.
 
 \subsection{RQ2: when and how to withhold and transfer authority}
 
-The design supplies a technical answer to RQ2. The runtime should withhold an
-action or observation---and transfer authority only where policy permits---when:
+The design supplies a bounded technical answer to RQ2. The runtime should
+withhold an action or observation---and transfer authority only where policy
+permits---when:
 
 \begin{itemize}
   \item policy prohibits the effect outright, in which case no human approval
@@ -60,12 +61,14 @@ action or observation---and transfer authority only where policy permits---when:
   or leave the page.
 \end{itemize}
 
-The implementation also answers ``how'' at the protocol level: explicit
-server-owned state, redacted reasons, no approval for hard blocks or
-quarantined content, scope binding, expiry and use caps, live revalidation,
-fresh observation after an incident, and fail-closed timeout/cancellation.
-This is stronger than an advisory confirmation dialog because authority is
-represented and checked at the execution boundary.
+The implementation provides evidence for selected parts of ``how'' at the
+protocol level: explicit server-owned state, redacted reasons, no approval for
+hard blocks or quarantined content, scope binding, expiry and use caps, live
+revalidation, fresh observation after an incident, and fail-closed
+timeout/cancellation. This is stronger than an advisory confirmation dialog
+within the governed execution path because authority is represented and
+checked at that boundary. The evidence does not establish full browser
+reconnect, accessibility, schema equivalence, or operator interpretation.
 
 The matched WASP enforce row produced one denied approval and no handovers.
 This is consistent with automatic containment requiring few authority
@@ -80,8 +83,9 @@ avoid automation bias, or experience tolerable workload. Bainbridge's classic
 rare abnormal states may be poorly prepared to do so
 ~\cite{bainbridge1983ironies}. Selective prompts reduce frequency but may also
 increase surprise and the expertise required at the moment of takeover.
-Consequently, RQ2 is answered as an implemented and testable authority design;
-behavioural effectiveness remains future HCI work.
+Consequently, the evidence supports a bounded RQ2 answer: a technical design
+with selected implemented contracts and rendered interface states. Complete
+end-to-end validation and behavioural effectiveness remain future work.
 
 \section{Why utility can improve under enforcement}
 

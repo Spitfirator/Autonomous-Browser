@@ -1,7 +1,7 @@
-\documentclass[10pt,a4paper]{report}
+\documentclass[12pt,a4paper]{report}
 
-% The official UCL project-report template is retained as the compilation root.
-% The class options above make its existing 10-point size and A4 output explicit.
+% Retain the project-report structure while applying the dissertation module's
+% explicit 12-point and A4 formatting requirements.
 \usepackage[margin=25mm,headheight=14pt]{geometry}
 \usepackage{setspace}
 \usepackage{amsmath,amssymb}
@@ -52,9 +52,8 @@
 \newcommand{\rqtwo}{Under what conditions should an independent runtime withhold a browser-agent action or observation, and what fail-closed protocol should govern approval, takeover, and return of control?}
 
 \begin{document}
-% At 10pt this retains approximately one-and-a-half visual line spacing while
-% keeping the complete main text within the 50-page working limit.
-\setstretch{1.20}
+% Use explicit one-and-a-half spacing as required by the dissertation module.
+\onehalfspacing
 
 \hypersetup{pageanchor=false}
 \begin{titlepage}
@@ -93,6 +92,7 @@
 
 \chapter*{Abstract}
 \addcontentsline{toc}{chapter}{Abstract}
+\begin{singlespace}
 
 Large-language-model agents can operate web browsers on a user's behalf, but
 the same page content that informs their decisions can also contain adversarial
@@ -106,19 +106,25 @@ privileged tool action immediately before execution. Its mechanisms combine
 deterministic prompt-injection detection, attributable sanitisation and clean re-detection,
 origin-scoped taint, data-flow checks, policy rules, bounded human approval,
 direct takeover for protected steps, and privacy-preserving audit.
-A Manifest V3 Chrome extension exposes these controls through a reconnect-safe
-side panel, an in-page ownership layer, and an inspectable Activity dashboard.
+A Manifest V3 Chrome extension presents these controls through a side panel
+initialised from redacted server state, an in-page ownership layer, and an
+inspectable Activity dashboard. Selected server-side lifecycle contracts are
+tested; full browser reconnect, accessibility, and operator effectiveness are
+not.
 
 The evaluation separates mechanism evidence from browser-native transfer.
-Across matched AgentDojo campaigns containing 629 attacked task pairs per
-model, enforcement reduced native attacker success from 206 to 0 cases for
-Qwen 3.5 4B, from 131 to 1 for 9B, and from 203 to 0 for 27B. Utility increased
-in all three enforce conditions, although these independent runs do not
-identify a causal effect of model size. In the principal matched WASP
-comparison, 84 attacked browser tasks were run in each condition with Qwen 3.5
-27B. Post-verified observation sanitisation reduced terminal attacker success
-from 5/84 to 0/84 and task instances with attacker-directed execution from
-17/84 to 0/84, while native utility changed from 47/84 to 46/84. A separate 9B
+Across paired AgentDojo task comparisons containing 629 attacked tasks per
+condition and model, enforcement reduced native attacker success from 206 to 0
+cases for Qwen 3.5 4B, from 131 to 1 for 9B, and from 203 to 0 for 27B. The 9B
+reports lack a recorded Git revision, and the 27B comparison joins a historical
+off row to a provenance-separated enforce rerun; it is therefore outcome
+evidence, not one immutable three-model campaign. Utility increased in all
+three enforce conditions, although the independent runs do not identify a
+causal effect of model size. In the principal matched WASP comparison, 84
+attacked browser tasks were run in each condition with Qwen 3.5 27B.
+Post-verified observation sanitisation reduced terminal attacker success from
+5/84 to 0/84 and task instances with attacker-directed execution from 17/84 to
+0/84, while native utility changed from 47/84 to 46/84. A separate 9B
 development sequence found that warning the model left attack success
 unchanged; the final sanitisation row recorded 0/84 terminal successes and one
 attacker-directed execution, but it was not a fresh matched comparison.
@@ -131,6 +137,7 @@ dissertation therefore argues for complete mediation at that governed tool
 boundary and fail-closed selective authority, while identifying visual inputs,
 adaptive attacks, policy specification, and evaluated human oversight as
 necessary future work.
+\end{singlespace}
 
 \begingroup
 \small
@@ -158,7 +165,10 @@ necessary future work.
 \clearpage
 \phantomsection
 \addcontentsline{toc}{chapter}{Bibliography}
+\begingroup
+\small
 \bibliographystyle{plainnat}
 \bibliography{references}
+\endgroup
 
 \end{document}

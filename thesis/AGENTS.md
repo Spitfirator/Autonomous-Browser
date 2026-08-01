@@ -66,10 +66,11 @@ The possible future features are easy to confuse:
 
 - Write the dissertation entirely in LaTeX, using
   `project_report - pg.tex` as the official UCL template and compilation root.
-- Keep the template's current 10-point type. Do not override it with an older
-  generic 12-point instruction.
-- Treat 50 pages as the working limit for the complete main dissertation,
-  including the current HITL and Chrome-extension chapter.
+- Format the dissertation text in 12-point type with explicit one-and-a-half
+  spacing, following the current module guidance.
+- Treat 50 pages as the limit for dissertation text, defined as everything
+  except the title page, table of contents, abstract, acknowledgements,
+  references, and appendices.
 - The current technical assurance appendix is part of the submission. Keep the
   complete submission, including appendices, at or below 100 pages.
 - Plan and monitor the page budget while writing; do not defer length control

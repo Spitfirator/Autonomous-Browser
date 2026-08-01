@@ -47,8 +47,88 @@ requiring a new run tag for a quantitative claim. \\
 \bottomrule
 \end{tabularx}
 \end{table}
-
 \clearpage
+
+\section{Extension packaging and state reconstruction}
+\label{sec:appendix-extension-consistency}
+
+The Vite build packages the React/TypeScript client as a static Manifest V3
+bundle. The browser manager uses a dedicated persistent Chrome profile and a
+saved DevTools endpoint; a one-time localhost page supports manual unpacked
+installation when automatic loading is unavailable. A second Chrome may host
+the control extension, but privileged execution remains in the governed
+browser.
+
+Server-owned pending state prevents a panel reload from losing a live request
+or displaying an expired one as authoritative. A WebSocket client receives a
+snapshot of status, recent events, configuration, and pending requests, then
+applies monotonic sequenced events. On reconnect, a fresh snapshot replaces the
+card lists; the service worker follows the same rule for its compact in-page
+projection. Security incidents have display priority over ordinary handovers.
+Client expiry hides a stale card, but the server timer owns the timeout. A
+response resolves only the request identifier; execution still requires fresh
+preflight and a terminal audit event.
+
+Sequence numbers are process-monotonic, but replay and per-client queues are
+bounded and the client does not diagnose sequence gaps. A slow client can
+therefore miss non-authority telemetry. Pending approvals and handovers are
+reconstructed separately from server-owned managers, so a telemetry gap cannot
+mint consent or erase a live authority request. Snapshot reconstruction is
+implemented, but a full browser reconnect test and Python--TypeScript
+schema-equivalence test remain absent.
+
+\section{Supplementary interface and Activity detail}
+\label{sec:appendix-interface-details}
+
+\subsection{Chat-first supervision}
+
+The side panel is organised around one continuous task thread rather than a
+separate security console. Persisted and live user text, agent step summaries
+with proposed-action chips, non-allow policy decisions, detector alerts,
+control requests and returns, and task outcomes appear in chronological
+context. Pending security incidents are docked first, followed by ordinary
+handovers and approvals, so the strongest unresolved state remains visually
+dominant.
+
+The header exposes run ownership controls and access to previous conversations,
+in-page visuals, and the dashboard. The composer starts or follows up on an
+idle conversation and queues steering for the next thought while a task is
+active. An offline banner distinguishes a local-service connection failure
+from an idle agent. Starting a new chat is also a deliberate forced-reset path
+for a wedged run, cancelling outstanding authority rather than leaving
+orphaned requests.
+
+Step summaries omit screenshot thumbnails; event fan-out strips frames, and
+titles and URLs are redacted at event and trace boundaries. Explicit local
+screenshot retention remains separate from the extension's live channel.
+Displayed rationale-like summaries are exposed outputs, not private
+chain-of-thought.
+
+\subsection{Activity and decision inspection}
+
+The Activity dashboard lists completed runs with task, status, duration,
+steps, model calls, and token totals. Expanding a run shows its result, a
+decision log, and a within-run time partition. The UI labels policy checks plus
+approval and incident waits as ``Enforcement added'', and labels the remainder
+``Without enforcement''; these are accounting labels, not a matched
+counterfactual. Handover wait is shown separately by implementation convention,
+not because the same delay has been demonstrated without \systemname.
+Enforcement changes later replanning, so the partition cannot estimate causal
+overhead.
+
+Decision chips count allowed actions, approvals, policy-triggered handoffs,
+security pauses, blocks plus human denials, approval/handoff timeouts, and total
+interventions. Non-zero chips deep-link into relevant trace events. Each
+non-allow decision can receive a local yes/no \texttt{understood} annotation in
+a researcher walkthrough. These ticks are not participant responses,
+comprehension scores, or evidence of trust.
+
+Models and settings configure providers, sampling, pacing, policy, retention,
+and budgets for the applicable boundary; API keys are write-only to the
+client. Live rule fields are re-read, while instantiated clients, timeouts,
+budgets, and schema pruning remain run-fixed. Pending approval is revalidated
+against changed policy, so an obsolete consent cannot survive.
+
 \section{Authority failure matrix}
 
 \begingroup
@@ -88,7 +168,7 @@ observation can resume progress. \\
 \begingroup
 \small
 \begin{longtable}{@{}L{0.31\textwidth}L{0.63\textwidth}@{}}
-\caption{Fresh verification of the post-campaign implementation on 29 July
+\caption{Fresh verification of the post-campaign implementation on 30 July
 2026.}
 \label{tab:implementation-verification}\\
 \toprule
@@ -104,6 +184,54 @@ Chrome extension production build & TypeScript check and Vite build passed \\
 \bottomrule
 \end{longtable}
 \endgroup
+
+The machine-readable record
+\texttt{sentinel/evals/submission-validation-20260730.json} preserves
+the exact commands and outputs, repository revision, tool versions, and a
+SHA-256 manifest over the relevant implementation and test sources. It records
+technical gates for the current source state, not benchmark outcomes or
+human-interface effectiveness.
+
+\clearpage
+\section{Rendered extension states}
+\label{sec:appendix-extension-states}
+
+\begin{figure}[!htbp]
+\centering
+\begin{minipage}[t]{0.41\textwidth}
+  \centering
+  \textbf{(a) Narrow action approval}\par\smallskip
+  \includegraphics[width=\linewidth]{figures/interface-approval.png}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.41\textwidth}
+  \centering
+  \textbf{(b) Direct human takeover}\par\smallskip
+  \includegraphics[width=\linewidth]{figures/interface-takeover.png}
+\end{minipage}
+
+\vspace{2mm}
+\begin{minipage}[t]{0.41\textwidth}
+  \centering
+  \textbf{(c) Unresolved-observation incident}\par\smallskip
+  \includegraphics[width=\linewidth]{figures/interface-incident.png}
+\end{minipage}
+
+\vspace{2mm}
+\begin{minipage}[t]{0.78\textwidth}
+  \centering
+  \textbf{(d) Activity decision inspection}\par\smallskip
+  \includegraphics[width=\linewidth]{figures/interface-activity.png}
+\end{minipage}
+\caption{Production Chrome-extension bundle rendered from fixed synthetic,
+redacted fixture state. The panels demonstrate four implemented presentation
+states: bounded approval, human-performed protected input, fail-closed
+observation review, and privacy-preserving decision inspection. They are
+implementation evidence, not a participant walkthrough, usability result,
+causal overhead estimate, or benchmark observation. The reproducible capture
+script is \texttt{thesis/scripts/capture-extension-figures.cjs}.}
+\label{fig:extension-states}
+\end{figure}
 
 \clearpage
 \section{Exact WASP run provenance}

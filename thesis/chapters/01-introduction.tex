@@ -89,8 +89,11 @@ modalities, and production deployment.
 
 \section{Approach}
 
-The implemented artefact, \systemname, wraps a BrowserUse agent with two
-governance boundaries. Before a model invocation, the observation boundary
+BrowserUse supplies the underlying delegated browser automation. \systemname's
+role is to make that delegation independently governed and visibly
+operator-controllable, rather than to originate browser-task automation. The
+implemented artefact wraps a BrowserUse agent with two governance boundaries.
+Before a model invocation, the observation boundary
 identifies untrusted page, extraction, and tool-result regions; detects
 prompt-injection signals; sanitises only attributable regions; and re-runs
 detection on the exact text that would be sent. A detected current browser
@@ -114,11 +117,12 @@ privacy-preserving audit records within this governed tool boundary.
 The evaluation uses two complementary environments. AgentDojo isolates
 tool-use mechanisms across banking, Slack, travel, and workspace suites. A
 model-free component replay measures detector and policy behaviour across
-attack families, while matched end-to-end campaigns measure how three Qwen 3.5
-models re-plan under enforcement. WASP then tests transfer to a browser agent
-operating mutable GitLab and Reddit environments. The principal browser result
-is a matched 27B off/enforce comparison. A separate 9B sequence is retained as
-development and failure-analysis evidence, not pooled into a single campaign.
+attack families, while paired end-to-end task comparisons measure how three
+Qwen 3.5 models re-plan under enforcement. WASP then tests transfer to a
+browser agent operating mutable GitLab and Reddit environments. The principal
+browser result is a matched 27B off/enforce comparison. A separate 9B sequence
+is retained as development and failure-analysis evidence, not pooled into a
+single campaign.
 This sequence is useful because it records a negative result for warning-only
 enforcement and two successive sanitisation revisions.
 
@@ -128,7 +132,8 @@ enforcement and two successive sanitisation revisions.
 The original contributions of this dissertation are:
 
 \begin{enumerate}
-  \item \textbf{An independent browser-agent enforcement architecture.}
+  \item \textbf{An executor-side enforcement architecture for existing
+  browser agents.}
   \systemname\ composes an untrusted planner with model-input and
   pre-execution wrappers, a single live policy decision point, and a privileged
   browser executor. The design applies complete mediation to model-proposed
@@ -143,25 +148,30 @@ The original contributions of this dissertation are:
   history values use bounded whole-value removal to avoid nested incident
   loops.
 
-  \item \textbf{Fail-closed selective human authority.}
+  \item \textbf{A fail-closed selective-authority protocol and
+  browser-integrated control plane.}
   The implemented technical lifecycle distinguishes hard refusal, narrow action approval,
   direct human completion of protected steps, and security-incident review.
   Reusable consent is run-local, scope-bound, expiring, and capped. The
   lifecycle includes timeout, stop-race, revalidation, and complete-action
   audit semantics rather than treating the interface as an advisory display.
-  A Manifest V3 Chrome extension realises these semantics through a
-  reconnect-safe side panel, in-page ownership controls, and an Activity
-  dashboard over redacted decision evidence. This contribution is the
-  implemented authority protocol and interface instrumentation, not a claim of
-  validated operator behaviour.
+  A Manifest V3 Chrome extension presents these semantics through a
+  side panel initialised from redacted server state, in-page ownership
+  controls, and an Activity dashboard over redacted decision evidence. This
+  contribution is the implemented server-owned authority lifecycle and client
+  instrumentation.
+  Selected backend contracts are verified, but full browser reconnect,
+  accessibility, explanation quality, and operator behaviour are not.
 
-  \item \textbf{A provenance-conscious evaluation across two abstraction
-  levels.} AgentDojo supplies controlled mechanism evidence; WASP supplies
+  \item \textbf{A two-level empirical evaluation of independent enforcement.}
+  AgentDojo supplies controlled mechanism evidence; WASP supplies
   browser-native transfer and limitation evidence. The analysis reports
   legitimate utility, secure utility, native attack success,
   attacker-directed attempts and executions, interventions, and mechanism
-  telemetry together. It also preserves negative and post-hoc development
-  results rather than silently pooling incompatible runs.
+  telemetry together. It provides bounded evidence that enforcement reduced
+  evaluated violations while retaining useful task performance under the
+  tested conditions, and preserves negative and post-hoc development results
+  rather than silently pooling incompatible runs.
 \end{enumerate}
 
 BrowserUse, AgentDojo, WASP, Qwen, and the cited attack and defence ideas are
@@ -171,8 +181,8 @@ here, not authorship of those dependencies or benchmarks.
 
 \section{Summary of findings}
 
-In the controlled AgentDojo end-to-end campaigns, each model completed 629
-attacked task pairs in both off and enforce modes. Native attacker success
+Across the controlled AgentDojo end-to-end comparisons, each model completed
+629 attacked tasks in both off and enforce modes. Native attacker success
 changed from 206 to 0 cases for Qwen 3.5 4B, from 131 to 1 for 9B, and from 203
 to 0 for 27B. Utility increased from 362 to 446, 422 to 467, and 428 to 483
 cases respectively. These runs show the importance of measuring useful
@@ -193,11 +203,12 @@ answer RQ1 positively within the evaluated boundary, but the single seed,
 finite scenario set, development-set detector adaptation, and incomplete
 modality coverage preclude a universal claim.
 
-Current implementation verification supplies the technical answer to RQ2.
-Approval, takeover, unresolved-observation incidents, timeout, cancellation,
-live revalidation, and paired audit were exercised as fail-closed protocol
-paths. This establishes the implemented authority semantics, not how well a
-person would understand or use the interface.
+Current implementation verification supplies bounded technical evidence for
+RQ2. Approval, takeover, unresolved-observation incidents, timeout,
+cancellation, live revalidation, and paired audit were exercised as fail-closed
+server-side protocol paths. This establishes selected authority semantics, not
+end-to-end browser reconnect or how well a person would understand or use the
+interface.
 
 \section{Dissertation structure}
 
@@ -206,8 +217,9 @@ injection, model-level defences, system-level mediation, and human security
 decisions. \Cref{chap:threat-model} defines the attacker, assets, trust
 boundaries, invariants, and explicit non-claims. \Cref{chap:design} explains
 \systemname's architecture and implementation.
-\Cref{chap:governance-interface} specifies the implemented human-authority
-protocol and Chrome extension as an end-to-end technical control plane.
+\Cref{chap:governance-interface} specifies the server-owned human-authority
+protocol and its Chrome extension presentation, including the limits of the
+current end-to-end validation.
 \Cref{chap:methodology} describes the two-stage evaluation and its provenance
 controls.
 \Cref{chap:results} presents the AgentDojo and WASP results.

@@ -8,6 +8,8 @@ valuable defence in depth, but it leaves the final security decision with the
 component exposed to the attack. This dissertation investigated a different
 allocation of responsibility through \systemname, an independent governance
 layer between a BrowserUse agent and its privileged executor.
+BrowserUse supplies the delegated browser automation; \systemname's contribution
+is the enforcement and operator-control layer that governs that delegation.
 
 \systemname\ applies two boundaries. At the observation boundary, it treats
 page, extraction, and tool-result content as untrusted; detects defined
@@ -31,17 +33,19 @@ the URL, parameter digest, and bound scope. Silence, timeout, stop, cancellation
 and missing context fail closed. Every such governed tool attempt receives a
 redacted start and terminal audit record.
 
-These authority states are realised in a Manifest V3 Chrome extension rather
-than left as backend-only mechanisms. Its side panel presents the live task
+These authority states have a Manifest V3 Chrome extension presentation rather
+than remaining backend-only mechanisms. Its side panel presents the live task
 and docked approval, takeover, and incident cards; its closed-shadow in-page
 layer makes human/agent ownership explicit; and its Activity dashboard exposes
 redacted decisions and within-run intervention timing. Pending requests remain
-server-owned and are replayed after reconnect, so client loss cannot become
-consent.
+server-owned, and reconnecting clients are initialised from redacted server
+state, so client loss cannot mint consent. The submission does not include a
+full browser reconnect or accessibility test.
 
 The evaluation answers RQ1 positively within its defined scope. Across three
-629-pair AgentDojo campaigns, enforce-mode attacker success was 0, 1, and 0
-cases for Qwen 3.5 4B, 9B, and 27B, compared with 206, 131, and 203 off.
+paired AgentDojo task comparisons of 629 attacked tasks per condition,
+enforce-mode attacker success was 0, 1, and 0 cases for Qwen 3.5 4B, 9B, and
+27B, compared with 206, 131, and 203 off.
 Utility and secure utility increased for every model. In the principal matched
 WASP comparison, terminal attacker success changed from 5/84 to 0/84 and task
 instances with attacker-directed execution from 17/84 to 0/84; utility changed
@@ -55,14 +59,16 @@ sanitisation row recorded 0/84 terminal successes against 7/84 in the shared
 off baseline, with one attacker-directed execution; because middleware changed,
 that difference is development evidence rather than a matched effect.
 
-RQ2 receives a bounded technical answer. Authority should transfer when an
+RQ2 receives a bounded design and protocol answer. Authority should transfer when an
 effect is ambiguous and consequential, when protected data should remain
 outside agent action, when a configured sensitive boundary is reached, or when
-a known suspicious observation cannot be cleaned. The implemented protocol
-makes that transfer explicit, bounded, and fail closed. No participant study
-establishes whether people understand or use it effectively, so the
-dissertation makes no claim about trust, workload, fatigue, comprehension,
-usability, or rubber-stamping.
+a known suspicious observation cannot be cleaned. Selected implemented
+contracts make that transfer explicit, bounded, and fail closed, while rendered
+fixture states demonstrate the client presentation. End-to-end reconnect,
+accessibility, explanation quality, and operator use remain unverified. No
+participant study establishes whether people understand or use the interface
+effectively, so the dissertation makes no claim about trust, workload, fatigue,
+comprehension, usability, or rubber-stamping.
 
 The demonstrated contributions are therefore specific:
 
@@ -73,8 +79,10 @@ The demonstrated contributions are therefore specific:
   \item a post-verified observation boundary with explicit unresolved-content
   semantics and sticky provenance;
   \item a selective-authority lifecycle with attempted and terminal audit for
-  those governed actions, realised as a reconnect-safe Chrome extension control
-  plane for browser effects;
+  those governed actions, presented through a Chrome extension control plane
+  with a side panel initialised from redacted server state, in-page ownership
+  controls, and an Activity view over redacted decision evidence; full reconnect
+  and human use of the control plane remain unevaluated;
   and
   \item a provenance-conscious evaluation connecting controlled AgentDojo
   mechanism evidence to matched WASP browser-native transfer and transparent

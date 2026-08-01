@@ -15,28 +15,63 @@ than a notification added after the decision.
 by the local Sentinel service. The extension has four operational surfaces:
 
 \begin{enumerate}
-  \item a \textbf{side panel} containing the task conversation, live run state,
-  intervention cards, and pause, resume, stop, and steering controls;
-  \item an \textbf{in-page control layer} that makes agent ownership visible,
-  offers cooperative input shielding, and supports direct takeover;
-  \item an \textbf{Activity dashboard} that presents completed runs,
-  privacy-preserving enforcement records, and recorded
-  intervention-timing breakdowns;
-  and
-  \item \textbf{model and policy settings} that configure the local runtime.
+  \item a task-centred \textbf{side panel} with intervention and run controls;
+  \item an \textbf{in-page control layer} for ownership, input shielding, and
+  takeover;
+  \item an \textbf{Activity dashboard} over redacted run and decision records;
+  and \item \textbf{model and policy settings} for the local runtime.
 \end{enumerate}
 
-A separate one-time server-hosted page supports manual unpacked installation.
 The implemented thesis scope comprises approval, takeover,
 unresolved-observation incident, trace, and extension UI primitives with
-server-owned lifecycle contracts. Together they form the implemented
-authority protocol and interface system described here. The backend lifecycle
-contracts are exercised by tests; the client is type-checked and packaged by
-the production build.
+server-owned lifecycle contracts. Together they form the technical prototype
+specified here. Selected backend lifecycle contracts are exercised by tests;
+the client is type-checked, packaged, and rendered below from synthetic,
+redacted fixture state. A full browser reconnect test, accessibility test,
+Python--TypeScript schema-equivalence test, and structured interface walkthrough
+remain absent.
 Operator-visible plan authority, provenance hiding, and a multi-agent
 supervisory queue are separate future mechanisms, not features attributed to
 this implementation. Broader human-factors evaluation remains incomplete: no
 participant study or WASP oracle result evaluates operator performance.
+
+\Cref{fig:extension-overview} places the interface in its browser context and
+shows the strongest fail-closed state. The remaining approval, takeover, and
+Activity views are retained as a supplementary visual record in
+\Cref{sec:appendix-extension-states}.
+
+\begin{figure}[!htbp]
+\centering
+\begin{minipage}[t]{0.82\textwidth}
+  \centering
+  \textbf{Governed browser during ordinary autonomous work}\par\smallskip
+  \IfFileExists{figures/interface-browser-overview.png}{%
+    \includegraphics[width=\linewidth,height=40mm,keepaspectratio]{figures/interface-browser-overview.png}%
+  }{%
+    \fbox{%
+      \begin{minipage}[c][40mm][c]{0.94\linewidth}
+        \centering\small
+        \textbf{Whole-browser capture pending}\par\medskip
+        Dedicated governed Chrome window on a neutral page, with the Sentinel
+        task thread and in-page ownership control visible during ordinary
+        autonomous work.\par\medskip
+        \texttt{figures/interface-browser-overview.png}
+      \end{minipage}%
+    }%
+  }
+\end{minipage}
+\IfFileExists{figures/interface-browser-overview.png}{%
+  \caption[Governed browser during ordinary autonomous work.]{Browser-integrated governance during ordinary autonomous work. The
+  dedicated Chrome window shows the active page, Sentinel task thread, and
+  in-page ownership control together. This is implementation evidence, not a
+  usability or benchmark result.}%
+}{%
+  \caption[Governed browser during ordinary autonomous work.]{Planned browser-integrated governance view. The reserved capture
+  will show ordinary autonomous work with the active page, Sentinel task
+  thread, and in-page ownership control together.}%
+}
+\label{fig:extension-overview}
+\end{figure}
 
 \section{Extension architecture}
 
@@ -102,46 +137,14 @@ another compromised process running as the same operating-system user. That
 process and a compromised browser or extension are outside the accepted thesis
 boundary.
 
-\subsection{Packaging and browser lifecycle}
+\subsection{Packaging and state reconstruction}
 
-The Vite build packages the React and TypeScript client and its fonts as a
-static Manifest V3 bundle. The browser manager launches a dedicated persistent
-Chrome profile and reconnects through its saved DevTools endpoint. It probes
-for a hello beacon or extension target, then tries launch-flag and DevTools
-loading. If branded Chrome rejects both, a one-time localhost page supplies the
-exact \emph{Load unpacked} path and confirms the next beacon. Another Chrome
-may install the bundle as a remote control and monitor; privileged execution
-remains in the dedicated governed browser.
-
-\subsection{Snapshot and event consistency}
-
-Two failures are especially dangerous in a human-authority interface:
-displaying a stale request after it has expired, and losing a live request
-during a panel reload. \systemname\ addresses both with server-owned pending
-state. A WebSocket client first receives a snapshot containing run status,
-recent events, configuration, pending approvals, and pending handovers. It
-then applies monotonic sequenced events. The side panel retains a bounded
-200-event live feed and reconciles the active conversation with persisted
-turns.
-
-On disconnection, the client enters an explicit offline state and reconnects
-with exponential backoff from approximately 1 to 8 seconds plus jitter. The
-next snapshot replaces the pending-card lists, so a resolved request
-disappears and an unresolved one reappears. The extension service worker uses
-the same snapshot-first rule for the in-page projection. If several control
-requests are present, an unresolved security incident has display priority so
-that an ordinary handover cannot conceal it.
-
-This protocol separates visual from authority state. Client expiry hides a
-stale card, but the server timer owns the timeout. A response only resolves the
-request identifier; execution still requires any fresh preflight and its
-terminal audit event.
-
-Sequence numbers are process-monotonic, but replay and per-client queues are
-bounded and the client does not diagnose sequence gaps. A slow client can
-therefore miss non-authority telemetry. Pending approvals and handovers are
-reconstructed separately from server-owned managers, so a telemetry gap cannot
-mint consent or erase a live authority request.
+The static Manifest V3 bundle runs in a dedicated persistent Chrome profile.
+Pending authority remains server-owned: reconnecting clients rebuild from
+snapshots and sequenced events, so panel expiry or disconnection cannot mint
+consent or erase a request. Replay is bounded, however, and no full browser
+reconnect test was run. \Cref{sec:appendix-extension-consistency} records the
+packaging and consistency details.
 
 \section{Authority taxonomy}
 
@@ -184,6 +187,59 @@ content and cannot resume from the quarantined input. \\
 \bottomrule
 \end{tabularx}
 \end{table}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  font=\scriptsize,
+  node distance=7mm,
+  box/.style={draw,rounded corners=2pt,align=center,minimum height=10mm,
+    inner sep=2.5pt,fill=white},
+  source/.style={box,draw=sentinelred,very thick},
+  guard/.style={box,draw=sentinelamber,very thick,fill=sentinelamber!8},
+  trusted/.style={box,draw=sentinelblue,very thick},
+  terminal/.style={box,draw=sentinelgrey,dashed,fill=sentinelgrey!5},
+  flow/.style={-{Latex[length=2mm]},thick}
+]
+  \node[source,text width=27mm] (observation) {Untrusted observation};
+  \node[guard,text width=34mm,right=of observation] (observeguard)
+    {Detect, attribute, rewrite, and re-detect exact model input};
+  \node[terminal,text width=68mm,align=left,right=of observeguard] (observeout) {%
+    \(\checkmark\) Post-condition holds: forward verified text to the model.\\[1mm]
+    \(\times\) Current-page residual or unsafe attribution: withhold it, open an
+    incident, and permit only a fresh capture.\\[1mm]
+    \(-\) Unresolved bounded extraction/history value: omit the whole value.};
+
+  \node[trusted,text width=27mm,below=10mm of observation] (proposal)
+    {Model-proposed privileged action};
+  \node[guard,text width=34mm,right=of proposal] (preflight)
+    {Rebuild live context and invoke the central policy decision};
+  \node[terminal,text width=68mm,align=left,right=of preflight] (actionout) {%
+    \(\checkmark\) Allow: call the privileged executor.\\[1mm]
+    \(\times\) Hard rule, timeout, cancellation, or missing context: do not
+    execute.\\[1mm]
+    \(\circlearrowleft\) Narrow approval: wait, then repeat the complete
+    preflight.\\[1mm]
+    \(\rightarrow\) Protected or unclassifiable step: the human acts and the
+    proposed agent action remains withheld.};
+
+  \node[anchor=south west,font=\bfseries\footnotesize,text=sentineldark]
+    at ([yshift=2mm]observation.north west) {Observation boundary};
+  \node[anchor=south west,font=\bfseries\footnotesize,text=sentineldark]
+    at ([yshift=2mm]proposal.north west) {Action boundary};
+
+  \draw[flow] (observation) -- (observeguard);
+  \draw[flow] (observeguard) -- (observeout);
+  \draw[flow] (proposal) -- (preflight);
+  \draw[flow] (preflight) -- (actionout);
+\end{tikzpicture}
+\caption{Current selective-authority lifecycle at the two guarded boundaries.
+The diagram distinguishes model input from privileged execution and shows that
+an operator response never bypasses fresh policy evaluation. It describes the
+post-campaign technical prototype; it is not a benchmark outcome or evidence of
+human decision quality.}
+\label{fig:authority-lifecycle}
+\end{figure}
 
 Ordinary supervision is separate from these enforcement outcomes. While a run
 is working, the operator may steer the agent at its next reasoning boundary,
@@ -251,6 +307,38 @@ The budget is a technical bound on interruption frequency. It should not be
 misread as an empirically optimal number of prompts or evidence that four
 prompts avoid fatigue.
 
+\begin{figure}[htbp]
+\centering
+\begin{minipage}[t]{0.78\textwidth}
+  \centering
+  \textbf{Governed browser during narrow approval}\par\smallskip
+  \IfFileExists{figures/interface-browser-approval.png}{%
+    \includegraphics[width=\linewidth,height=40mm,keepaspectratio]{figures/interface-browser-approval.png}%
+  }{%
+    \fbox{%
+      \begin{minipage}[c][40mm][c]{0.94\linewidth}
+        \centering\small
+        \textbf{Browser-and-sidebar approval capture pending}\par\medskip
+        Neutral page visible beside the Sentinel sidebar; a redacted
+        approval card holds one harmless click and exposes bounded
+        allow-once, allow-similar, and deny choices.\par\medskip
+        \texttt{figures/interface-browser-approval.png}
+      \end{minipage}%
+    }%
+  }
+\end{minipage}
+\IfFileExists{figures/interface-browser-approval.png}{%
+  \caption[Browser-integrated narrow approval.]{Browser-integrated narrow approval. The page remains visible while
+  Sentinel withholds a harmless click and presents its redacted target, reason,
+  expiry, and bounded choices. This is not operator-comprehension evidence.}%
+}{%
+  \caption[Browser-integrated narrow approval.]{Planned browser-integrated narrow-approval view. The reserved
+  capture will show a neutral page beside a Sentinel card holding one harmless
+  click, with its redacted reason and bounded choices.}%
+}
+\label{fig:browser-approval}
+\end{figure}
+
 \section{Direct human takeover}
 
 \subsection{Why takeover is not approval}
@@ -304,6 +392,39 @@ Timeout and cancellation are explicit non-authorising outcomes; stop and
 shutdown cause cancellation. If stop and handover completion race in the event
 loop, stop wins before privileged execution.
 
+\begin{figure}[htbp]
+\centering
+\begin{minipage}[t]{0.78\textwidth}
+  \centering
+  \textbf{Governed browser during direct takeover}\par\smallskip
+  \IfFileExists{figures/interface-browser-takeover.png}{%
+    \includegraphics[width=\linewidth,height=40mm,keepaspectratio]{figures/interface-browser-takeover.png}%
+  }{%
+    \fbox{%
+      \begin{minipage}[c][40mm][c]{0.94\linewidth}
+        \centering\small
+        \textbf{Browser-and-sidebar takeover capture pending}\par\medskip
+        Benign local form visible beside the Sentinel sidebar; the page-level
+        ``Your turn'' ownership state and matching takeover card show that the
+        agent is waiting while the human acts.\par\medskip
+        \texttt{figures/interface-browser-takeover.png}
+      \end{minipage}%
+    }%
+  }
+\end{minipage}
+\IfFileExists{figures/interface-browser-takeover.png}{%
+  \caption[Browser-integrated direct takeover.]{Browser-integrated direct takeover. The page-level ownership state
+  and matching sidebar card show that the proposed agent action remains
+  withheld while the operator acts. Return resumes from fresh page state; it
+  does not authorise the intercepted disclosure.}%
+}{%
+  \caption[Browser-integrated direct takeover.]{Planned browser-integrated takeover view. The reserved capture will
+  show a benign form, the page-level ``Your turn'' state, and the matching
+  Sentinel sidebar card while the agent waits.}%
+}
+\label{fig:browser-takeover}
+\end{figure}
+
 \section{Unresolved-observation security incident}
 
 \subsection{Quarantine before the model call}
@@ -336,6 +457,39 @@ explicit wording that re-checking does not approve the hidden content.
 Reduced-motion preferences disable attention animations without removing the
 side-panel status.
 
+\begin{figure}[htbp]
+\centering
+\begin{minipage}[t]{0.78\textwidth}
+  \centering
+  \textbf{Governed browser during a fail-closed incident}\par\smallskip
+  \IfFileExists{figures/interface-browser-incident.png}{%
+    \includegraphics[width=\linewidth,height=40mm,keepaspectratio]{figures/interface-browser-incident.png}%
+  }{%
+    \fbox{%
+      \begin{minipage}[c][40mm][c]{0.94\linewidth}
+        \centering\small
+        \textbf{Browser-and-sidebar incident capture pending}\par\medskip
+        Synthetic page visible beside the persistent Sentinel security card;
+        the unsafe observation is withheld, attacker text is not exposed, and
+        only fresh re-check or stop is offered.\par\medskip
+        \texttt{figures/interface-browser-incident.png}
+      \end{minipage}%
+    }%
+  }
+\end{minipage}
+\IfFileExists{figures/interface-browser-incident.png}{%
+  \caption[Browser-integrated fail-closed observation incident.]{Browser-integrated fail-closed observation incident. The current
+  page remains visible while Sentinel withholds its unresolved observation.
+  The sidebar permits only fresh re-check or stop, with no ``allow anyway''
+  path.}%
+}{%
+  \caption[Browser-integrated fail-closed observation incident.]{Planned browser-integrated fail-closed incident view. The reserved
+  capture will show a synthetic page beside Sentinel's persistent security
+  card, with no attacker text visible and only fresh re-check or stop offered.}%
+}
+\label{fig:browser-incident}
+\end{figure}
+
 \subsection{Fresh-observation invariant}
 
 Selecting \emph{Re-check page} resolves only the wait on the discarded
@@ -355,63 +509,23 @@ string is safely omitted.
 
 \section{Side panel, dashboard, and explanatory audit}
 
-\subsection{Chat-first supervision}
+The four contextual views in
+\Cref{fig:extension-overview,fig:browser-approval,fig:browser-takeover,fig:browser-incident}
+place ordinary work and each selective-authority state inside the governed
+browser rather than presenting the sidebar in isolation. The side panel keeps
+the task thread, policy events, intervention cards, and run controls in one
+chronology, prioritising an unresolved incident over ordinary handovers and
+approvals. Screenshot frames are excluded from its live event channel, and
+displayed rationale-like summaries are exposed outputs rather than private
+chain-of-thought.
 
-The side panel is organised around one continuous task thread rather than a
-separate security console. Persisted and live user text, agent step summaries
-with proposed-action chips, non-allow policy decisions, detector alerts,
-control requests and returns, and task outcomes appear in chronological
-context. Pending security incidents are docked first, followed by ordinary
-handovers and approvals, so the strongest unresolved state remains visually
-dominant.
-
-The header exposes run ownership controls and access to previous conversations,
-in-page visuals, and the dashboard. The composer changes meaning with run
-state: it starts or follows up on an idle conversation and queues steering for
-the next thought while a task is active. An offline banner distinguishes a
-local-service connection failure from an idle agent. Starting a new chat is
-also a deliberate forced-reset path for a wedged run, which cancels any
-outstanding authority rather than leaving orphaned requests.
-
-Step summaries do not contain browser screenshot thumbnails. The ordinary
-interactive model path is DOM/accessibility based, and the event fan-out
-strips screenshot data before sending a step to the extension. Page titles and
-URLs are redacted at event and trace boundaries. A locally retained screenshot
-is a separate explicit audit option and is never the extension's live
-observation channel. Likewise, displayed rationale-like summaries are exposed
-model outputs and are not presented as private chain-of-thought.
-
-\subsection{Activity and decision inspection}
-
-The Activity dashboard lists completed runs with task, status, duration,
-steps, model calls, and token totals. Expanding a run shows its result, a
-decision log, and a within-run time partition. The UI labels policy checks plus
-approval and incident waits as ``Enforcement added'', and labels the remainder
-``Without enforcement''; these are accounting labels, not a matched
-counterfactual. Handover wait is shown separately by implementation convention,
-not because the same delay has been demonstrated without \systemname.
-Enforcement changes later replanning, so the partition cannot estimate causal
-overhead.
-
-Decision chips count allowed actions, approvals, policy-triggered handoffs,
-security pauses, blocks plus human denials,
-approval/handoff timeouts, and total interventions. Non-zero chips deep-link
-into the relevant trace events. Each non-allow policy decision in the decision
-log can also receive a local yes/no \texttt{understood} annotation in a
-researcher walkthrough. These ticks record whether the reviewer could explain
-the displayed reason during inspection. They are not participant responses,
-comprehension scores, or evidence of trust.
-
-The Models view selects the primary and fallback providers, model identifiers,
-sampling settings, and rate-limit pacing for the next task; API keys can be
-written to the backend but are never read back into the client. The Policies
-view exposes enforcement mode, domain and action rules, data-flow and
-prompt-injection settings, trace retention, and run budgets. Live-evaluated
-rule fields are re-read at the next model or action boundary; instantiated
-model clients, timeouts, budgets, and schema pruning are fixed when a run
-starts. A pending approval is revalidated against changed live rules, so an
-obsolete consent cannot silently survive. These surfaces expose local control
-without moving authority into the client.
+The Activity view provides redacted run and decision inspection. Its timing
+partition is accounting rather than a matched counterfactual, and its local
+\texttt{understood} ticks are researcher walkthrough annotations rather than
+participant comprehension evidence. Enlarged control states and Activity
+rendering remain in \Cref{fig:extension-states}; operational detail is retained
+in \Cref{sec:appendix-interface-details}. These synthetic fixtures exercise
+client rendering paths but do not add an outcome to either benchmark.
 
 \section{Audit and privacy invariants}
 
@@ -424,51 +538,23 @@ action identifier joins the pair. This prevents a preflight exception from
 becoming an invisible governed attempt and prevents a card resolution from
 being mistaken for execution.
 
-The public record contains action class, verdict, policy rule, redacted reason,
-capabilities, taint labels, risk factors, policy and preflight latency, target
-origin, and a run-keyed parameter digest. Detection events contain score,
-severity, signal names, and a finding digest, not the injection payload.
-Sanitisation events contain branch and count telemetry, not removed text.
-Event and history fields receive deterministic recursive pattern redaction
-across nested parameters, URLs, free text, approval previews, operator notes,
-errors, conversation history, and trace views. This is coverage for recognised
-patterns, not proof that arbitrary sensitive or attacker-derived echoes are
-absent. Step summaries remain exposed model output and may themselves be
-sensitive.
+Public records retain action class, verdict, rule, redacted reason,
+risk/taint/capability metadata, latencies, target origin, and run-keyed digests.
+Detection and sanitisation retain scores, signals, branch, and counts rather
+than payloads or removed text. Deterministic recursive redaction covers nested
+parameters, URLs, free text, previews, notes, errors, history, and trace views.
+It covers recognised patterns, not arbitrary sensitive or attacker-derived
+echoes; step summaries remain exposed model output.
 
-Run-keyed HMAC digests correlate attempted and terminal records without
-retaining the digested values or linking equal values across runs. Persistent
-traces default to no screenshots and no free-form model rationale. Before
-returning stored events, the Activity API again removes screenshots and legacy
-untrusted page titles as defence in depth. The current runner also writes a
-bounded prefix of steering text to its local process log; this path sits outside
-trace redaction and prevents a categorical no-raw-free-text persistence claim.
+Run-keyed HMACs join attempted and terminal records without retaining values or
+linking equal values across runs. Persistent traces default to no screenshots
+or free-form rationale, and the Activity API strips legacy frames/titles again.
+A bounded steering-text prefix still reaches the local process log, preventing
+a categorical no-raw-free-text persistence claim.
 
 \section{Failure semantics and technical verification}
 
-\Cref{tab:interface-failures} summarises the principal pending-authority
-failures. The invariant is that loss of required authority never becomes
-implied consent: disconnect, expiry, stop, stale response, changed live
-context, absent operator channel, and unresolved observation terminate or
-remain pending without executing the withheld governed agent action. Direct
-human and page-script effects remain outside that guarantee.
-
-The verification strategy exercises these behaviours below the benchmark
-level. Python tests cover request-manager lifecycle and pending-state
-behaviour; scope restrictions; timeout and cancellation; selected
-revalidation cases involving policy, DOM targets, uploads, and stop races;
-guarded-channel takeover and upload classification; incident retry; recursive
-redaction; and attempted/terminal audit pairing. Snapshot reconstruction is
-implemented but lacks a full browser reconnect test. The TypeScript/Vite build
-type-checks and packages the client; it does not prove Python--TypeScript
-schema equivalence or test browser rendering, reconnect, accessibility, or
-human behaviour.
-\Cref{sec:implementation-verification} records the fresh submission-time gates.
-
-These checks establish technical protocol properties, not human performance.
-The service-backed extension presents selective-authority requests, persistent
-incidents, and inspectable redacted evidence as a coherent control plane.
-Whether operators notice the right information, decide well under time
-pressure, or supervise several agents remains an empirical question; the
-evaluation therefore uses contract tests as implementation evidence and makes
-no human-outcome claim.
+\Cref{tab:interface-failures} details how missing authority remains pending or
+fails closed; direct human and page-script effects remain outside that
+guarantee. \Cref{sec:implementation-verification} records protocol and
+client-build gates.
