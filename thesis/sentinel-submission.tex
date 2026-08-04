@@ -1,0 +1,169 @@
+\documentclass[12pt,a4paper]{report}
+
+% Standalone submission master derived from the official UCL project-report
+% template. Chapter sources remain shared with the evidence-reviewed draft so
+% that evidence corrections can be incorporated once without allowing the two
+% manuscript roots to drift. This submission freezes the verified matched WASP
+% result; excluded multi-seed checkpoints are not a release dependency.
+\usepackage[margin=25mm,headheight=14pt]{geometry}
+\usepackage{setspace}
+\usepackage{amsmath,amssymb}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{microtype}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage{tabularx}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usepackage{xcolor}
+\usepackage[hidelinks]{hyperref}
+\usepackage[capitalise,noabbrev]{cleveref}
+
+\definecolor{sentineldark}{HTML}{17202A}
+\definecolor{sentinelamber}{HTML}{D97706}
+\definecolor{sentinelred}{HTML}{B42318}
+\definecolor{sentinelblue}{HTML}{2563EB}
+\definecolor{sentinelgrey}{HTML}{667085}
+
+\hypersetup{
+  pdftitle={Sentinel: Independent Runtime Enforcement for Browser Agents},
+  pdfauthor={Hector Gittos},
+  pdfsubject={MSc Information Security dissertation},
+  pdfkeywords={browser agents, prompt injection, runtime enforcement, reference monitor, human in the loop}
+}
+
+\graphicspath{{./}}
+\setlength{\emergencystretch}{2em}
+\Urlmuskip=0mu plus 1mu
+\setlength{\parindent}{1.5em}
+\setlength{\parskip}{0pt}
+\setlist{nosep}
+\renewcommand{\arraystretch}{1.15}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+
+\newcommand{\systemname}{\textsc{Sentinel}}
+\newcommand{\studentname}{Hector Gittos}
+\newcommand{\degreeprogramme}{MSc Information Security}
+\newcommand{\submissiondate}{September 2026}
+\newcommand{\rqone}{To what extent can an independent runtime-enforcement layer reduce prompt-injection-driven browser-agent violations while preserving task utility?}
+
+\begin{document}
+\onehalfspacing
+
+\hypersetup{pageanchor=false}
+\begin{titlepage}
+  \centering
+  \includegraphics[width=0.28\textwidth]{ucl_logo.png}\par
+  \vspace{1.5cm}
+  {\Huge\bfseries Sentinel: Independent Runtime Enforcement for Browser
+  Agents\par}
+  \vfill
+  {\Large \studentname\par}
+  \vspace{0.6cm}
+  {\large \degreeprogramme\par}
+  \vspace{0.6cm}
+  {\large Submission date: \submissiondate\par}
+  \vfill
+  \begin{minipage}{0.88\textwidth}
+    \small
+    \textbf{Declaration.}
+    This report is submitted in partial fulfilment of the requirements for the
+    \degreeprogramme\ at University College London. It is substantially the
+    result of my own work except where explicitly indicated in the text.
+
+    \medskip
+    \textbf{Distribution statement.}
+    The report may be freely copied and distributed provided the source is
+    explicitly acknowledged.
+  \end{minipage}
+\end{titlepage}
+
+\pagenumbering{roman}
+\hypersetup{pageanchor=true}
+
+\chapter*{Abstract}
+\addcontentsline{toc}{chapter}{Abstract}
+\begin{singlespace}
+
+Browser agents turn model outputs into consequential actions across web
+applications, but the pages they observe may also contain instructions supplied
+by an attacker.
+This creates an authority problem: the acting model must interpret untrusted
+content while deciding whether that content should influence privileged
+actions. This dissertation presents \systemname, an independent enforcement
+layer between a browser agent and its executor. \systemname\ governs the exact
+observation sent to the model, evaluates model-proposed actions immediately
+before execution, and transfers control to the operator when policy requires
+human authority. Its implementation combines attributable observation
+sanitisation and re-detection, origin-scoped taint, deterministic policy and
+data-flow rules, narrow approval, direct takeover for protected input, and a
+redacted audit trail presented through a Chrome extension.
+
+The evaluation connects controlled mechanism evidence to browser-native
+execution. Across paired AgentDojo comparisons with 629 attacked tasks per
+condition, enforcement changed native attacker success from 206 to 0 cases for
+Qwen 3.5 4B, from 131 to 1 for 9B, and from 203 to 0 for 27B. Utility increased
+in all three enforce conditions. In the primary matched WASP comparison,
+post-verified sanitisation changed terminal attacker success from 5/84 to 0/84
+and attacker-directed execution from 17/84 to 0/84, while utility changed from
+47/84 to 46/84 and secure utility from 44/84 to 46/84. A separate 9B
+development sequence explains the mechanism choice: model-facing warnings left
+attacker success unchanged, sanitisation V1 exposed incomplete multi-line
+removal, and V2 addressed that observed failure class.
+
+The results show that, under the evaluated conditions, an independently
+enforced observation and action boundary can reduce successful attacks and
+attacker-serving execution without eliminating useful task completion. The
+contribution is a bounded systems result rather than a universal defence:
+Sentinel demonstrates how a probabilistic planner can remain useful without
+being the sole authority for its own privileged effects.
+\end{singlespace}
+
+\begingroup
+\small
+\tableofcontents
+\endgroup
+\listoffigures
+\listoftables
+\clearpage
+
+\pagenumbering{arabic}
+
+\input{chapters/01-introduction}
+\clearpage
+\input{chapters/02-background}
+\clearpage
+\input{chapters/03-threat-model}
+\clearpage
+\input{chapters/04-design}
+\clearpage
+\input{chapters/05-methodology}
+\clearpage
+\input{chapters/06-results}
+\clearpage
+\input{chapters/07-discussion}
+\clearpage
+\input{chapters/08-conclusion}
+
+\appendix
+\clearpage
+\input{chapters/appendix-assurance}
+
+\clearpage
+\phantomsection
+\addcontentsline{toc}{chapter}{Bibliography}
+\begingroup
+\small
+\raggedright
+\Urlmuskip=0mu plus 2mu\relax
+\bibliographystyle{plainnat}
+\bibliography{references}
+\endgroup
+
+\end{document}

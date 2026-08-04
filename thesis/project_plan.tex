@@ -7,7 +7,7 @@
 \usepackage{longtable}
 \usepackage{microtype}
 
-\title{Dissertation plan: Sentinel}
+\title{Dissertation plan: \emph{Sentinel: Independent Runtime Enforcement for Browser Agents}}
 \author{Hector Gittos}
 \date{\today}
 
@@ -16,8 +16,8 @@
 
 \section{Working title and thesis}
 
-\textbf{Working title:} \emph{Design and Implementation of Enforcement
-Middleware for Securing Web Agents}.
+\textbf{Title:} \emph{Sentinel: Independent Runtime Enforcement for Browser
+Agents}.
 
 \textbf{Thesis:} Browser agents should not be relied upon to police the same
 untrusted content that determines their actions.  A separate, executor-side
@@ -27,81 +27,69 @@ evaluated policy violations while preserving useful autonomy under the tested
 conditions.  It does not claim to solve prompt injection or establish
 deployment readiness.
 
-\section{Research questions}
+\section{Research question}
 
-\begin{enumerate}[label=\textbf{RQ\arabic*:},leftmargin=18mm]
-  \item Can a separate enforcement layer reduce unsafe browser-agent actions
-  without stopping the agent from doing useful work?
-  \item Under what conditions should an independent runtime withhold a
-  browser-agent action or observation, and what fail-closed protocol should
-  govern approval, takeover, and return of control?
-\end{enumerate}
+\begin{quote}
+\textbf{RQ.} To what extent can an independent runtime-enforcement layer reduce
+prompt-injection-driven browser-agent violations while preserving task utility?
+\end{quote}
 
-RQ1 is answered empirically using AgentDojo and WASP. RQ2 receives a bounded
-design and protocol-verification answer through selected implementation
-contracts and rendered client states. Full browser reconnect, accessibility,
-schema equivalence, and human comprehension, workload, trust, and approval
-behaviour are not evaluated.
+AgentDojo and WASP answer this question empirically at controlled tool and
+browser-native levels. Approval, direct takeover, unresolved-observation
+incidents, audit, and the Chrome extension are completed supporting mechanisms
+within the bounded prototype. They are not a second empirical question or
+evidence about human effectiveness.
 
 \section{Original contributions}
 
 \begin{enumerate}
-  \item An executor-side reference-monitor architecture that treats the model
-  and every browser-derived observation as untrusted and applies policy
-  immediately before privileged execution.
-  \item A layered observation boundary combining deterministic detection,
-  attributable sanitisation, clean re-detection, sticky origin-scoped taint,
-  and fail-closed handling of unresolved content.
-  \item A selective-authority mechanism for hard blocks, bounded approval,
-  direct human takeover, cancellation, revalidation, and privacy-preserving
-  audit.
-  \item A two-stage evaluation that uses AgentDojo for controlled mechanism
-  evidence and WASP for browser-native transfer and failure analysis, reporting
-  utility and secure utility alongside attack success and attacker-directed
-  execution.
+  \item Executor-side mediation of model-proposed privileged actions.
+  \item Post-verified observation sanitisation combined with selective,
+  fail-closed human authority.
+  \item Evaluation across controlled AgentDojo environments and browser-native
+  WASP tasks, reporting utility and secure utility alongside native attacker
+  success and attacker-directed execution.
 \end{enumerate}
 
 \section{Chapter plan and page budget}
 
-The official report root is \texttt{project\_report - pg.tex}.  It uses
-12-point type with one-and-a-half spacing and targets no more than 50 pages of
-dissertation text, excluding the title page, contents, abstract,
-acknowledgements, references, and appendices.  The page allocations below
-include chapter-opening space, figures, and tables.
+The official report root is \texttt{project\_report - pg.tex}. It uses
+12-point type with one-and-a-half spacing. Counted material includes the Lists
+of Figures and Tables and the eight Arabic-numbered chapters; it excludes the
+title page, contents, abstract, acknowledgements, references, and appendices.
+The target is 43--45 counted pages and no more than 100 pages in total.
 
 \begin{longtable}{@{}p{0.06\textwidth}p{0.55\textwidth}r@{}}
 \toprule
  & Purpose & Target pages \\
 \midrule
 \endhead
-1 & Introduction: problem, motivation, questions, contributions, scope, and
-argumentative route. & 4 \\
+ & Lists of Figures and Tables & 2 \\
+1 & Introduction: problem, motivation, research question, contributions, scope,
+and argumentative route. & 3 \\
 2 & Background and related work: browser agents, indirect prompt injection,
 model-level defences, reference monitors, information flow, benchmarks, and
-human authority.  Establish the precise gap. & 6 \\
+human authority. Establish the precise gap. & 5 \\
 3 & Threat model and requirements: assets, actors, trust boundaries,
-capabilities, invariants, assumptions, and non-claims. & 5 \\
-4 & Sentinel design and implementation: runtime composition, observation
-boundary, taint and risk analysis, policy order, approvals and handover,
-revalidation, audit, privacy, and lifecycle failure handling. & 7 \\
-5 & Human authority and Chrome extension: approval, takeover, security
-incident, reconnect protocol, in-page ownership, Activity, privacy, and
-fail-closed interface semantics. & 7 \\
-6 & Evaluation methodology: questions and hypotheses, AgentDojo and WASP
-designs, metrics, provenance, reproducibility, and validity controls. & 6 \\
-7 & Results: component replay, controlled AgentDojo end-to-end comparisons,
+capabilities, invariants, assumptions, and bounded claims. & 4 \\
+4 & Design, implementation, and selective authority: runtime composition,
+observation mediation, action enforcement, approval, takeover, incident,
+auditing, and interface. & 9 \\
+5 & Evaluation methodology: AgentDojo and WASP designs, metrics, comparison
+logic, provenance, reproducibility, and validity controls. & 5 \\
+6 & Results: controlled AgentDojo end-to-end comparisons,
 matched 27B WASP comparison, 9B development sequence, and mechanism telemetry.
-& 7 \\
-8 & Discussion: interpretation, utility/security interaction, failure
-analysis, RQ answers, limitations, ethics, and unmeasured human outcomes. & 6 \\
-9 & Conclusion: demonstrated contributions and tightly bounded future work. &
-2 \\
- & \textbf{Main-text total} & \textbf{50} \\
+& 8 \\
+7 & Discussion: interpretation, utility/security interaction, mechanism and
+failure analysis, limitations, and implications. & 7 \\
+8 & Conclusion: demonstrated contributions and bounded future work. & 2 \\
+ & \textbf{Counted total} & \textbf{45} \\
 \midrule
- & Technical assurance appendix (outside the main-text limit) & 2 \\
- & References (outside the main-text limit) & 4--5 \\
+ & Technical assurance appendix (outside the counted limit) & 5 \\
+ & References (outside the counted limit) & 5 \\
+ & Title, abstract, and contents (outside the counted limit) & 4 \\
 \midrule
- & \textbf{Expected complete submission} & \textbf{56--57} \\
+ & \textbf{Expected complete submission} & \textbf{59} \\
 \bottomrule
 \end{longtable}
 
@@ -180,11 +168,14 @@ comprehension, workload, fatigue, trust, or usability. \\
   \item Terminology, denominators, policy modes, and measured/post-campaign
   boundaries are consistent across chapters.
   \item The official root compiles with Tectonic without undefined
-  references, missing citations, overfull boxes, or placeholder text.
-  \item The compiled PDF is at most 50 main-text pages and 100 pages in total,
-  and every page is rendered and visually inspected for layout defects.
-  \item Title-page identity, degree, supervisor, submission date, declaration,
-  and distribution wording are confirmed by the author before submission.
+  references, missing citations, overfull boxes, or placeholder results. The
+  two labelled screenshot capture briefs remain until the author inserts
+  redacted real composites.
+  \item The compiled PDF is 43--45 counted pages and no more than 100 pages in
+  total, and every page is rendered and visually inspected for layout defects.
+  \item Title-page identity, degree, submission date, declaration, and
+  distribution wording are confirmed by the author before submission.
+  \item No GenAI, Codex, or ImageGen acknowledgement is added.
 \end{enumerate}
 
 \end{document}

@@ -3,310 +3,168 @@
 
 \section{System model}
 
-The operator supplies a trusted task goal \(G\). At agent step \(t\), the
-browser produces an observation \(O_t\), the model and scaffold produce a
-proposed action \(a_t\), and the privileged executor may update environment
-state \(S_t\):
+The operator supplies a trusted goal $G$. At step $t$, the browser produces
+an observation $O_t$, the model proposes an action $a_t$, and the executor
+may update environment state $S_t$:
 
 \[
-  O_t = \mathsf{observe}(S_t), \qquad
-  a_t = \mathsf{agent}(G,O_{\leq t},A_{<t}), \qquad
-  S_{t+1} = \mathsf{execute}(S_t,a_t).
+  O_t=\mathsf{observe}(S_t), \qquad
+  a_t=\mathsf{agent}(G,O_{\leq t},A_{<t}), \qquad
+  S_{t+1}=\mathsf{execute}(S_t,a_t).
 \]
 
-In an ungoverned loop, the last transition follows directly from the model's
-proposal. \systemname\ inserts an observation transformation
-\(\mathsf{guard}_{O}\) and an action decision
-\(\mathsf{guard}_{A}\):
+An ungoverned loop passes the model proposal directly to the executor.
+\systemname\ inserts two transformations:
 
 \[
-  \widehat{O}_t = \mathsf{guard}_{O}(O_t,P,C_t), \qquad
-  d_t = \mathsf{guard}_{A}(a_t,S_t,P,C_t),
+  \widehat{O}_t=\mathsf{guard}_{O}(O_t,P,C_t), \qquad
+  d_t=\mathsf{guard}_{A}(a_t,S_t,P,C_t),
 \]
 
-where \(P\) is live policy and \(C_t\) is run-local governance state, including
-taint, approvals, budgets, and cancellation. The executor is called only when
-\(d_t\) yields \emph{allow} or a still-valid approved scope. Block, timeout,
+where $P$ is live policy and $C_t$ is run-local governance state. The
+executor is called only when $d_t$ returns \emph{allow}, including an action
+whose narrow approval remains valid after fresh preflight. Block, timeout,
 cancellation, unavailable required context, and unresolved authority do not
-execute \(a_t\).
+execute $a_t$. The model is therefore a proposal generator rather than the
+source of authority for privileged effects.
 
-This model separates \emph{proposal} from \emph{authority}. The model can
-propose any syntactically valid tool call, including one influenced by
-malicious content. The proposal has no effect until a component outside the
-model evaluates it. The separation is the primary architectural security
-property; the quality of individual detector and risk rules is a secondary,
-empirical property.
+\section{Assets and trust boundary}
 
-\section{Actors, assets, and trust boundaries}
+Protected assets are the operator's task authority, authenticated browser
+session, private and security-sensitive data, local files available to the
+browser, integrity of remote state, consent decisions, and audit
+confidentiality. Availability is also relevant because an agent that never
+acts has no useful autonomy, although denial is preferable to an unauthorised
+effect when required security context is missing.
 
 \begin{table}[htbp]
 \centering
-\caption{Actors and trust assumptions.}
+\caption{Trust allocation across the governed browser-agent loop.}
 \label{tab:trust-boundaries}
-\small
-\begin{tabularx}{\textwidth}{@{}L{0.25\textwidth}L{0.18\textwidth}Y@{}}
+\footnotesize
+\renewcommand{\arraystretch}{1.35}
+\setlength{\tabcolsep}{4.5pt}
+\begin{tabularx}{\textwidth}{@{}L{0.24\textwidth}L{0.19\textwidth}Y@{}}
 \toprule
-Component or actor & Trust & Rationale \\
+Component & Security role & Boundary assumption \\
 \midrule
-Operator request and live steering & Trusted authority &
-Defines the task and may provide new instructions, but cannot override a
-configured hard block merely by approving a pending action. \\
+Operator goal and live input & Root of task authority &
+Defines the task and may supply contextual authority, but cannot override a
+configured hard block. \\
+\addlinespace[3pt]
 
-Local policy and \systemname\ middleware & Trusted computing base &
-Defines the allowed authority and mediates wrapped model inputs and
-model-proposed privileged tool actions at the governed boundary. It does not
-mediate direct human page interaction or browser effects outside those
-channels. \\
+Sentinel middleware and policy & Trusted computing base &
+Mediates the wrapped observation and action paths; owns policy and authority
+state. \\
+\addlinespace[3pt]
 
-Browser-agent model and scaffold & Untrusted decision maker &
-May hallucinate, follow injected content, retry denials, or produce malformed
+Model and browser-agent scaffold & Untrusted planner &
+May follow injected content, hallucinate, retry denials, or emit malformed
 actions. \\
+\addlinespace[3pt]
 
-DOM, accessibility text, title, URL-carried content, extracted text, downloads,
-and tool results & Untrusted data &
-May contain first-party, third-party, user-generated, or attacker-controlled
-content, including stored attacks. \\
-
-Screenshot pixels & Excluded from ordinary model and operator-telemetry paths &
-DOM sanitisation cannot clean text rendered into pixels. Optional local trace
-retention does not make a frame trusted. \\
+DOM, accessibility text, URLs, extracted text, files, and tool results &
+Untrusted inputs & May contain first-party, third-party, stored, or
+attacker-controlled content. \\
+\addlinespace[3pt]
 
 Browser and tool implementation & Privileged executor &
-Performs effects after mediation and therefore remains inside the trusted
-computing base. \\
+Performs effects after mediation; trusted within the prototype boundary. \\
+\addlinespace[3pt]
 
-Extension side panel & Operator interface, not an authority source &
-Displays redacted decisions and submits responses that the server validates;
-it cannot mint broader consent locally. \\
+Chrome extension & Presentation and transport &
+Displays redacted server state and relays bounded responses; cannot create
+authority locally. \\
+\addlinespace[3pt]
 
-Trace consumers & Honest but curious &
-May inspect records but should not receive raw secrets, injected payloads,
-screenshots, or model rationale by default. \\
-
-Other same-user processes & Outside the accepted boundary &
-Loopback binding is accepted for this local research prototype; it does not
-isolate the service from a compromised process with the same operating-system
-account. \\
+Trace consumer & Honest but curious &
+May inspect records but must not receive raw secrets, injection payloads,
+screenshots, or free-form rationale by default. \\
 \bottomrule
 \end{tabularx}
 \end{table}
 
-Protected assets include the operator's task authority, authenticated browser
-session, private or security-sensitive data, local files available for upload,
-integrity of remote state, consent decisions, and the confidentiality of audit
-records. Availability is a secondary asset: a defence that blocks every task
-is not useful, but fail-closed denial is preferred to an unauthorised side
-effect when required security context is missing.
+The local service, configured policy, middleware, browser automation library,
+and browser form the trusted computing base. The model, page, and data returned
+by tools are untrusted. The extension communicates with the local service but
+is not a reference monitor: pending requests, timers, validation, and execution
+remain server-owned.
 
 \section{Adversary}
 
-The primary adversary controls content that the agent may encounter during a
-legitimate task. This includes a page or part of a page, a user-generated
-record, a link label, a tool result, or content later returned by extraction.
-The adversary knows the general agent design and may write natural-language
-instructions intended to:
+The primary adversary controls content that an agent encounters while pursuing
+a legitimate task. This may be a page, user-generated record, link label,
+extracted value, or stored tool result. The adversary knows the general system
+design and attempts to replace the operator's goal, impersonate a higher-trust
+role, suppress warnings, request disclosure, induce code or file access, or
+persist influence into later turns. The action may be conspicuous, such as
+cross-origin navigation, or use the same same-origin form controls required by
+the legitimate task.
 
-\begin{itemize}
-  \item replace or extend the operator's goal;
-  \item impersonate system, developer, tool, or user authority;
-  \item demand secrecy or suppression of warnings;
-  \item request navigation, disclosure, code execution, file access, or a
-  consequential same-origin action;
-  \item persist influence through history or a second model call; or
-  \item exploit ambiguities in page structure and target semantics.
-\end{itemize}
+The adversary does not compromise the operating system, browser binary,
+Sentinel process, model provider, or local policy file. Direct human page
+interaction and browser effects outside the governed BrowserUse tool path are
+also outside complete mediation. The evaluated attacks are those instantiated
+by AgentDojo and WASP. Adaptive and pixel-only attacks are outside the measured
+task matrices; they remain relevant limitations and motivate the future
+evaluations identified in \cref{chap:discussion}.
 
-The attacker need not compromise the model provider, \systemname\ process,
-browser binary, operating system, or local policy file. Those stronger
-attackers are out of scope. The benchmark adversary is also bounded by each
-suite's instantiated attack goal and environment; the evaluation does not
-claim coverage of every adaptive or obfuscated payload.
-
-\section{Security objectives}
+\section{Security requirements}
 \label{sec:security-objectives}
 
-The design is governed by eight objectives.
+Five requirements translate the threat model into testable behaviour.
 
-\begin{enumerate}[label=\textbf{O\arabic*:},leftmargin=16mm]
-  \item \textbf{Complete action mediation.} Every model-proposed privileged
-  tool action entering \texttt{GovernedTools} is evaluated immediately before
-  execution. There is no model-accessible parallel path to the wrapped tool
-  through the implemented agent scaffold.
+\begin{enumerate}[label=\textbf{R\arabic*:},leftmargin=16mm]
+  \item \textbf{Independent and complete action mediation.} Every
+  model-proposed privileged action entering the wrapped tool boundary is
+  evaluated against live context immediately before execution. Each attempt
+  receives exactly one attempted and one terminal audit outcome, including
+  errors, denials, timeouts, handovers, and cancellation.
 
-  \item \textbf{Complete terminal audit.} Every such governed tool attempt has
-  exactly one privacy-preserving attempted event and one terminal event,
-  including blocks, denials, timeouts, exceptions, and cancellation.
+  \item \textbf{Verified observation handling.} Browser, extraction, and
+  tool-result content remains untrusted regardless of origin. A detected
+  region may be forwarded only after attributable modification and clean
+  re-detection of the reconstructed model input. Known residual or
+  unattributable current-page content is withheld; bounded extraction or
+  historical values are omitted in full.
 
-  \item \textbf{Source does not imply authority.} Browser, file, extraction,
-  and tool-result content remains untrusted even when it is necessary for the
-  task or originates on the current first-party domain.
+  \item \textbf{Fail-closed policy and data flow.} Domain blocks, unavailable
+  required context, unsafe navigation schemes, and configured hard risk take
+  precedence over interactive approval. Recognised protected values cannot be
+  typed, scripted, or uploaded by the agent in enforce mode; the human performs
+  the step through takeover.
 
-  \item \textbf{Controlled sensitive-data flow.} Recognised sensitive values
-  cannot enter an untrusted sink solely because a page or the model requested
-  it. In enforce mode, credentials, one-time codes, access tokens, payment
-  values, private keys, and protected placeholders are completed by the human
-  directly, not approved for agent entry.
+  \item \textbf{Narrow authority.} Approval is explicit, run-local,
+  expiring, and bound to the reviewed action, origin, capabilities, taint,
+  sensitive-data categories, target, and applicable parameter evidence. Live
+  policy and browser context are recomputed before use. Silence, timeout,
+  malformed responses, disconnect, and stop never become permission.
 
-  \item \textbf{Fail-safe authority.} Consent is explicit, narrow, expiring,
-  run-local, and non-transferable. Silence, timeout, malformed responses,
-  shutdown, and a stop race do not execute the pending action.
-
-  \item \textbf{Observation post-condition.} Sanitisation counts as successful
-  only if at least one attributable untrusted region changed and re-detection
-  over the resulting model input is clear. A known residual or unattributable
-  current browser observation is withheld before the model call.
-
-  \item \textbf{Monitoring confidentiality.} Dedicated enforcement fields
-  retain redacted summaries, finding metadata, and run-keyed digests, not raw
-  detector payloads, recognised secrets, or unredacted parameters. Model
-  metadata omits HTTP(S) queries and fragments; telemetry may retain benign ones
-  after sensitive-value masking. Both omit non-web suffixes. Recursive
-  redaction covers general events and history. Arbitrary model echoes and the
-  local process log are outside this invariant.
-
-  \item \textbf{Utility-aware enforcement.} Read-only inspection remains
-  available where policy permits it, and ambiguous risk is not converted into
-  a blanket block. The evaluation must report legitimate utility beside
-  security outcomes.
+  \item \textbf{Privacy-preserving accountability.} Decisions remain
+  inspectable through redacted rules, risk factors, outcomes, and run-keyed
+  digests. Raw protected values, attacker payloads, screenshot pixels, and
+  unrestricted model rationale are excluded from persistent and extension
+  telemetry by default.
 \end{enumerate}
 
-Objectives O1--O7 are implementation invariants within the channel scopes
-defined above. O8 is a design and evaluation criterion rather than a universal
-guarantee: no runtime can ensure task completion for an arbitrary model,
-website, and policy.
+Together, these requirements define what Sentinel can enforce on the paths it
+controls. They do not make every allowed model decision correct: the planner
+may still choose an unhelpful action, and the detector may miss an attack. The
+evaluation therefore combines contract tests with end-to-end security and
+utility outcomes.
 
-\section{Taint and capability model}
+\section{Scope of the claim}
 
-\systemname\ assigns labels to sources and action parameters. A web observation
-introduces \texttt{untrusted\_web}. A positive detector finding adds
-\texttt{prompt\_injection\_suspected} and is retained per origin so that a
-later clean viewport does not erase possible influence on model history.
-Recognised values add categories such as \texttt{sensitive:credential},
-\texttt{sensitive:one\_time\_code}, \texttt{sensitive:access\_token},
-\texttt{sensitive:payment\_data}, or \texttt{sensitive:private\_key}. Local
-uploads add \texttt{local\_file}.
+Sentinel is evaluated as a local research prototype. Its ordinary interactive
+path is DOM/accessibility based; screenshot pixels are withheld because the
+implemented observation guard cannot sanitise rendered text. The loopback API
+checks permitted origins, but does not isolate the service from another
+compromised process running under the same operating-system account.
 
-Actions expose capabilities rather than being judged only by tool name.
-Relevant capabilities include read-only inspection, navigation, page write,
-data disclosure, local-file read or write, code execution, and task
-completion. A navigation action also exposes a destination origin; an indexed
-page action exposes bounded target semantics such as element role, label,
-input type, and consequential button language.
-
-This is dynamic taint tracking in an engineering sense, not a proof of
-language-level non-interference. Model memory can transform data, a detector
-can miss a source, and target semantics can be ambiguous. The labels support
-explicit rules such as ``injection-tainted cross-origin disclosure requires
-intervention'' and ``recognised credentials require takeover'' without
-asserting that all semantic flows are captured.
-
-\section{Threat--control mapping}
-
-\begin{table}[htbp]
-\centering
-\caption{Principal threats and intended controls.}
-\label{tab:threat-controls}
-\small
-\begin{tabularx}{\textwidth}{@{}L{0.31\textwidth}Y@{}}
-\toprule
-Threat & Control strategy \\
-\midrule
-Indirect injection in a current DOM/read observation &
-Untrusted-region extraction, deterministic detection, attributable
-sanitisation, clean re-detection, and origin-scoped taint. \\
-
-Partial or unsafe sanitisation &
-Withhold the current observation, open a persistent security incident, and
-obtain a fresh observation after operator control; remove an unresolved
-bounded extraction/history value in full. \\
-
-Stored or second-order tool output &
-Wrap all tool-result text in untrusted protocol regions and apply the same
-boundary on later model calls. \\
-
-Image or canvas instruction &
-Exclude screenshots and image-bearing tool results from the ordinary model
-path; declare visual attacks outside evaluated coverage. \\
-
-Secret or token disclosure &
-Recursive value/key classification, DOM field semantics, guarded free-text
-keystrokes and page-code semantics, bounded local-text upload inspection,
-direct human takeover, and recursive redaction. \\
-
-Injected cross-origin or privileged action &
-Sticky taint, capability classification, live target/origin analysis, dynamic
-block or approval, and static domain rules. \\
-
-Redirect, popup, or link-based domain bypass &
-Mirror domain policy into the browser navigation watchdog in addition to
-pre-tool evaluation. \\
-
-Approval replay or page change &
-Bind grants to run, action, origin/path, target fingerprint, capabilities,
-taints, categories, and selected parameter digests; re-evaluate immediately
-before execution. \\
-
-Stop, timeout, or preflight exception &
-Emit attempted audit before fallible work; fail closed and emit one terminal
-outcome without invoking the tool. \\
-
-Leak through observability &
-Redact recursively, suppress raw page titles and non-web URL suffixes, use
-run-keyed digests, and omit screenshots and free-form model rationale by
-default. \\
-\bottomrule
-\end{tabularx}
-\end{table}
-
-\section{Assumptions and explicit non-claims}
-\label{sec:nonclaims}
-
-The following limits are part of the security statement rather than defects
-hidden from it.
-
-\begin{itemize}
-  \item \textbf{Detection is incomplete.} Signatures cannot prove an
-  observation benign. Novel, obfuscated, task-relevant, or adaptive attacks
-  can be missed.
-
-  \item \textbf{Visual input is not evaluated.} Screenshot and canvas attacks
-  are outside the ordinary model path and the reported campaigns use
-  DOM/accessibility observations. Disabling vision can also remove legitimate
-  information.
-
-  \item \textbf{Data-loss prevention is bounded.} The implementation recognises
-  specified values, keys, field semantics, action types, filenames, and at most
-  256 KiB of authorised local UTF-8 upload content. A semantically private
-  value with no recognised marker may be missed.
-
-  \item \textbf{Takeover is not post-handoff non-interference.} It prevents the
-  intercepted model-proposed action from entering a protected value. An
-  operator note is ordinary model context, and a non-password value entered
-  directly into the page can reappear in a later DOM or accessibility
-  observation. The system therefore makes no general claim that human-entered
-  data remains outside all subsequent model context.
-
-  \item \textbf{The executor is trusted.} Once an action is allowed, a remote
-  site or browser handler may behave differently from its visible label.
-  \systemname\ does not provide transactional isolation or verify server-side
-  implementation.
-
-  \item \textbf{Localhost is an accepted prototype boundary.} Origin checks and
-  input validation protect the intended extension/API interaction, but a
-  compromised same-user process can call the loopback service or modify local
-  files. This is not an operating-system sandbox.
-
-  \item \textbf{Policy does not fully infer intent.} Generic browser controls
-  have imperfect business semantics. Operators or deployments must configure
-  sensitive domains, trusted destinations, and prohibited capabilities
-  appropriate to their tasks.
-
-  \item \textbf{No universal or human-factors claim follows.} The experiments
-  cover specific models, seeds, suites, policies, and scaffolds. No participant
-  study measures trust, workload, comprehension, fatigue, usability, or
-  rubber-stamping.
-\end{itemize}
-
-These boundaries govern \cref{chap:methodology}: AgentDojo tests controlled
-tool mechanisms and WASP tests browser-native transfer; neither validates the
-excluded visual or same-user compromise scenarios.
+The dissertation claims neither universal prompt-injection prevention nor
+human-factors effectiveness. Its security claim concerns the model-input and
+pre-execution paths that Sentinel actually mediates; its utility claim concerns
+the reported task suites and native oracles. Evidence must therefore establish
+two outcomes together: fewer evaluated violations and continued completion of
+legitimate work. Detector accuracy or blanket refusal would not answer the
+research question on its own.

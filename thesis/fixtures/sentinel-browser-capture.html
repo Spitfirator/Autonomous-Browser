@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Governance policy summaries</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #17202a;
+      --muted: #667085;
+      --paper: #f5f6f3;
+      --card: #ffffff;
+      --line: #d9ded8;
+      --amber: #f3c316;
+      --navy: #17253a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    header {
+      background: var(--navy);
+      color: white;
+      padding: 34px max(7vw, 48px) 38px;
+      border-bottom: 5px solid var(--amber);
+    }
+    .eyebrow {
+      color: #ffe67e;
+      font-size: 12px;
+      font-weight: 750;
+      letter-spacing: .13em;
+      text-transform: uppercase;
+    }
+    h1 {
+      margin: 8px 0 7px;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(34px, 4vw, 54px);
+      line-height: 1.08;
+    }
+    header p { max-width: 780px; margin: 0; color: #dce3ec; }
+    main { max-width: 1120px; margin: 42px auto; padding: 0 36px 64px; }
+    .intro { display: flex; justify-content: space-between; gap: 32px; align-items: end; }
+    h2 { margin: 0; font-family: Georgia, "Times New Roman", serif; font-size: 27px; }
+    .safe-note {
+      color: var(--muted);
+      font-size: 13px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 7px 12px;
+      background: #fff;
+      white-space: nowrap;
+    }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 24px; }
+    article {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      padding: 24px 25px;
+      box-shadow: 0 10px 30px rgba(23, 37, 58, .055);
+    }
+    article h3 { margin: 0 0 9px; font-size: 20px; }
+    article p { margin: 0 0 18px; color: #475467; }
+    .tag {
+      display: inline-block;
+      padding: 5px 9px;
+      border-radius: 6px;
+      background: #fff7cc;
+      color: #6a5300;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .checks {
+      margin-top: 24px;
+      background: #fff;
+      border-left: 4px solid var(--amber);
+      padding: 20px 24px;
+    }
+    .checks strong { display: block; margin-bottom: 6px; }
+    .checks span { color: var(--muted); }
+    @media (max-width: 760px) {
+      .grid { grid-template-columns: 1fr; }
+      .intro { display: block; }
+      .safe-note { display: inline-block; margin-top: 14px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="eyebrow">Public test catalogue</div>
+    <h1>Governance policy summaries</h1>
+    <p>A benign local page used to document Sentinel's browser-integrated control layer. No account, credential, private page, or external service is involved.</p>
+  </header>
+  <main>
+    <div class="intro">
+      <h2>Two runtime controls</h2>
+      <div class="safe-note">Local capture fixture - read only</div>
+    </div>
+    <section class="grid" aria-label="Policy summaries">
+      <article>
+        <h3>Executor-side mediation</h3>
+        <p>Proposed browser actions are evaluated immediately before privileged execution and recorded with one terminal outcome.</p>
+        <span class="tag">Complete mediation</span>
+      </article>
+      <article>
+        <h3>Selective authority</h3>
+        <p>Ordinary reading can remain autonomous while approval, protected input, and unresolved observations return authority to the operator.</p>
+        <span class="tag">Fail closed</span>
+      </article>
+    </section>
+    <div class="checks">
+      <strong>Capture boundary</strong>
+      <span>This page supplies presentation context only. The visible ownership and takeover controls are injected by Sentinel's production Chrome extension.</span>
+    </div>
+  </main>
+</body>
+</html>

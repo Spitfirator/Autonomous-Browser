@@ -14,7 +14,7 @@
 \usepackage[numbers,sort&compress]{natbib}
 \usepackage{tabularx}
 \usepackage{tikz}
-\usetikzlibrary{arrows.meta,fit,positioning,shapes.geometric}
+\usetikzlibrary{arrows.meta}
 \usepackage{pgfplots}
 \pgfplotsset{compat=1.18}
 \usepackage{xcolor}
@@ -28,7 +28,7 @@
 \definecolor{sentinelgrey}{HTML}{667085}
 
 \hypersetup{
-  pdftitle={Design and Implementation of Enforcement Middleware for Securing Web Agents},
+  pdftitle={Sentinel: Independent Runtime Enforcement for Browser Agents},
   pdfauthor={Hector Gittos},
   pdfsubject={MSc Information Security dissertation},
   pdfkeywords={browser agents, prompt injection, runtime enforcement, reference monitor, human in the loop}
@@ -36,6 +36,7 @@
 
 \graphicspath{{./}}
 \setlength{\emergencystretch}{2em}
+\Urlmuskip=0mu plus 1mu
 \setlength{\parindent}{1.5em}
 \setlength{\parskip}{0pt}
 \setlist{nosep}
@@ -46,10 +47,8 @@
 \newcommand{\systemname}{\textsc{Sentinel}}
 \newcommand{\studentname}{Hector Gittos}
 \newcommand{\degreeprogramme}{MSc Information Security}
-\newcommand{\supervisorname}{\textit{Supervisor name to be confirmed}}
 \newcommand{\submissiondate}{September 2026}
-\newcommand{\rqone}{Can a separate enforcement layer reduce unsafe browser-agent actions without stopping the agent from doing useful work?}
-\newcommand{\rqtwo}{Under what conditions should an independent runtime withhold a browser-agent action or observation, and what fail-closed protocol should govern approval, takeover, and return of control?}
+\newcommand{\rqone}{To what extent can an independent runtime-enforcement layer reduce prompt-injection-driven browser-agent violations while preserving task utility?}
 
 \begin{document}
 % Use explicit one-and-a-half spacing as required by the dissertation module.
@@ -60,23 +59,19 @@
   \centering
   \includegraphics[width=0.28\textwidth]{ucl_logo.png}\par
   \vspace{1.5cm}
-  {\Huge\bfseries Design and Implementation of Enforcement Middleware for
-  Securing Web Agents\par}
-  \vspace{0.5cm}
-  {\Large \systemname: independent runtime governance for browser agents\par}
+  {\Huge\bfseries Sentinel: Independent Runtime Enforcement for Browser
+  Agents\par}
   \vfill
   {\Large \studentname\par}
   \vspace{0.6cm}
   {\large \degreeprogramme\par}
-  \vspace{0.6cm}
-  {\large Supervisor: \supervisorname\par}
   \vspace{0.6cm}
   {\large Submission date: \submissiondate\par}
   \vfill
   \begin{minipage}{0.88\textwidth}
     \small
     \textbf{Declaration.}
-    This report is submitted as part requirement for the
+    This report is submitted in partial fulfilment of the requirements for the
     \degreeprogramme\ at University College London. It is substantially the
     result of my own work except where explicitly indicated in the text.
 
@@ -94,49 +89,38 @@
 \addcontentsline{toc}{chapter}{Abstract}
 \begin{singlespace}
 
-Large-language-model agents can operate web browsers on a user's behalf, but
-the same page content that informs their decisions can also contain adversarial
-instructions. This creates a structural conflict: an agent is expected to
-interpret untrusted data and simultaneously decide whether that data is
-authoritative. This dissertation presents \systemname, an independent runtime
-enforcement layer placed between a browser agent and its privileged executor.
-\systemname\ treats the model and browser-derived content as untrusted,
-mediates observations before model calls, and evaluates every model-proposed
-privileged tool action immediately before execution. Its mechanisms combine
-deterministic prompt-injection detection, attributable sanitisation and clean re-detection,
-origin-scoped taint, data-flow checks, policy rules, bounded human approval,
-direct takeover for protected steps, and privacy-preserving audit.
-A Manifest V3 Chrome extension presents these controls through a side panel
-initialised from redacted server state, an in-page ownership layer, and an
-inspectable Activity dashboard. Selected server-side lifecycle contracts are
-tested; full browser reconnect, accessibility, and operator effectiveness are
-not.
+Browser agents turn model outputs into consequential actions across web
+applications, but the pages they observe may also contain instructions supplied
+by an attacker.
+This creates an authority problem: the acting model must interpret untrusted
+content while deciding whether that content should influence privileged
+actions. This dissertation presents \systemname, an independent enforcement
+layer between a browser agent and its executor. \systemname\ governs the exact
+observation sent to the model, evaluates model-proposed actions immediately
+before execution, and transfers control to the operator when policy requires
+human authority. Its implementation combines attributable observation
+sanitisation and re-detection, origin-scoped taint, deterministic policy and
+data-flow rules, narrow approval, direct takeover for protected input, and a
+redacted audit trail presented through a Chrome extension.
 
-The evaluation separates mechanism evidence from browser-native transfer.
-Across paired AgentDojo task comparisons containing 629 attacked tasks per
-condition and model, enforcement reduced native attacker success from 206 to 0
-cases for Qwen 3.5 4B, from 131 to 1 for 9B, and from 203 to 0 for 27B. The 9B
-reports lack a recorded Git revision, and the 27B comparison joins a historical
-off row to a provenance-separated enforce rerun; it is therefore outcome
-evidence, not one immutable three-model campaign. Utility increased in all
-three enforce conditions, although the independent runs do not identify a
-causal effect of model size. In the principal matched WASP comparison, 84
-attacked browser tasks were run in each condition with Qwen 3.5 27B.
-Post-verified observation sanitisation reduced terminal attacker success from
-5/84 to 0/84 and task instances with attacker-directed execution from 17/84 to
-0/84, while native utility changed from 47/84 to 46/84. A separate 9B
-development sequence found that warning the model left attack success
-unchanged; the final sanitisation row recorded 0/84 terminal successes and one
-attacker-directed execution, but it was not a fresh matched comparison.
+The evaluation connects controlled mechanism evidence to browser-native
+execution. Across paired AgentDojo comparisons with 629 attacked tasks per
+condition, enforcement changed native attacker success from 206 to 0 cases for
+Qwen 3.5 4B, from 131 to 1 for 9B, and from 203 to 0 for 27B. Utility increased
+in all three enforce conditions. In the primary matched WASP comparison,
+post-verified sanitisation changed terminal attacker success from 5/84 to 0/84
+and attacker-directed execution from 17/84 to 0/84, while utility changed from
+47/84 to 46/84 and secure utility from 44/84 to 46/84. A separate 9B
+development sequence explains the mechanism choice: model-facing warnings left
+attacker success unchanged, sanitisation V1 exposed incomplete multi-line
+removal, and V2 addressed that observed failure class.
 
-The results support a bounded conclusion: under the tested conditions,
-independent runtime enforcement reduced evaluated policy violations while
-preserving useful autonomy. They do not establish universal prompt-injection
-robustness, deployment readiness, or human-factors effectiveness. The
-dissertation therefore argues for complete mediation at that governed tool
-boundary and fail-closed selective authority, while identifying visual inputs,
-adaptive attacks, policy specification, and evaluated human oversight as
-necessary future work.
+The results show that, under the evaluated conditions, an independently
+enforced observation and action boundary can reduce successful attacks and
+attacker-serving execution without eliminating useful task completion. The
+contribution is a bounded systems result rather than a universal defence:
+Sentinel demonstrates how a probabilistic planner can remain useful without
+being the sole authority for its own privileged effects.
 \end{singlespace}
 
 \begingroup
@@ -149,24 +133,33 @@ necessary future work.
 
 \pagenumbering{arabic}
 
-\include{chapters/01-introduction}
-\include{chapters/02-background}
-\include{chapters/03-threat-model}
-\include{chapters/04-design}
-\include{chapters/05-governance-interface}
-\include{chapters/05-methodology}
-\include{chapters/06-results}
-\include{chapters/07-discussion}
-\include{chapters/08-conclusion}
+\input{chapters/01-introduction}
+\clearpage
+\input{chapters/02-background}
+\clearpage
+\input{chapters/03-threat-model}
+\clearpage
+\input{chapters/04-design}
+\clearpage
+\input{chapters/05-methodology}
+\clearpage
+\input{chapters/06-results}
+\clearpage
+\input{chapters/07-discussion}
+\clearpage
+\input{chapters/08-conclusion}
 
 \appendix
-\include{chapters/appendix-assurance}
+\clearpage
+\input{chapters/appendix-assurance}
 
 \clearpage
 \phantomsection
 \addcontentsline{toc}{chapter}{Bibliography}
 \begingroup
 \small
+\raggedright
+\Urlmuskip=0mu plus 2mu\relax
 \bibliographystyle{plainnat}
 \bibliography{references}
 \endgroup

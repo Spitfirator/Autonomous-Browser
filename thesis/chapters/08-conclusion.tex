@@ -1,109 +1,60 @@
 \chapter{Conclusion}
 \label{chap:conclusion}
 
-Browser agents combine useful autonomy with an unusual security problem: the
-environment they must understand can also contain instructions designed to
-redirect them. Asking the acting model to distinguish authority from data is
-valuable defence in depth, but it leaves the final security decision with the
-component exposed to the attack. This dissertation investigated a different
-allocation of responsibility through \systemname, an independent governance
-layer between a BrowserUse agent and its privileged executor.
-BrowserUse supplies the delegated browser automation; \systemname's contribution
-is the enforcement and operator-control layer that governs that delegation.
+Browser agents must interpret web content in order to act, yet that same
+content can contain instructions designed to redirect them. This dissertation
+asked whether an independent runtime-enforcement layer can reduce the resulting
+violations while preserving useful task completion. \systemname\ answers the
+question by separating planning from authority: BrowserUse and the model
+continue to choose actions, but observation handling and privileged execution
+are governed outside the model.
 
-\systemname\ applies two boundaries. At the observation boundary, it treats
-page, extraction, and tool-result content as untrusted; detects defined
-prompt-injection signals; removes attributable regions; and re-detects the
-exact text that would reach the model. Known unresolved current observations
-are withheld for operator inspection, while bounded extraction/history values
-are removed in full. The ordinary model path excludes screenshot pixels
-because DOM sanitisation cannot secure them. At the action boundary,
-\systemname\ rebuilds live context, propagates origin-scoped taint, classifies
-capabilities and sensitive data, and sends every model-proposed privileged
-tool action entering the governed boundary through one policy engine
-immediately before execution.
+The first contribution is an executor-side architecture for a dynamic browser
+loop. Sentinel mediates model-proposed actions immediately before execution,
+using live browser context, one policy engine, fail-closed outcomes, and paired
+attempted/terminal audit. The second contribution is a post-verified
+observation boundary connected to selective authority. Attributable suspicious
+regions are removed and the exact reconstructed model input is re-detected.
+Hard rules remain non-overridable; narrow approval is revalidated; protected
+input transfers to direct takeover; and unresolved current observations are
+withheld until a fresh capture. A Chrome extension presents these server-owned
+states and their redacted history. The third contribution is a two-environment
+evaluation that connects controlled AgentDojo evidence to a matched
+browser-native WASP comparison.
 
-The authority design distinguishes refusal, approval, and takeover. Hard
-policy and unsafe flows cannot be weakened into consent. Recognised
-credentials, one-time codes, access tokens, payment data, private keys, unsafe
-free-text keystrokes, and unclassifiable uploads are completed by the operator
-directly. Other ambiguous consequential actions can receive a narrow, expiring,
-run-local approval. Fresh preflight recomputes risk and policy, then revalidates
-the URL, parameter digest, and bound scope. Silence, timeout, stop, cancellation,
-and missing context fail closed. Every such governed tool attempt receives a
-redacted start and terminal audit record.
+The empirical answer is positive within that evaluated boundary. Across 629
+attacked AgentDojo tasks per condition, attacker success changed from 206 to 0
+cases for Qwen 3.5 4B, from 131 to 1 for 9B, and from 203 to 0 for 27B. Utility
+and secure utility increased in every enforce row, while each model recorded
+only nine explicit blocks. In the matched 27B WASP comparison, terminal
+attacker success changed from 5/84 to 0/84 and attacker-directed execution from
+17/84 to 0/84. Utility changed from 47/84 to 46/84 and secure utility from
+44/84 to 46/84. The enforce run recorded 368 confirmed sanitisation removals,
+no hard block or takeover, and one denied approval on a task that still
+succeeded.
 
-These authority states have a Manifest V3 Chrome extension presentation rather
-than remaining backend-only mechanisms. Its side panel presents the live task
-and docked approval, takeover, and incident cards; its closed-shadow in-page
-layer makes human/agent ownership explicit; and its Activity dashboard exposes
-redacted decisions and within-run intervention timing. Pending requests remain
-server-owned, and reconnecting clients are initialised from redacted server
-state, so client loss cannot mint consent. The submission does not include a
-full browser reconnect or accessibility test.
+The 9B development sequence supplies the mechanism lesson behind these
+results. Warning the model left ASR at 7/84, slightly increased
+attacker-directed execution, and reduced utility. Sanitisation V1 reduced the
+attack outcomes but exposed incomplete multi-line removal. V2 addressed that
+observed failure class and recorded 0/84 terminal attacker successes with one
+attacker-directed execution. Detection became useful containment when it was
+coupled to independently enforced removal and a verified post-condition, not
+when it merely asked the exposed planner to behave differently.
 
-The evaluation answers RQ1 positively within its defined scope. Across three
-paired AgentDojo task comparisons of 629 attacked tasks per condition,
-enforce-mode attacker success was 0, 1, and 0 cases for Qwen 3.5 4B, 9B, and
-27B, compared with 206, 131, and 203 off.
-Utility and secure utility increased for every model. In the principal matched
-WASP comparison, terminal attacker success changed from 5/84 to 0/84 and task
-instances with attacker-directed execution from 17/84 to 0/84; utility changed
-from 47/84 to 46/84 and secure utility from 44/84 to 46/84. The enforce row
-recorded 368 post-verified sanitisation removals, no hard blocks or handovers,
-and one denied approval on a task that retained utility; sanitisation was
-therefore the primary recorded intervention, not an exclusive causal
-attribution. The 9B development sequence supplies important negative evidence:
-warning the model left ASR unchanged and reduced utility. The final
-sanitisation row recorded 0/84 terminal successes against 7/84 in the shared
-off baseline, with one attacker-directed execution; because middleware changed,
-that difference is development evidence rather than a matched effect.
+The result is a bounded systems contribution. The evaluated channel is
+DOM-derived accessibility text, the detector was developed against known
+corpora, and the experiments cover particular models, policies, benchmarks,
+and one seed.
+The authority interface establishes technical control semantics rather than
+measured human effectiveness. These boundaries define the next work: frozen
+adaptive evaluation, a separately tested task-authority contract, an
+independently mediated visual path, and participant research on approval and
+takeover decisions.
 
-RQ2 receives a bounded design and protocol answer. Authority should transfer when an
-effect is ambiguous and consequential, when protected data should remain
-outside agent action, when a configured sensitive boundary is reached, or when
-a known suspicious observation cannot be cleaned. Selected implemented
-contracts make that transfer explicit, bounded, and fail closed, while rendered
-fixture states demonstrate the client presentation. End-to-end reconnect,
-accessibility, explanation quality, and operator use remain unverified. No
-participant study establishes whether people understand or use the interface
-effectively, so the dissertation makes no claim about trust, workload, fatigue,
-comprehension, usability, or rubber-stamping.
-
-The demonstrated contributions are therefore specific:
-
-\begin{enumerate}
-  \item an executor-side composition that mediates model-proposed privileged
-  tool actions at the governed boundary of an existing dynamic browser-agent
-  loop;
-  \item a post-verified observation boundary with explicit unresolved-content
-  semantics and sticky provenance;
-  \item a selective-authority lifecycle with attempted and terminal audit for
-  those governed actions, presented through a Chrome extension control plane
-  with a side panel initialised from redacted server state, in-page ownership
-  controls, and an Activity view over redacted decision evidence; full reconnect
-  and human use of the control plane remain unevaluated;
-  and
-  \item a provenance-conscious evaluation connecting controlled AgentDojo
-  mechanism evidence to matched WASP browser-native transfer and transparent
-  development failures.
-\end{enumerate}
-
-These contributions do not make \systemname\ a universal prompt-injection
-solution. The signatures were adapted using evaluated corpora, visual attacks
-are excluded, one seed and a finite set of models were tested, same-origin
-semantics remain difficult, and several current hardening mechanisms post-date
-the frozen results. The trusted computing base also includes the middleware,
-browser library, browser, local policy, and prototype loopback boundary.
-
-The broader conclusion is architectural. A capable agent can remain a
-probabilistic planner without becoming the sole source of authority for its
-own privileged effects. Observation handling can reduce hostile influence;
-deterministic policy and data-flow rules can enforce non-negotiable
-constraints; and the operator can receive control only where judgement or
-private input is genuinely required. Future work should test this composition
-against frozen adaptive attacks, add a separately secured visual path, evaluate
-plan authority, and study real operator behaviour. Until then, the evidence
-supports the narrow thesis stated at the outset: independent runtime
-enforcement can reduce evaluated policy violations while preserving useful
-autonomy under the tested conditions.
+The broader conclusion is architectural. Useful planning does not require
+unchecked authority. A probabilistic model can remain responsible for adapting
+to the web while an independent system controls what reaches it, mediates what
+leaves it, and transfers genuinely contextual decisions to the operator. Under
+the tested conditions, that separation reduced successful attacks and
+attacker-serving execution while preserving useful autonomy.

@@ -26,27 +26,31 @@ Current thesis readiness:
   ready to draft;
 - later benchmark reruns should update existing tables and interpretation
   without pooling incompatible provenance;
-- broader HITL and plan-authority work remains incomplete, even though
-  approval, handover, unresolved-sanitisation incident, trace, and extension UI
-  primitives exist;
+- approval, takeover, unresolved-observation incident, audit, and extension UI
+  are completed supporting mechanisms within the dissertation's bounded
+  prototype; broader plan-authority work and human evaluation remain incomplete;
 - no human-participant findings or WASP oracle results currently exist.
+- the unavailable Qwen 3.5 27B multi-seed replication and proposed
+  sanitisation ablation provide no submission evidence. The submission freezes
+  the verified single-seed result; do not cite partial replication checkpoints
+  or wait for a rerun.
 
 ## Confirmed thesis direction
 
-Use these two plain-language questions to keep the dissertation focused:
+Use one research question to keep the dissertation focused:
 
-1. Can a separate enforcement layer reduce unsafe browser-agent actions without
-   stopping the agent from doing useful work?
-2. When that layer cannot decide safely, when and how should it pause and hand
-   control to the user?
+> To what extent can an independent runtime-enforcement layer reduce
+> prompt-injection-driven browser-agent violations while preserving task
+> utility?
 
 The evidence should form one connected argument:
 
 1. AgentDojo tests the enforcement mechanisms in a controlled tool setting.
 2. WASP tests whether those mechanisms transfer to a more realistic browser
    setting.
-3. HITL work addresses the cases where automatic enforcement cannot resolve
-   uncertainty safely.
+3. Selective authority supplies fail-closed supporting mechanisms for cases
+   where automatic enforcement cannot resolve uncertainty safely; it is not a
+   second empirical question or a claim about human effectiveness.
 
 The possible future features are easy to confuse:
 
@@ -66,11 +70,13 @@ The possible future features are easy to confuse:
 
 - Write the dissertation entirely in LaTeX, using
   `project_report - pg.tex` as the official UCL template and compilation root.
+- Use the title *Sentinel: Independent Runtime Enforcement for Browser Agents*
+  everywhere, including PDF metadata.
 - Format the dissertation text in 12-point type with explicit one-and-a-half
   spacing, following the current module guidance.
-- Treat 50 pages as the limit for dissertation text, defined as everything
-  except the title page, table of contents, abstract, acknowledgements,
-  references, and appendices.
+- Target 43--45 counted pages and never exceed 45. Count everything except the
+  title page, table of contents, abstract, acknowledgements, references, and
+  appendices; the Lists of Figures and Tables are therefore counted.
 - The current technical assurance appendix is part of the submission. Keep the
   complete submission, including appendices, at or below 100 pages.
 - Plan and monitor the page budget while writing; do not defer length control
@@ -78,6 +84,13 @@ The possible future features are easy to confuse:
 - `project_plan.tex` is the thesis outline, not the official report template.
 - Manage references with BibTeX in `references.bib`. Retain only sources that
   have actually been verified; never invent placeholder citation records.
+- Keep the labelled browser-integrated figures and the bounded appendix
+  control-plane figure tied to the live and deterministic local walkthroughs
+  documented in `FIGURE-PROVENANCE.md`. Use visibly distinct page fixtures
+  where separate browser contexts are shown. Describe every capture as
+  implementation evidence, not benchmark or participant evidence. Do not
+  fabricate UI evidence or turn the appendix into a screenshot gallery.
+- Do not add a GenAI, Codex, or ImageGen acknowledgement.
 
 ## Structure and argument
 

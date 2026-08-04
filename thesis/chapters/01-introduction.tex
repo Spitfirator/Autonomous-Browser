@@ -3,227 +3,127 @@
 
 \section{Motivation}
 
-Large language models (LLMs) have moved from producing text to selecting and
-invoking tools. In a browser agent, a model receives a representation of the
-current page, reasons about a user's request, and proposes actions such as
-navigating, clicking, entering text, uploading a file, or executing page code.
-This pattern extends the interleaving of reasoning and action introduced by
-systems such as ReAct~\cite{yao2023react} into an environment that contains
-authenticated sessions, personal data, and consequential controls.
-WebArena and related benchmarks demonstrate why this interface is useful:
-ordinary work often requires several dependent actions across realistic
-websites rather than a single model response~\cite{zhou2024webarena,
-koh2024visualwebarena}. The same capability also changes the consequence of a
-model error. A mistaken sentence is no longer necessarily the final output; it
-can become an external side effect.
+Large language models increasingly operate as agents: they observe an
+environment, choose tools, inspect the result, and continue until a task is
+complete. Browser agents apply this loop to navigation, form entry, file
+handling, and web applications in which a model output can become an external
+side effect. This capability is useful precisely because web tasks are rarely
+one-shot questions: benchmarks such as WebArena require agents to carry state
+across several dependent interactions~\cite{zhou2024webarena}.
 
-The web is not a passive input. Pages combine first-party text, user-generated
-content, advertising, embedded resources, and attacker-controlled data. An
-indirect prompt-injection attacker places instructions in one of these sources
-so that the agent encounters them while performing the legitimate user's task.
-The attacker need not control the user's request or communicate directly with
-the model. Demonstrations against LLM-integrated applications show that
-retrieved documents and pages can redirect behaviour, request disclosure, or
-induce further actions~\cite{greshake2023indirect}. AgentDojo and WASP turn this
-threat into executable evaluations for tool-using and browser-native agents
-respectively~\cite{debenedetti2024agentdojo,evtimov2025wasp}.
+The same loop creates a security problem. Web observations mix application
+content, user-generated data, embedded resources, and text controlled by an
+attacker. An indirect prompt injection places instructions in that data so the
+agent encounters them while pursuing a legitimate goal~\cite{greshake2023indirect}.
+The attack exploits an authority ambiguity rather than a malformed API call:
+the model is expected to understand novel page content, yet must also decide
+whether that content is entitled to redirect its behaviour. Once the model can
+invoke privileged tools, a successful redirection can change remote state or
+disclose information instead of merely producing incorrect prose.
+Prompt reminders, delimiters, and detectors can reduce exposure, but they
+leave the acting model responsible for respecting the distinction between the
+operator's goal and hostile data. Classical protection principles suggest a
+different allocation of responsibility. Complete mediation places a check at
+each privileged use, while least privilege limits which component may perform
+the effect~\cite{saltzer1975protection}. For an agent, the model can remain a
+flexible planner without being the final authority for its proposed actions.
+An independent runtime can enforce deterministic constraints, control data
+flows, request narrowly scoped authority, and record the outcome.
 
-The central difficulty is one of authority. Natural-language content is useful
-because the model interprets its meaning, yet the same flexibility makes an
-instruction embedded in data resemble an instruction from the operator. A
-system prompt can state that pages are untrusted, a delimiter can mark their
-boundaries, and a detector can search for familiar attacks. None of these
-measures alone changes the fact that the acting model sees both trusted
-instructions and potentially hostile content before deciding what to do.
-Placing all enforcement responsibility inside that model therefore makes the
-security decision depend on the component exposed to the attack.
+\section{Research question and thesis}
 
-Classical protection principles suggest a different allocation of
-responsibility. Complete mediation requires access checks whenever an object is
-used, while least privilege limits the authority available to each
-component~\cite{saltzer1975protection}. Applied to agents, the model may remain
-a capable but untrusted planner, while a separate runtime decides whether its
-proposed actions may reach privileged browser tools. This does not make
-language-model behaviour predictable, nor does it solve the semantic problem
-of deciding what the user intended. It does create a stable place to enforce
-deterministic invariants, restrict data flows, request narrow consent, fail
-closed, and record what happened.
-
-\section{Research problem and questions}
-
-This dissertation investigates whether an executor-side governance layer can
-reduce the consequences of indirect prompt injection without reducing a
-browser agent to a non-functional system. Security and utility must be
-considered together. An agent that never acts has a low attack-success rate,
-but it has not safely completed useful work. Conversely, an agent that
-completes many tasks while serving attacker goals has not preserved the user's
-authority. The study therefore asks:
-
-\begin{description}[leftmargin=12mm,labelwidth=9mm,style=nextline]
-  \item[RQ1] \rqone
-  \item[RQ2] \rqtwo
-\end{description}
-
-RQ1 is an empirical systems question. It requires native task and attacker
-oracles, matched enforcement conditions, and measurements that expose both
-useful completion and unsafe execution. RQ2 is a systems-design and
-protocol-verification question. This dissertation implements selective
-approval, takeover, and unresolved-observation incident paths, and evaluates
-their technical semantics. Whether operators comprehend or use those controls
-effectively is a separate human-computer interaction question. No participant
-study was conducted, so the dissertation does not claim measured improvements
-in comprehension, trust, workload, fatigue, usability, or approval behaviour.
-
-The thesis advanced here is deliberately bounded:
+The research question is:
 
 \begin{quote}
-\emph{Independent runtime enforcement can reduce evaluated policy violations
-while preserving useful autonomy under the tested conditions.}
+\textbf{RQ.} \rqone
 \end{quote}
 
-The wording matters. ``Independent'' means that the final allow, block,
-approval, or handover decision is made outside the acting model.
-``Evaluated'' ties the conclusion to defined benchmarks and oracles.
-``Under the tested conditions'' excludes universal robustness, unmeasured
-modalities, and production deployment.
+Security and utility are evaluated together. A system that blocks every action
+can suppress attacks while destroying the purpose of an agent; conversely,
+high task completion is not useful if trajectories also achieve attacker
+goals. The dissertation therefore measures native user-task success, native
+attacker success, their joint outcome, and whether attacker-directed actions
+reach the executor.
+
+The thesis is that \emph{independent runtime enforcement can reduce evaluated
+policy violations while preserving useful autonomy under the tested
+conditions}. Independence means that an allow, block, approval, or takeover
+outcome is determined outside the acting model. The claim is tied to defined
+tool and browser benchmarks rather than to prompt injection in general.
 
 \section{Approach}
 
-BrowserUse supplies the underlying delegated browser automation. \systemname's
-role is to make that delegation independently governed and visibly
-operator-controllable, rather than to originate browser-task automation. The
-implemented artefact wraps a BrowserUse agent with two governance boundaries.
-Before a model invocation, the observation boundary
-identifies untrusted page, extraction, and tool-result regions; detects
-prompt-injection signals; sanitises only attributable regions; and re-runs
-detection on the exact text that would be sent. A detected current browser
-observation that cannot be cleaned is withheld and escalated rather than
-forwarded with a warning. Image inputs are excluded from the ordinary model
-path because DOM sanitisation cannot remove text rendered in pixels.
+This dissertation presents \systemname, a local research prototype positioned
+between a BrowserUse agent and its privileged executor. It governs the agent
+loop at two points. Before inference, an observation guard identifies
+untrusted browser, extraction, and tool-result regions; detects configured
+prompt-injection signals; removes attributable regions; and re-detects the
+exact reconstructed model input. Before execution, an action guard rebuilds
+live browser context, classifies capabilities and sensitive data, propagates
+origin-scoped taint, and invokes one policy engine. The executor is reached
+only after that decision.
 
-Before a privileged action, the execution boundary reconstructs the live URL
-and relevant element context, classifies capabilities and sensitive-data
-categories, propagates origin-scoped taint, and invokes one central policy
-engine. Static blocks and data-flow rules precede approval. Recognised
-credentials, one-time codes, access tokens, payment details, and private keys
-are human-only in enforce mode: the proposed agent action is withheld and the
-operator performs the step directly. Other consequential but permissible
-actions can receive one narrow approval or a bounded, expiring grant.
-Approval is revalidated against the live page and policy immediately before
-execution. Timeouts, cancellation, malformed authority, and unavailable
-security context fail closed. All attempted actions receive paired,
-privacy-preserving audit records within this governed tool boundary.
+Automatic enforcement is combined with selective human authority. Hard policy
+and protected data flows remain non-overridable. A permissible but
+consequential action can receive narrow, expiring approval and is evaluated
+again against live state before execution. Recognised credentials, one-time
+codes, payment data, and other protected values trigger direct takeover so the
+operator performs the step instead of authorising the agent to type the value.
+If a suspicious current-page observation cannot be sanitised and verified, it
+is withheld and the operator may inspect the page before Sentinel captures a
+fresh observation. A Chrome extension presents these states and the redacted
+decision history; the server remains the source of authority.
 
-The evaluation uses two complementary environments. AgentDojo isolates
-tool-use mechanisms across banking, Slack, travel, and workspace suites. A
-model-free component replay measures detector and policy behaviour across
-attack families, while paired end-to-end task comparisons measure how three
-Qwen 3.5 models re-plan under enforcement. WASP then tests transfer to a
-browser agent operating mutable GitLab and Reddit environments. The principal
-browser result is a matched 27B off/enforce comparison. A separate 9B sequence
-is retained as development and failure-analysis evidence, not pooled into a
-single campaign.
-This sequence is useful because it records a negative result for warning-only
-enforcement and two successive sanitisation revisions.
+Evaluation proceeds in two stages. AgentDojo supplies controlled tool-agent
+tasks with native user and attacker oracles across four application domains
+~\cite{debenedetti2024agentdojo}. WASP then exercises a BrowserUse agent over
+mutable GitLab and Reddit environments, adding observation construction,
+navigation, and browser re-planning~\cite{evtimov2025wasp}. The primary browser
+result is a matched Qwen 3.5 27B off/enforce comparison. A provenance-separated
+9B development sequence is retained because it explains why warning-only
+enforcement and incomplete sanitisation were replaced by post-verified
+removal.
 
 \section{Contributions}
 \label{sec:contributions}
 
-The original contributions of this dissertation are:
+The dissertation makes three contributions.
 
 \begin{enumerate}
-  \item \textbf{An executor-side enforcement architecture for existing
-  browser agents.}
-  \systemname\ composes an untrusted planner with model-input and
-  pre-execution wrappers, a single live policy decision point, and a privileged
-  browser executor. The design applies complete mediation to model-proposed
-  privileged tool actions at that boundary without requiring changes to the
-  underlying model.
+  \item \textbf{Executor-side enforcement for a dynamic browser-agent loop.}
+  Sentinel interposes on model input and every model-proposed privileged action
+  entering the governed executor. Live context, central policy evaluation,
+  fail-closed outcomes, and paired attempted/terminal audit separate a model's
+  proposal from authority to act without changing the underlying model.
 
-  \item \textbf{A post-verified observation boundary.}
-  Detection is combined with attributable sanitisation, re-detection,
-  origin-scoped sticky taint, and explicit outcomes for clean removal,
-  residual content, and unsafe attribution. Known unresolved content is
-  withheld before the model call; shorter-lived extraction and persistent
-  history values use bounded whole-value removal to avoid nested incident
-  loops.
+  \item \textbf{Post-verified observation governance with selective
+  authority.} Detection is connected to attributable sanitisation,
+  reconstruction, and clean re-detection. Origin-scoped taint and action policy
+  remain as backstops. Approval, direct takeover, and unresolved-observation
+  incidents provide distinct server-owned paths for decisions that cannot be
+  resolved as an automatic allow or block.
 
-  \item \textbf{A fail-closed selective-authority protocol and
-  browser-integrated control plane.}
-  The implemented technical lifecycle distinguishes hard refusal, narrow action approval,
-  direct human completion of protected steps, and security-incident review.
-  Reusable consent is run-local, scope-bound, expiring, and capped. The
-  lifecycle includes timeout, stop-race, revalidation, and complete-action
-  audit semantics rather than treating the interface as an advisory display.
-  A Manifest V3 Chrome extension presents these semantics through a
-  side panel initialised from redacted server state, in-page ownership
-  controls, and an Activity dashboard over redacted decision evidence. This
-  contribution is the implemented server-owned authority lifecycle and client
-  instrumentation.
-  Selected backend contracts are verified, but full browser reconnect,
-  accessibility, explanation quality, and operator behaviour are not.
-
-  \item \textbf{A two-level empirical evaluation of independent enforcement.}
-  AgentDojo supplies controlled mechanism evidence; WASP supplies
-  browser-native transfer and limitation evidence. The analysis reports
-  legitimate utility, secure utility, native attack success,
-  attacker-directed attempts and executions, interventions, and mechanism
-  telemetry together. It provides bounded evidence that enforcement reduced
-  evaluated violations while retaining useful task performance under the
-  tested conditions, and preserves negative and post-hoc development results
-  rather than silently pooling incompatible runs.
+  \item \textbf{A two-environment security--utility evaluation.} Across 629
+  attacked AgentDojo tasks per condition and model, enforcement reduced native
+  attacker success from 206 to 0 cases for Qwen 3.5 4B, from 131 to 1 for 9B,
+  and from 203 to 0 for 27B while utility increased in each row. In the matched
+  27B WASP comparison, attacker success changed from 5/84 to 0/84 and
+  attacker-directed execution from 17/84 to 0/84, while utility changed from
+  47/84 to 46/84. Reporting intermediate execution together with utility avoids
+  treating either inactivity or baseline model failure as security.
 \end{enumerate}
 
-BrowserUse, AgentDojo, WASP, Qwen, and the cited attack and defence ideas are
-prior work. The contribution is the design, implementation, integration,
-hardening, evaluation, and analysis of the \systemname\ middleware described
-here, not authorship of those dependencies or benchmarks.
-
-\section{Summary of findings}
-
-Across the controlled AgentDojo end-to-end comparisons, each model completed
-629 attacked tasks in both off and enforce modes. Native attacker success
-changed from 206 to 0 cases for Qwen 3.5 4B, from 131 to 1 for 9B, and from 203
-to 0 for 27B. Utility increased from 362 to 446, 422 to 467, and 428 to 483
-cases respectively. These runs show the importance of measuring useful
-outcomes: enforcement often removed the diversion that had prevented the user
-task, rather than merely adding blocks.
-
-The principal WASP comparison used Qwen 3.5 27B for 84 attacked browser tasks
-per condition. Native attacker success changed from 5 to 0 cases, and task
-instances with an attacker-directed action execution changed from 17 to 0.
-Native utility changed by one case, from 47 to 46, while secure utility
-increased from 44 to 46. No hard policy block or handover occurred in the
-enforce row; post-verified observation sanitisation was the primary recorded
-containment mechanism, alongside one denied approval. In the 9B development
-sequence, warning-only
-enforcement left attacker success at 7/84 and reduced utility, while the final
-sanitisation revision recorded 0/84 terminal attacker successes. These results
-answer RQ1 positively within the evaluated boundary, but the single seed,
-finite scenario set, development-set detector adaptation, and incomplete
-modality coverage preclude a universal claim.
-
-Current implementation verification supplies bounded technical evidence for
-RQ2. Approval, takeover, unresolved-observation incidents, timeout,
-cancellation, live revalidation, and paired audit were exercised as fail-closed
-server-side protocol paths. This establishes selected authority semantics, not
-end-to-end browser reconnect or how well a person would understand or use the
-interface.
+Sentinel does not claim BrowserUse, AgentDojo, WASP, or Qwen as original work.
+Its original contribution is the architecture that composes observation
+governance, executor-side policy, selective authority, and paired audit around
+a dynamic browser agent, together with the implementation and evaluation of
+that composition.
 
 \section{Dissertation structure}
 
-\Cref{chap:background} establishes the state of the art in web agents, prompt
-injection, model-level defences, system-level mediation, and human security
-decisions. \Cref{chap:threat-model} defines the attacker, assets, trust
-boundaries, invariants, and explicit non-claims. \Cref{chap:design} explains
-\systemname's architecture and implementation.
-\Cref{chap:governance-interface} specifies the server-owned human-authority
-protocol and its Chrome extension presentation, including the limits of the
-current end-to-end validation.
-\Cref{chap:methodology} describes the two-stage evaluation and its provenance
-controls.
-\Cref{chap:results} presents the AgentDojo and WASP results.
-\Cref{chap:discussion} answers the research questions, analyses failures and
-validity limits, and separates implemented human-authority mechanisms from
-unmeasured human outcomes. \Cref{chap:conclusion} restates the demonstrated
-contributions and identifies the next research steps.
+\Cref{chap:background} establishes the prompt-injection and system-security
+context. \Cref{chap:threat-model} defines the authority boundary and security
+requirements. \Cref{chap:design} presents the implementation and operator
+control plane. \Cref{chap:methodology,chap:results} define and report the
+evaluation, and \cref{chap:discussion,chap:conclusion} interpret the evidence,
+scope its validity, and state the resulting contribution.

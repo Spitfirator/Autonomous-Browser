@@ -1,260 +1,242 @@
-\chapter{Technical assurance and provenance details}
+\chapter{Technical assurance and reproducibility}
 \label{app:assurance}
 
-This appendix preserves the detailed assurance evidence referenced by the main
-argument without obscuring its research through-line. It does not add new
-experimental rows or extend the claims of the frozen campaigns.
+This appendix retains component evidence, protocol checks, and exact
+provenance needed to audit the main argument. It introduces no additional
+headline campaign.
 
-\section{Implementation chronology}
+\section{Component and policy replays}
 
-\begin{table}[!h]
+\begin{table}[htbp]
 \centering
-\caption{Relationship between mechanisms and frozen benchmark evidence.}
-\label{tab:chronology}
+\caption{AgentDojo v1 model-free component replay. Benign tasks recur across
+attack families in the aggregate detector count; the benign outcome uses the
+97 distinct tasks.}
+\label{tab:component-replay}
 \small
-\begin{tabularx}{\textwidth}{@{}L{0.34\textwidth}L{0.24\textwidth}Y@{}}
+\begin{tabular}{@{}lr@{}}
 \toprule
-Mechanism & Status in reported campaigns & Interpretation \\
+Measure & Result \\
 \midrule
-Executor-side policy and action audit & Present &
-Directly represented in AgentDojo and WASP telemetry under each run's recorded
-version. \\
-
-AgentDojo tool-result sanitisation & Present in controlled AgentDojo runs &
-Primary recorded intervention in those tool-agent campaigns. \\
-
-WASP browser observation sanitisation and post-verification & Present in
-sanitisation rows &
-Primary recorded intervention in the final browser rows. \\
-
-DOM/accessibility-only WASP profile & Present &
-No reported WASP row supplied screenshot pixels to the interactive model. \\
-
-Unresolved current-observation operator incident & Added after campaigns &
-Implemented and tested, but the four 9B V2 unattributable events used the
-historical model-warning fallback. \\
-
-Bounded extraction/history whole-value removal & Added after campaigns &
-Current implementation fact only. \\
-
-Human-only detected-secret takeover and bounded upload inspection & Added
-after campaigns & Current channel-guard fact, not measured benchmark outcome. \\
-
-Approval revalidation, explicit stop-cancellation, preflight-audit hardening,
-extension-thumbnail, image-bearing-result and trace-path hardening, and the
-special-URL boundary & Added after campaigns & Current implementation facts
-requiring a new run tag for a quantitative claim. \\
+Attack families & 16 \\
+Security cases across families & 7,404 \\
+Distinct benign tasks & 97 \\
+Detection precision / recall / F1 & 1.000 / 1.000 / 1.000 \\
+Security-case hard-block outcome & 7,404/7,404 \\
+Benign hard blocks & 0/97 \\
+Benign approval-triggering tasks & 1/97 (1.03\%) \\
 \bottomrule
-\end{tabularx}
+\end{tabular}
 \end{table}
-\clearpage
 
-\section{Extension packaging and state reconstruction}
-\label{sec:appendix-extension-consistency}
+The replay verifies the configured component contract on a development corpus.
+It contains no acting model and therefore cannot measure re-planning or native
+task success.
 
-The Vite build packages the React/TypeScript client as a static Manifest V3
-bundle. The browser manager uses a dedicated persistent Chrome profile and a
-saved DevTools endpoint; a one-time localhost page supports manual unpacked
-installation when automatic loading is unavailable. A second Chrome may host
-the control extension, but privileged execution remains in the governed
-browser.
-
-Server-owned pending state prevents a panel reload from losing a live request
-or displaying an expired one as authoritative. A WebSocket client receives a
-snapshot of status, recent events, configuration, and pending requests, then
-applies monotonic sequenced events. On reconnect, a fresh snapshot replaces the
-card lists; the service worker follows the same rule for its compact in-page
-projection. Security incidents have display priority over ordinary handovers.
-Client expiry hides a stale card, but the server timer owns the timeout. A
-response resolves only the request identifier; execution still requires fresh
-preflight and a terminal audit event.
-
-Sequence numbers are process-monotonic, but replay and per-client queues are
-bounded and the client does not diagnose sequence gaps. A slow client can
-therefore miss non-authority telemetry. Pending approvals and handovers are
-reconstructed separately from server-owned managers, so a telemetry gap cannot
-mint consent or erase a live authority request. Snapshot reconstruction is
-implemented, but a full browser reconnect test and Python--TypeScript
-schema-equivalence test remain absent.
-
-\section{Supplementary interface and Activity detail}
-\label{sec:appendix-interface-details}
-
-\subsection{Chat-first supervision}
-
-The side panel is organised around one continuous task thread rather than a
-separate security console. Persisted and live user text, agent step summaries
-with proposed-action chips, non-allow policy decisions, detector alerts,
-control requests and returns, and task outcomes appear in chronological
-context. Pending security incidents are docked first, followed by ordinary
-handovers and approvals, so the strongest unresolved state remains visually
-dominant.
-
-The header exposes run ownership controls and access to previous conversations,
-in-page visuals, and the dashboard. The composer starts or follows up on an
-idle conversation and queues steering for the next thought while a task is
-active. An offline banner distinguishes a local-service connection failure
-from an idle agent. Starting a new chat is also a deliberate forced-reset path
-for a wedged run, cancelling outstanding authority rather than leaving
-orphaned requests.
-
-Step summaries omit screenshot thumbnails; event fan-out strips frames, and
-titles and URLs are redacted at event and trace boundaries. Explicit local
-screenshot retention remains separate from the extension's live channel.
-Displayed rationale-like summaries are exposed outputs, not private
-chain-of-thought.
-
-\subsection{Activity and decision inspection}
-
-The Activity dashboard lists completed runs with task, status, duration,
-steps, model calls, and token totals. Expanding a run shows its result, a
-decision log, and a within-run time partition. The UI labels policy checks plus
-approval and incident waits as ``Enforcement added'', and labels the remainder
-``Without enforcement''; these are accounting labels, not a matched
-counterfactual. Handover wait is shown separately by implementation convention,
-not because the same delay has been demonstrated without \systemname.
-Enforcement changes later replanning, so the partition cannot estimate causal
-overhead.
-
-Decision chips count allowed actions, approvals, policy-triggered handoffs,
-security pauses, blocks plus human denials, approval/handoff timeouts, and total
-interventions. Non-zero chips deep-link into relevant trace events. Each
-non-allow decision can receive a local yes/no \texttt{understood} annotation in
-a researcher walkthrough. These ticks are not participant responses,
-comprehension scores, or evidence of trust.
-
-Models and settings configure providers, sampling, pacing, policy, retention,
-and budgets for the applicable boundary; API keys are write-only to the
-client. Live rule fields are re-read, while instantiated clients, timeouts,
-budgets, and schema pruning remain run-fixed. Pending approval is revalidated
-against changed policy, so an obsolete consent cannot survive.
-
-\section{Authority failure matrix}
-
-\begingroup
+\begin{table}[htbp]
+\centering
+\caption{Detector-v2 regression scorecard. WASP supplied development inputs
+after the live accessibility representation was inspected.}
+\label{tab:detector-scorecard}
 \small
+\begin{tabular}{@{}lrrrrr@{}}
+\toprule
+Corpus & Attack & Benign & Recall & Precision & FPR \\
+\midrule
+AgentDojo security & 130 & 58 & 1.000 & 1.000 & 0.000 \\
+AgentDojo v1 tool knowledge & 629 & 97 & 1.000 & 1.000 & 0.000 \\
+WASP security & 84 & 39 & 1.000 & 0.988 & 0.026 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The live-representation correction reproduced BrowserUse's href-free,
+split-line accessibility text for URL-format attacks. It changed 40 missed
+WASP classifications and two already-detected score bands while leaving all
+AgentDojo classifications and scores unchanged. The retained WASP false
+positive was a legitimate GitLab profile page containing password, key, and
+privacy language.
+
+An action-gating replay explains why observation sanitisation remained the
+primary browser control. WASP contains 20 cross-origin terminal goals and 64
+same-origin form goals. Gating every tainted side effect produced a median of
+eight requests per affected task (95th percentile 28, maximum 28) and exhausted
+the four-request prompt budget on 35 of 50 replayed tasks. Requiring an
+independent amplified sink reduced the median and 95th percentile to zero,
+with a maximum of two and no budget exhaustion, while retaining the
+cross-origin coverage. The replay did not change AgentDojo classifications.
+
+\section{Current authority and failure semantics}
+
 \begin{longtable}{@{}L{0.28\textwidth}L{0.66\textwidth}@{}}
-\caption{Fail-closed extension and authority behaviour.}
+\caption{Fail-closed outcomes at the extension and authority boundary.}
 \label{tab:interface-failures}\\
 \toprule
-Failure or race & Runtime outcome \\
+Condition & Runtime outcome \\
 \midrule
+\endfirsthead
+\toprule
+Condition & Runtime outcome \\
+\midrule
+\endhead
 Panel closes or WebSocket disconnects &
-The server request remains pending; a reconnecting snapshot replays it. \\
-Approval or handover expires &
-The server emits a timeout resolution; the withheld agent action does not
-execute. \\
+The server request remains pending and a reconnecting snapshot reconstructs it. \\
+Approval or takeover expires &
+The server emits a timeout outcome; the withheld agent action does not execute. \\
 Stop or forced reset during a wait &
-Outstanding futures resolve as cancelled; cards cannot survive as apparent
-authority. \\
-Live context or policy changes after approval &
-Fresh preflight recomputes risk and policy, then verifies URL, parameter digest,
-and bound scope. Relaxation may permit an unchanged action; scope changes or a
-new block or handoff prevent it. \\
+Outstanding futures resolve as cancelled and cannot later supply authority. \\
+Live URL, target, parameter, file, or policy changes after approval &
+Fresh preflight recomputes risk and policy and rejects a changed or newly
+prohibited scope. \\
 Malformed, stale, or duplicate response &
 The API cannot resolve a missing or completed request identifier. \\
-Extension/operator channel unavailable when authority is required &
+Authority channel unavailable &
 The governed path blocks or terminates according to policy rather than
 continuing autonomously. \\
-Unresolved browser observation &
+Unresolved current browser observation &
 The provider call is skipped, the observation is discarded, and only a fresh
-observation can resume progress. \\
+capture can resume progress. \\
+Unresolved bounded extraction or history value &
+The complete value is omitted and replaced with a fixed marker. \\
 \bottomrule
 \end{longtable}
-\endgroup
 
-\section{Submission-time implementation gates}
+The default approval budget is four requests per run. It is a configurable
+lifecycle bound rather than a behavioural claim about operator attention.
+Reusable grants remain run-local, expiring, use-capped, and bound to action,
+origin, capabilities, taint, protected-data classes, target fingerprint, and
+applicable parameter or content digests.
 
-\begingroup
+Figure~\ref{fig:appendix-interface-evidence} retains two secondary interface
+views that support this lifecycle without interrupting the main design
+argument. The approval card shows the narrow prospective decision; Activity
+shows how allowed and blocked terminal outcomes are paired retrospectively.
+
+\begin{figure}[p]
+\centering
+\begin{minipage}[t]{0.82\textwidth}
+  \centering\scriptsize\textbf{(a) Completed-run Activity record}\par\smallskip
+  \includegraphics[width=\linewidth]{figures/interface-activity-detail-walkthrough.png}
+\end{minipage}
+
+\vspace{4mm}
+\begin{minipage}[t]{0.44\textwidth}
+  \centering\scriptsize\textbf{(b) Bounded approval request}\par\smallskip
+  \includegraphics[width=\linewidth]{figures/interface-approval-walkthrough.png}
+\end{minipage}
+\caption[Supporting Activity and approval views.]{Supporting control-plane views from the deterministic local
+walkthrough. Panel (a) pairs attempted and terminal outcomes and reports
+enforcement timing as within-run accounting, not a no-enforcement
+counterfactual. Panel (b) offers only a bounded decision for the current
+redacted proposal. These are implementation walkthroughs, not participant or
+usability evidence.}
+\label{fig:appendix-interface-evidence}
+\end{figure}
+
+\section{Implementation verification}
+\label{sec:implementation-verification}
+
+\begin{table}[htbp]
+\centering
+\caption{Submission-time checks for the current implementation.}
+\label{tab:implementation-verification}
 \small
-\begin{longtable}{@{}L{0.31\textwidth}L{0.63\textwidth}@{}}
-\caption{Fresh verification of the post-campaign implementation on 30 July
-2026.}
-\label{tab:implementation-verification}\\
+\begin{tabularx}{\textwidth}{@{}L{0.38\textwidth}Y@{}}
 \toprule
 Gate & Result \\
 \midrule
-Complete Sentinel Python suite & 231 passed \\
+Complete Sentinel Python suite & 243 passed \\
 Deterministic security smoke & 5/5 expected cases; detection F1 and verdict
 accuracy 1.000; 0/2 benign interventions \\
-WASP campaign contract suite & 29 passed \\
-WASP offline preflight & Pinned source, 21 scenarios, reset policy, and
-Python dependency checks passed \\
+WASP campaign, replication, and intermediate suites & 52 passed \\
+WASP offline preflight & Pinned source, scenario matrix, reset policy, and
+dependency checks passed \\
 Chrome extension production build & TypeScript check and Vite build passed \\
 \bottomrule
-\end{longtable}
-\endgroup
+\end{tabularx}
+\end{table}
 
-The machine-readable record
-\texttt{sentinel/evals/submission-validation-20260730.json} preserves
-the exact commands and outputs, repository revision, tool versions, and a
-SHA-256 manifest over the relevant implementation and test sources. It records
-technical gates for the current source state, not benchmark outcomes or
-human-interface effectiveness.
+These gates exercise the current approval, takeover, incident, extraction,
+secret-channel, cancellation, navigation, audit, trace, and client contracts.
+They verify source behaviour rather than altering the frozen benchmark rows.
+The machine-readable verification record preserves commands, outputs, tool
+versions, repository revision, and source hashes.
 
 \clearpage
-\section{Rendered extension states}
-\label{sec:appendix-extension-states}
+\section{Mechanism-to-evidence map}
 
-\begin{figure}[!htbp]
+\begin{table}[htbp]
 \centering
-\begin{minipage}[t]{0.41\textwidth}
-  \centering
-  \textbf{(a) Narrow action approval}\par\smallskip
-  \includegraphics[width=\linewidth]{figures/interface-approval.png}
-\end{minipage}
-\hfill
-\begin{minipage}[t]{0.41\textwidth}
-  \centering
-  \textbf{(b) Direct human takeover}\par\smallskip
-  \includegraphics[width=\linewidth]{figures/interface-takeover.png}
-\end{minipage}
-
-\vspace{2mm}
-\begin{minipage}[t]{0.41\textwidth}
-  \centering
-  \textbf{(c) Unresolved-observation incident}\par\smallskip
-  \includegraphics[width=\linewidth]{figures/interface-incident.png}
-\end{minipage}
-
-\vspace{2mm}
-\begin{minipage}[t]{0.78\textwidth}
-  \centering
-  \textbf{(d) Activity decision inspection}\par\smallskip
-  \includegraphics[width=\linewidth]{figures/interface-activity.png}
-\end{minipage}
-\caption{Production Chrome-extension bundle rendered from fixed synthetic,
-redacted fixture state. The panels demonstrate four implemented presentation
-states: bounded approval, human-performed protected input, fail-closed
-observation review, and privacy-preserving decision inspection. They are
-implementation evidence, not a participant walkthrough, usability result,
-causal overhead estimate, or benchmark observation. The reproducible capture
-script is \texttt{thesis/scripts/capture-extension-figures.cjs}.}
-\label{fig:extension-states}
-\end{figure}
+\caption{Relationship between the current implementation and frozen evidence.}
+\label{tab:chronology}
+\small
+\begin{tabularx}{\textwidth}{@{}L{0.35\textwidth}L{0.24\textwidth}Y@{}}
+\toprule
+Mechanism & Evidence status & Interpretation \\
+\midrule
+Executor-side policy and action audit & Present in reported runs &
+Represented by the recorded middleware and telemetry of each row. \\
+AgentDojo tool-result sanitisation & Present in AgentDojo runs &
+Primary recorded mechanism in the controlled tool-agent campaigns. \\
+WASP observation sanitisation and verification & Present in sanitisation rows &
+Primary recorded mechanism in the final browser rows. \\
+DOM/accessibility-only browser profile & Present in WASP rows &
+No reported WASP row supplied screenshot pixels to the interactive model. \\
+Unresolved-observation incident and bounded-value omission & Added after rows &
+Current tested behaviour; the four 9B V2 unattributable events used the
+historical warning fallback. \\
+Human-only detected-secret takeover, upload inspection, approval
+revalidation, cancellation, and special-URL hardening & Added after rows &
+Current tested behaviour without a retrospective benchmark effect. \\
+\bottomrule
+\end{tabularx}
+\end{table}
 
 \clearpage
-\section{Exact WASP run provenance}
+\section{Campaign provenance}
 \label{sec:appendix-wasp-provenance}
+
+The AgentDojo table uses one thinking/32K profile for all three models: a
+32,768-token context, 4,096-token output cap, temperature 0.6, top-$p$ 0.95,
+and seed 0. The WASP rows use the same numerical profile with BrowserUse's
+structured planning fields enabled, the model server's separate native-thinking
+stream disabled, one action per step, a 30-step cap, DOM/accessibility input,
+and no screenshots. The 4B
+campaign repeated off and enforce under a fixed pipeline. The preserved 9B
+reports cover all 1,258 executions but omit a Git revision. The 27B summary
+preserves historical off reports byte-for-byte and combines them with the
+fixed-enforce tag; task, model name, profile, and sampling match, while the
+historical code revision and model digest remain unrecorded. All ten 27B
+responses reaching the output cap were retained: three off and seven enforce.
+
+The WASP rows use the following frozen identifiers:
 
 \begingroup
 \small
-\begin{description}[style=nextline,leftmargin=35mm]
+\begin{description}[style=nextline,leftmargin=32mm]
   \item[Primary 27B tag]
-  \texttt{wasp-qwen35-27b-browser32k-30step-v2-sanitise-noalert-none-v1}
+  \nolinkurl{wasp-qwen35-27b-browser32k-30step-v2-sanitise-noalert-none-v1}
   \item[27B Sentinel commit]
-  \texttt{6c71df2b8e274d843571b20897489b6ad478bd10}
+  \nolinkurl{6c71df2b8e274d843571b20897489b6ad478bd10}
   \item[Final 9B tag]
-  \texttt{wasp-qwen35-9b-browser32k-30step-v2-sanitise-noalert-none-v3}
+  \nolinkurl{wasp-qwen35-9b-browser32k-30step-v2-sanitise-noalert-none-v3}
   \item[9B Sentinel commit]
-  \texttt{3ca50cae923b4621b4703f2308d52050cff8f038}
+  \nolinkurl{3ca50cae923b4621b4703f2308d52050cff8f038}
   \item[Policy SHA-256]
-  \texttt{32d0f0a17798dd27fbe03ec1e5221e38d66e6ebfc9a743266581e890c3c7617f}
+  \texttt{32d0f0a17798dd27fbe03ec1e5221e38}\newline
+  \texttt{d66e6ebfc9a743266581e890c3c7617f}
   \item[Enforcement SHA-256]
-  \texttt{20ddf4c0b632215b7cd494cdea0998d1b89fa023c326473ea655adfd199c0322}
+  \texttt{20ddf4c0b632215b7cd494cdea0998d1}\newline
+  \texttt{b89fa023c326473ea655adfd199c0322}
   \item[WASP commit]
-  \texttt{ffee6f41fde76acd14bd792db442479c506260c2}
+  \nolinkurl{ffee6f41fde76acd14bd792db442479c506260c2}
   \item[BrowserUse commit]
-  \texttt{c8e6e8f0fe617564687895702c2338967293b309}
+  \nolinkurl{c8e6e8f0fe617564687895702c2338967293b309}
 \end{description}
 \endgroup
+
+The browser controller restores pristine GitLab and Reddit clones before each
+new 21-task cell, binds model/policy/participant/input/middleware provenance to
+the checkpoint, and requires native scores for completion. The historical
+20-step pilot and incomplete or provenance-incompatible campaigns remain
+excluded. No WASP oracle-participant result exists.
