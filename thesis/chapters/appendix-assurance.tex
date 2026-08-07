@@ -107,34 +107,49 @@ Reusable grants remain run-local, expiring, use-capped, and bound to action,
 origin, capabilities, taint, protected-data classes, target fingerprint, and
 applicable parameter or content digests.
 
-Figure~\ref{fig:appendix-interface-evidence} retains two secondary interface
-views that support this lifecycle without interrupting the main design
-argument. The approval card shows the narrow prospective decision; Activity
-shows how allowed and blocked terminal outcomes are paired retrospectively.
+Figure~\ref{fig:appendix-interface-evidence} retains three secondary
+control-plane views without interrupting the main design argument. Policy is
+the prospective configuration surface, the approval card is the narrow live
+decision, and Activity reconstructs allowed and blocked terminal outcomes
+retrospectively.
 
-\begin{figure}[p]
+\begin{figure}[!htbp]
 \centering
-\begin{minipage}[t]{0.82\textwidth}
+\begin{minipage}[t]{0.48\textwidth}
   \centering\scriptsize\textbf{(a) Completed-run Activity record}\par\smallskip
   \includegraphics[width=\linewidth]{figures/interface-activity-detail-walkthrough.png}
 \end{minipage}
+\hfill
+\begin{minipage}[t]{0.48\textwidth}
+  \centering\scriptsize\textbf{(b) Live policy configuration}\par\smallskip
+  \includegraphics[width=\linewidth]{figures/interface-policies-walkthrough.png}
+\end{minipage}
 
-\vspace{4mm}
-\begin{minipage}[t]{0.44\textwidth}
-  \centering\scriptsize\textbf{(b) Bounded approval request}\par\smallskip
+\vspace{2mm}
+\begin{minipage}[t]{0.30\textwidth}
+  \centering\scriptsize\textbf{(c) Bounded approval request}\par\smallskip
   \includegraphics[width=\linewidth]{figures/interface-approval-walkthrough.png}
 \end{minipage}
-\caption[Supporting Activity and approval views.]{Supporting control-plane views from the deterministic local
-walkthrough. Panel (a) pairs attempted and terminal outcomes and reports
-enforcement timing as within-run accounting, not a no-enforcement
-counterfactual. Panel (b) offers only a bounded decision for the current
-redacted proposal. These are implementation walkthroughs, not participant or
-usability evidence.}
+\caption[Supporting Activity, policy, and approval views.]{Supporting
+control-plane views from the deterministic local walkthrough. Panel (a) pairs
+attempted and terminal outcomes and reports enforcement timing as within-run
+accounting, not a no-enforcement counterfactual. Panel (b) shows that policy
+state is configured explicitly and enforced by the middleware, rather than by
+the page UI. Panel (c) offers only a bounded decision for the current redacted
+proposal. These are implementation walkthroughs, not participant or usability
+evidence.}
 \label{fig:appendix-interface-evidence}
 \end{figure}
 
+\FloatBarrier
 \section{Implementation verification}
 \label{sec:implementation-verification}
+
+These gates exercise the current approval, takeover, incident, extraction,
+secret-channel, cancellation, navigation, audit, trace, and client contracts.
+They verify source behaviour rather than altering the frozen benchmark rows.
+The machine-readable verification record preserves commands, outputs, tool
+versions, repository revision, and source hashes.
 
 \begin{table}[htbp]
 \centering
@@ -155,12 +170,6 @@ Chrome extension production build & TypeScript check and Vite build passed \\
 \bottomrule
 \end{tabularx}
 \end{table}
-
-These gates exercise the current approval, takeover, incident, extraction,
-secret-channel, cancellation, navigation, audit, trace, and client contracts.
-They verify source behaviour rather than altering the frozen benchmark rows.
-The machine-readable verification record preserves commands, outputs, tool
-versions, repository revision, and source hashes.
 
 \clearpage
 \section{Mechanism-to-evidence map}

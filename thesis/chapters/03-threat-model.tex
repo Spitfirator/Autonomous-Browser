@@ -37,58 +37,64 @@ confidentiality. Availability is also relevant because an agent that never
 acts has no useful autonomy, although denial is preferable to an unauthorised
 effect when required security context is missing.
 
+The threat model turns on one question: which component can cause a browser
+effect to occur? A page can influence an observation, a model can propose an
+action, and an extension can display a decision, but none of those roles should
+confer permission to execute. \Cref{tab:trust-boundaries} is therefore an
+authority ledger. It states the permitted role of each component and, more
+importantly, the power that remains outside that role.
+
 \begin{table}[htbp]
 \centering
-\caption{Trust allocation across the governed browser-agent loop.}
+\caption{Authority ledger for the governed browser-agent loop.}
 \label{tab:trust-boundaries}
 \footnotesize
 \renewcommand{\arraystretch}{1.35}
 \setlength{\tabcolsep}{4.5pt}
-\begin{tabularx}{\textwidth}{@{}L{0.24\textwidth}L{0.19\textwidth}Y@{}}
+\begin{tabularx}{\textwidth}{@{}L{0.21\textwidth}L{0.31\textwidth}Y@{}}
 \toprule
-Component & Security role & Boundary assumption \\
+Component and role & Permitted influence & Authority withheld \\
 \midrule
-Operator goal and live input & Root of task authority &
-Defines the task and may supply contextual authority, but cannot override a
-configured hard block. \\
+Operator: task principal & Defines the goal and may act directly during a
+human step. & Cannot convert a configured hard prohibition into an agent
+permission. \\
 \addlinespace[3pt]
 
-Sentinel middleware and policy & Trusted computing base &
-Mediates the wrapped observation and action paths; owns policy and authority
-state. \\
+Sentinel service and policy: reference monitor & Decides whether a proposal may
+reach the executor; owns pending authority, timers, revalidation, and audit. &
+Cannot delegate these decisions to model or client state without breaking the
+claimed boundary. \\
 \addlinespace[3pt]
 
-Model and browser-agent scaffold & Untrusted planner &
-May follow injected content, hallucinate, retry denials, or emit malformed
-actions. \\
+Model and planning logic: proposer & Interprets the goal and governed
+observation, then proposes an action. & Cannot authorise its own proposal or
+bypass a refusal. \\
 \addlinespace[3pt]
 
-DOM, accessibility text, URLs, extracted text, files, and tool results &
-Untrusted inputs & May contain first-party, third-party, stored, or
-attacker-controlled content. \\
+Page and external data: untrusted inputs & DOM, accessibility text, URLs,
+extracted text, files, and tool results supply task context. & Cannot acquire
+instruction authority merely by appearing in an observation. \\
 \addlinespace[3pt]
 
-Browser and tool implementation & Privileged executor &
-Performs effects after mediation; trusted within the prototype boundary. \\
+Browser automation and tools: privileged executor & Perform the concrete effect
+selected by an allowed proposal. & Cannot make an independent policy decision;
+their integrity is assumed within the prototype. \\
 \addlinespace[3pt]
 
-Chrome extension & Presentation and transport &
-Displays redacted server state and relays bounded responses; cannot create
-authority locally. \\
-\addlinespace[3pt]
-
-Trace consumer & Honest but curious &
-May inspect records but must not receive raw secrets, injection payloads,
-screenshots, or free-form rationale by default. \\
+Chrome extension and trace consumers: projections & Display redacted state and
+relay a bounded operator response. & Cannot mint authority, release a stale
+request, or invoke the executor directly. \\
 \bottomrule
 \end{tabularx}
 \end{table}
 
-The local service, configured policy, middleware, browser automation library,
-and browser form the trusted computing base. The model, page, and data returned
-by tools are untrusted. The extension communicates with the local service but
-is not a reference monitor: pending requests, timers, validation, and execution
-remain server-owned.
+The table makes the central assumption visible. Sentinel and the privileged
+executor must retain their integrity; the model, page, or extension need not be
+trusted to make correct security decisions. A compromised extension may show
+misleading state or withhold a response, but it cannot release the server's
+wait. A compromised page may shape what the model proposes, but it still cannot
+call the executor. The requirements below turn this allocation into behaviour
+that can be tested.
 
 \section{Adversary}
 
@@ -112,59 +118,82 @@ evaluations identified in \cref{chap:discussion}.
 \section{Security requirements}
 \label{sec:security-objectives}
 
-Five requirements translate the threat model into testable behaviour.
+The requirements form a dependency chain rather than a list of desirable
+features. Observation control limits what can shape a proposal; action control
+limits what that proposal can do; authority control prevents an interface
+response from becoming a transferable permission; audit control makes every
+outcome accountable without replaying the attack. A break in any earlier link
+weakens the guarantees that follow.
 
 \begin{enumerate}[label=\textbf{R\arabic*:},leftmargin=16mm]
-  \item \textbf{Independent and complete action mediation.} Every
-  model-proposed privileged action entering the wrapped tool boundary is
-  evaluated against live context immediately before execution. Each attempt
-  receives exactly one attempted and one terminal audit outcome, including
-  errors, denials, timeouts, handovers, and cancellation.
+  \item \textbf{Independent and complete action mediation.} No proposal is
+  trusted because the model produced it or because a similar action was
+  previously allowed. Every privileged action entering the wrapped tool path is
+  evaluated against live context immediately before execution. Every attempt
+  receives one attempted and one terminal audit outcome, including errors,
+  denials, timeouts, handovers, and cancellation.
 
-  \item \textbf{Verified observation handling.} Browser, extraction, and
-  tool-result content remains untrusted regardless of origin. A detected
-  region may be forwarded only after attributable modification and clean
-  re-detection of the reconstructed model input. Known residual or
-  unattributable current-page content is withheld; bounded extraction or
-  historical values are omitted in full.
+  \item \textbf{Verified observation handling.} Detection is not itself a
+  safety property. Browser, extraction, and tool-result content remains
+  untrusted regardless of origin, and a detected region may be forwarded only
+  after attributable modification and clean re-detection of the reconstructed
+  model input. Known residual or unattributable current-page content is
+  withheld; bounded extraction or historical values are omitted in full.
 
-  \item \textbf{Fail-closed policy and data flow.} Domain blocks, unavailable
-  required context, unsafe navigation schemes, and configured hard risk take
-  precedence over interactive approval. Recognised protected values cannot be
-  typed, scripted, or uploaded by the agent in enforce mode; the human performs
-  the step through takeover.
+  \item \textbf{Fail-closed policy and data flow.} Uncertainty cannot be
+  interpreted as an absent rule. Domain blocks, unavailable required context,
+  unsafe navigation schemes, and configured hard risk take precedence over
+  interactive approval. Recognised protected values cannot be typed, scripted,
+  or uploaded by the agent in enforce mode; the human performs the step
+  directly.
 
-  \item \textbf{Narrow authority.} Approval is explicit, run-local,
-  expiring, and bound to the reviewed action, origin, capabilities, taint,
-  sensitive-data categories, target, and applicable parameter evidence. Live
-  policy and browser context are recomputed before use. Silence, timeout,
-  malformed responses, disconnect, and stop never become permission.
+  \item \textbf{Narrow authority.} Consent is a scoped capability, not a
+  conversational sentiment. Approval is explicit, run-local, expiring, and
+  bound to the reviewed action, origin, capabilities, taint, sensitive-data
+  categories, target, and applicable parameter evidence. Live policy and
+  browser context are recomputed before use. Silence, timeout, malformed
+  responses, disconnect, and stop never become permission.
 
-  \item \textbf{Privacy-preserving accountability.} Decisions remain
-  inspectable through redacted rules, risk factors, outcomes, and run-keyed
-  digests. Raw protected values, attacker payloads, screenshot pixels, and
-  unrestricted model rationale are excluded from persistent and extension
-  telemetry by default.
+  \item \textbf{Privacy-preserving accountability.} An audit trail must explain
+  why an effect did or did not occur without becoming a second disclosure
+  channel. Decisions remain inspectable through redacted rules, risk factors,
+  outcomes, and run-keyed digests. Raw protected values, attacker payloads,
+  visual captures, and unrestricted model rationale are excluded from
+  persistent and extension telemetry by default.
 \end{enumerate}
 
-Together, these requirements define what Sentinel can enforce on the paths it
-controls. They do not make every allowed model decision correct: the planner
-may still choose an unhelpful action, and the detector may miss an attack. The
-evaluation therefore combines contract tests with end-to-end security and
-utility outcomes.
+Together, R1--R5 define a compact safety case for the paths Sentinel controls:
+the model sees only an observation that passed R2, its proposal reaches the
+executor only through R1 and R3, any exceptional permission must satisfy R4,
+and R5 preserves evidence of the outcome. They do not make every allowed model
+decision correct, and a missed detection can still produce a compromised
+proposal. The evaluation therefore combines contract tests with end-to-end
+security and utility outcomes.
 
 \section{Scope of the claim}
 
-Sentinel is evaluated as a local research prototype. Its ordinary interactive
-path is DOM/accessibility based; screenshot pixels are withheld because the
-implemented observation guard cannot sanitise rendered text. The loopback API
-checks permitted origins, but does not isolate the service from another
-compromised process running under the same operating-system account.
+The claim is about an enforceable boundary, not an immune model. Sentinel does
+not make every model judgement correct and does not claim to eliminate prompt
+injection. It claims that, where observations and actions traverse the governed
+BrowserUse path, the model's proposal can be subjected to a decision whose
+authority does not depend on the model obeying a warning. The empirical question
+is correspondingly narrow: under the evaluated conditions, does that independent
+boundary reduce policy-violating effects without preventing legitimate work?
 
-The dissertation claims neither universal prompt-injection prevention nor
-human-factors effectiveness. Its security claim concerns the model-input and
-pre-execution paths that Sentinel actually mediates; its utility claim concerns
-the reported task suites and native oracles. Evidence must therefore establish
-two outcomes together: fewer evaluated violations and continued completion of
-legitimate work. Detector accuracy or blanket refusal would not answer the
-research question on its own.
+That claim has a visible edge. The interactive model receives a
+DOM/accessibility representation, so pixel-only instructions and tasks that
+require visual grounding are not measured. The service is a local research
+prototype: origin checks protect its loopback interface, but another compromised
+process running as the same operating-system user is outside the isolation
+assumption. Direct human interaction, actions taken outside the wrapped tool
+path, and compromise of Sentinel, the browser, or the operating system are also
+outside complete mediation.
+
+The evaluation must therefore establish security and usefulness together.
+Detector recall is mechanism evidence, not the endpoint; terminal attack failure
+can reflect an incapable agent, just as blanket refusal can create the appearance
+of safety by destroying utility. The thesis consequently relies on paired native
+security and task outcomes, supplemented by trajectory and intervention records.
+Its conclusions apply to those models, suites, representations, and frozen
+implementations, and do not constitute evidence about human comprehension or
+deployment-scale robustness.

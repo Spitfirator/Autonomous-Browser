@@ -154,8 +154,8 @@ Most WASP attacker goals culminate in the same same-origin forms and controls
 used by legitimate tasks. Treating every side effect after a detector finding
 as approval-requiring would therefore convert untrusted provenance into broad
 denial of service. Sentinel instead applies strong deterministic rules to
-independently dangerous sinks---cross-origin flow, protected values, local
-files, code, unsafe schemes, and configured consequential targets---while
+independently dangerous sinks, including cross-origin flow, protected values,
+local files, code, unsafe schemes, and configured consequential targets, while
 post-verified sanitisation handles the observation that shaped the plan.
 
 This division is pragmatic rather than a complete semantic judge. A
@@ -247,12 +247,10 @@ configuration-specific post-condition, not that the remaining text is free of
 attacker intent. Adaptive optimisation against the frozen whole system is the
 appropriate next test~\cite{zhan2025adaptive}.
 
-The observation model excludes screenshots. This makes the evaluated channel
-clear and prevents pixel-only instructions from silently bypassing DOM
-sanitisation, but it also removes tasks that require visual grounding. A future
-visual path needs its own provenance, isolation, and action-authority design;
-simply enabling screenshots would expand both capability and attack surface
-~\cite{bailey2024imagehijacks,koh2024visualwebarena}.
+The results do not extend to visual observations or tasks that require visual
+grounding. A future visual path needs its own provenance, isolation, and
+action-authority design because adding images expands both capability and attack
+surface~\cite{bailey2024imagehijacks,koh2024visualwebarena}.
 
 Experimental scope is bounded by three Qwen conditions, one seed, AgentDojo v1,
 one pinned WASP revision, a 30-step browser budget, and the configured policies.

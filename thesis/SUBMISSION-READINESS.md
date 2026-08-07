@@ -64,37 +64,40 @@ independent validator are indexed from `sentinel/EVALS.md` and
 
 ## Completed release checks
 
-- Chapter 4 now begins from the system's central authority problem and follows
-  one governed step through observation, action, selective human authority,
-  interface projection, and audit. Its runtime composition is redrawn as a
-  source-native vector figure. Browser evidence is distributed by argumentative
-  role: the unresolved-observation view sits beside the sanitisation
-  post-condition, direct takeover sits in the selective-authority section, and
-  the active-run view grounds the Chrome extension control plane. The former
-  Activity subfigure was removed from the main text; Activity and a bounded
-  approval card form one supporting assurance figure in Appendix A.
-- The active-run and handover captures came from the dedicated Chrome instance
-  launched by `sentinel/start.sh`. A second, visually distinct workspace-
+- Chapter 4 introduces the ordinary Chrome-extension state before progressing
+  through observation incidents, action governance, and selective human
+  authority. Its runtime diagram makes the direction of data and authority
+  explicit. Browser evidence is distributed by argumentative role: the
+  active-run view establishes the ordinary control plane, the unresolved
+  observation view sits beside the sanitisation post-condition, and the
+  password handover sits in the selective-authority section. Activity, policy,
+  and a bounded approval card remain supporting assurance views in Appendix A.
+- The active-run and password-handover captures came from the dedicated Chrome
+  instance launched by `sentinel/start.sh`. The replacement handover capture is
+  local run `8d78c714`: the model navigated to a distinct synthetic login page
+  and invoked `request_human_control` when it reached an empty password field.
+  No password was entered or submitted, and the task was stopped after capture.
+  A separate, visually distinct workspace-
   settings fixture exercised a real `unattributable` observation in run
   `0b0f1d3c`: one region was targeted, zero were changed, one security incident
   opened, and the provider-call count remained zero. The fixture contains no
   attack payload, live credential, account, private URL, or external service.
   None of the captures is benchmark, participant, or usability evidence.
-- The completed Activity panel and approval card remain a separate
+- The completed Activity, policy, and approval views remain a separate
   deterministic walkthrough. Its helper passed a fresh syntax check and
   isolated API smoke test; it made no model call, started no browser agent or
   benchmark, and resolved approval, direct-takeover, and incident states to the
   expected pending authority objects. The live and deterministic servers were
   stopped after capture. Exact scope, run identifiers, reproduction commands,
   and image hashes are in `FIGURE-PROVENANCE.md`.
-- Tectonic produced a 60-page A4 PDF with the expected title, author, subject,
+- Tectonic produced a 61-page A4 PDF with the expected title, author, subject,
   and keywords. Under the convention in `AGENTS.md`, the counted dissertation
   is exactly 45 pages: the Lists of Figures and Tables plus Arabic pages 1--43.
   Appendix A begins on Arabic page 44 and the bibliography on page 50, so both
   are outside that count. Concise list captions keep the List of Figures to one
   page while the full analytical captions remain beneath the figures.
 - Both `sentinel-submission.tex` and the official `project_report - pg.tex`
-  root compile to 60 A4 pages with identical extracted page text and page
+  root compile to 61 A4 pages with identical extracted page text and page
   geometry. All pages were rendered for visual inspection, with front matter,
   affected design pages, and the appendix figure checked again at higher
   resolution. No missing references, material box warnings, or other LaTeX
@@ -104,11 +107,8 @@ independent validator are indexed from `sentinel/EVALS.md` and
 - The release copy is
   `output/pdf/Sentinel-Independent-Runtime-Enforcement-for-Browser-Agents-submission-ready.pdf`
   with SHA-256
-  `9c30a04ca6a25f4f9b554a437afbc370a03996f8a53a9897f8854e1f23316d3f`.
-
-The only remaining administrative choice is whether the submission template
-requires a supervisor name. It is not an evidence or manuscript-quality
-blocker.
+  `7a7ddec17996287f8c2ff0723f8c46c1c4987dd07113035cc4929b84d2c81861`.
+- The title page records the supervisor as Arthur below the submission date.
 
 ## Final gate
 

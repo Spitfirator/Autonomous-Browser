@@ -46,9 +46,8 @@ can cross secondary model calls, while stored history can reintroduce hostile
 content later. Multimodal agents add pixels: image-hijack work shows that
 instructions embedded in images can redirect vision-language systems
 ~\cite{bailey2024imagehijacks}. A DOM filter cannot remove text rendered only
-in pixels. Sentinel consequently treats browser-derived text and tool results
-as untrusted and excludes screenshots from its evaluated interactive model
-path.
+in pixels. Visual observations must therefore be treated as a distinct threat
+surface, rather than as an automatic extension of text sanitisation.
 
 \subsection{What an agent-security evaluation must measure}
 
@@ -124,7 +123,7 @@ deviations, and masks conflicting instructions before they persist in memory
 ~\cite{li2025drift}. Their attack-success rates are not directly comparable:
 each system changes a different part of the agent stack and is evaluated under
 different policies, models, and tasks. \Cref{tab:system-comparison} therefore
-compares the more durable architectural question---what each system trusts and
+compares the more durable architectural question: what each system trusts and
 where that trust is enforced.
 
 \begin{table}[htbp]

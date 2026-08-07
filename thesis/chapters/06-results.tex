@@ -166,7 +166,7 @@ The paired utility losses also cannot be equated with direct policy false
 blocks. No hard block or takeover occurred, and the sole denied approval was in
 a task whose user oracle succeeded. The eight losses therefore arose from
 changed agent trajectories after the observation was rewritten, website or
-model variability within the fixed setting, or finite-step interactions—not
+model variability within the fixed setting, or finite-step interactions, not
 from eight explicit vetoes. Conversely, seven off failures became enforce
 successes. The net change of one task is a compact aggregate over both effects.
 
@@ -333,39 +333,24 @@ counts explain how the trajectories differed.
 
 \section{Result synthesis}
 
-The AgentDojo rows establish the controlled result across three model
-conditions and four tool domains: attacker success fell sharply, utility and
-secure utility rose, and explicit blocking remained rare. The matched 27B WASP
-row then tests the harder transfer claim. All 17 observed attacker-directed
-executions were absent under enforcement, while aggregate utility changed by
-one task. The 9B sequence supplies the missing mechanism explanation: the
-effective intervention was post-verified sanitisation, not a warning attached
-to detection.
+The three evidence levels align without being pooled. Component replay confirms
+the configured detector and policy decisions. Across AgentDojo's controlled
+tool environments, enforcement sharply reduced attacker success while utility
+and secure utility rose. The matched 27B WASP pair then preserved the direction
+of the security effect in a browser loop: the five terminal attacks and all 17
+attacker-directed executions observed off were absent under enforcement.
 
-Three forms of evidence therefore align without being pooled. The component
-replays show that the configured detector and policy implement their defined
-decisions. AgentDojo shows that observation rewriting and executor mediation
-change native outcomes across controlled tool environments. The matched WASP
-comparison shows the same security direction in a browser loop, and its action
-replay rules out an explanation based only on the five terminal attacks that
-the off agent happened to complete. In that row, both terminal success and all
-17 observed attacker-directed executions were absent under enforcement.
+Utility sets the boundary on that conclusion. AgentDojo enforce utility moved
+towards each model's clean ceiling, whereas WASP produced seven gains and eight
+losses, a net change of one task, while secure utility increased by two. The
+browser evidence therefore supports preservation of roughly the same aggregate
+completion, not a general claim that enforcement improves utility.
 
-The utility evidence is likewise joint rather than incidental. AgentDojo
-enforce utility moved towards each model's clean ceiling while secure utility
-rose, indicating recovery of user work as well as removal of attacker success.
-WASP showed a smaller and mixed effect: seven task gains, eight losses, and a
-net change of minus one, with secure utility increasing by two. This contrast
-prevents the controlled-environment gains from being presented as a guaranteed
-browser utility improvement. What transfers is the ability to retain roughly
-the same aggregate task completion while reducing the measured violations.
-
-Finally, the intervention records support a specific rather than merely
-correlational account of the implemented mechanism. Explicit action refusal was
-rare in AgentDojo and absent in the matched WASP row; the one denied WASP
-approval occurred in a task that still succeeded. The recurring intervention
-was a changed, detector-clear observation before the next decision. The 9B
-warning and V1 rows show why both parts of that statement matter: a warning did
-not remove the hostile input, and incomplete rewriting left a represented
-failure class. V2 combined attributable change with verification over the exact
-message supplied to the model.
+The intervention record explains why the result is attributed to
+post-verified sanitisation. Explicit action refusal was rare in AgentDojo and
+absent in the matched WASP row; its one denied approval occurred in a task that
+still succeeded. By contrast, the recurring intervention changed the
+observation before the next decision. The 9B sequence supplies the negative
+controls: warning left hostile input in the model channel, and V1 left an
+incompletely rewritten representation. V2 combined attributable removal with
+a post-condition over the exact reconstructed message.
