@@ -1,48 +1,33 @@
-# Sentinel thesis status and evidence map
+# Sentinel thesis evidence map
 
-This is the concise handoff for agents writing about Sentinel. It describes the
-project argument, current implementation, evidence hierarchy, thesis-ready
-scope, and unfinished work as of 2026-07-29.
+This file routes thesis work to the authoritative implementation and evidence
+sources. It is not a live changelog or quantitative ledger. Verify current
+behaviour in code and tests; verify experimental claims in curated artefacts
+and recorded run provenance.
 
-Quantitative results belong in [`EVALS.md`](EVALS.md). Do not copy result tables
-into this file. WASP's detailed row-level ledger remains
-[`evals/wasp/results/README.md`](evals/wasp/results/README.md), linked from the
-WASP results section in `EVALS.md`.
+Quantitative results belong in [`EVALS.md`](EVALS.md). WASP's thesis-ready
+synthesis and per-run records are under
+[`evals/wasp/results/`](evals/wasp/results/README.md).
 
 ## Source-of-truth order
 
 When a claim or number conflicts across documents, use:
 
-1. curated result JSON or per-run result Markdown;
-2. frozen campaign state, reports, task results, and provenance;
+1. curated result JSON or the corresponding per-run Markdown;
+2. frozen campaign state, native scores, task artefacts, and provenance;
 3. [`EVALS.md`](EVALS.md) and the WASP result ledger;
-4. this implementation and thesis-readiness synthesis.
+4. current implementation and tests for implementation-only claims;
+5. this argument and evidence map.
 
 The current repository `HEAD` is not retrospective provenance for an older
-run. Each row retains the model, policy, code, and benchmark provenance
-recorded by that campaign.
+run. Each result remains tied to its recorded model, policy, middleware,
+benchmark, and scaffold.
 
-## Required reading
+## Project argument
 
-- [`README.md`](README.md): architecture and development entry point.
-- [`THREAT-MODEL.md`](THREAT-MODEL.md): trust boundary, invariants, and
-  non-claims.
-- [`POLICY.md`](POLICY.md) and
-  [`policies/POLICY-SCHEMA.md`](policies/POLICY-SCHEMA.md): policy semantics.
-- [`EVALS.md`](EVALS.md): methodology, all benchmark results, interpretation,
-  and provenance limits.
-- [`evals/wasp/README.md`](evals/wasp/README.md): WASP campaign design,
-  infrastructure, provenance, and recovery.
-- [`../DESIGN.md`](../DESIGN.md): interface direction.
-- [`../AGENTS.md`](../AGENTS.md) and
-  [`../thesis/AGENTS.md`](../thesis/AGENTS.md): repository and thesis-writing
-  constraints.
-
-## Project identity and supported argument
-
-Sentinel is a research prototype and thesis artefact: an independent
-runtime-enforcement and governance layer between an untrusted browser agent and
-its privileged executor.
+Sentinel is a research prototype and thesis artefact: an independent runtime-
+enforcement and governance layer between an untrusted browser agent and its
+privileged executor.
 
 The supported claim is deliberately narrow:
 
@@ -50,83 +35,24 @@ The supported claim is deliberately narrow:
 > preserving useful autonomy under the tested conditions.
 
 Do not claim that Sentinel solves prompt injection, is universally robust, is
-ready for deployment, or improves real human trust, workload, fatigue,
-usability, or approval behaviour.
+deployment-ready, or has demonstrated human-factors benefits.
 
-The contribution chain is:
-
-1. AgentDojo supplies controlled mechanism evidence across tool domains and
-   attack families.
-2. WASP tests browser-native transfer through observations, navigation, and
-   privileged actions.
-3. The extension and governance layer implement selective, fail-closed human
-   authority as a supporting systems mechanism. They are not empirical evidence
-   about human effectiveness.
-
-The single thesis research question is:
+The research question is:
 
 > To what extent can an independent runtime-enforcement layer reduce
 > prompt-injection-driven browser-agent violations while preserving task
 > utility?
 
-This is the intended argumentative link: AgentDojo tests enforcement in
-isolation, WASP tests transfer to browser interaction, and selective authority
-supports remaining cases where safe automatic resolution is not possible.
+The evidence chain is:
 
-## Confirmed decisions as of 2026-07-29
+1. AgentDojo supplies controlled mechanism and end-to-end evidence across tool
+   domains and attack families.
+2. WASP tests browser-native transfer through observations, navigation, and
+   privileged actions.
+3. The authority workflow supplies the completed technical mechanism for
+   approval, direct human steps, and unresolved observations.
 
-- Important enforcement lifecycle defects should be fixed now, with tests; they
-  are not deferred thesis limitations.
-- A failed or incomplete browser-observation sanitisation must not be followed
-  by a warning to the model. Sentinel withholds the observation, pauses, shows
-  a persistent operator incident in the Chrome extension, and requires human
-  takeover or stop. Returning control causes a fresh browser observation; it
-  does not approve or reuse the held content.
-- Page-extraction subcalls and wrapped historical tool results use the same
-  untrusted-input detector. If one bounded value remains unresolved, Sentinel
-  removes that value in full rather than opening an incident inside a shorter
-  extraction timeout or repeatedly pausing on persistent history.
-- The incident path must have scripted coverage, including the four
-  unattributable attempts recorded in the 9B V2 campaign, and must be visually
-  checked in the extension. Completed tasks retain an explicit security-pause
-  count and review time in Activity, linked to the redacted incident log.
-- Activity's security-pause telemetry is descriptive runtime instrumentation.
-  Its `understood` ticks are researcher/operator walkthrough annotations, not
-  participant comprehension data, and its within-run timing split is accounting
-  rather than a matched no-enforcement counterfactual.
-- In enforce mode, recognized passwords, credentials, one-time codes,
-  access/API tokens, payment details, and private keys are human-only steps.
-  Consent means the user takes control and performs the step directly; an
-  approval card must not authorize the guarded agent action.
-- Browser screenshots are not sent to the interactive model or shown as
-  side-panel thumbnails. DOM sanitisation cannot safely remove an instruction
-  rendered into pixels. Explicit local trace retention may keep a frame for
-  audit, but it is not sent over the extension WebSocket.
-- The localhost-only, origin-checked API is the accepted deployment boundary
-  for this local thesis prototype. Protection from another compromised process
-  running as the same OS user is out of scope and must remain a stated limit.
-- Do not launch another benchmark campaign without an explicit user request.
-  The earlier Qwen 3.5 27B multiseed attempt is quarantined as exploratory
-  operational evidence after the Ollama 0.30.8/non-thinking structured-output
-  failure. Preserve every checkpoint; do not pool or selectively rerun it. The
-  completed repaired native-thinking/Ollama 0.32.5 design uses an 8,192-token generation
-  cap within the task-specific 32,768-token context, with a neutral padded
-  context/headroom launch canary and explicitly pinned early history
-  compaction rather than a late library default. The controller records GPU
-  model, memory and driver, and requires the complete model to remain resident
-  in VRAM at the exact context before official execution. All six immutable
-  `v2` campaigns, 756 episodes and 36 native-score cells passed the independent
-  final validator with no controller restart or recorded operational failure.
-- Plan authority and multi-agent supervision are possible later HITL work, not
-  current contributions. Provenance hiding is only an optional separate
-  comparison, not required current work.
-
-## Current implementation
-
-Sentinel treats the model, DOM, screenshots, downloads, extracted text, and
-tool results as untrusted. It mediates proposed actions immediately before
-privileged execution, applies policy independently of model intent, and records
-attempted and terminal outcomes.
+## Implementation map
 
 | Concern | Main implementation |
 | --- | --- |
@@ -134,195 +60,127 @@ attempted and terminal outcomes.
 | Model-output and observation governance | `server/governance/governed_llm.py` |
 | Pre-execution tool mediation | `server/governance/governed_tools.py` |
 | Central policy decision point | `server/governance/policy.py` |
-| Prompt-injection detection and sanitisation | `server/governance/security.py` |
+| Detection, sanitisation, and redaction | `server/governance/security.py` |
 | Approval lifecycle | `server/governance/approvals.py` |
-| Handover and unresolved-observation incident lifecycle | `server/governance/handover.py`, `server/governance/governed_llm.py` |
+| Human steps and observation incidents | `server/governance/handover.py` |
 | Redacted traces, history, and audit events | `server/traces.py`, `server/history.py` |
 | Local API and browser integration | `server/api.py`, `server/browser.py` |
-| Operator side panel and dashboard | `extension/src/` |
+| Side panel, in-page controls, and dashboard | `extension/src/`, `extension/public/content.js` |
 
-Implemented mechanisms include:
+Sentinel treats model output, browser observations, downloads, extracted text,
+and tool results as untrusted. It mediates proposed actions immediately before
+privileged execution, applies policy independently of model intent, and emits
+paired attempted and terminal audit outcomes.
 
-- policy evaluation before privileged actions;
-- hard blocks and sensitive-data-flow controls;
-- narrow, expiring, run-local approvals;
-- fail-closed approval and handover states;
-- prompt-injection detection, targeted sanitisation, post-sanitisation
-  re-detection, and branch telemetry;
-- fail-closed operator quarantine after residual or unattributable current
-  browser/read sanitisation, followed by a fresh observation after takeover;
-- whole-value removal for unresolved bounded page-extraction or persistent
-  tool-result content;
-- direct takeover for recognized credentials, one-time codes, tokens, payment
-  details, and private keys across guarded input, keystroke, script, and upload
-  channels rather than agent approval;
-- DOM-only interactive model input and no screenshot thumbnails in the
-  extension;
-- complete non-web URL-suffix redaction at the model, Activity and trace
-  boundaries, plus enforce-mode blocking of direct autonomous special-URL
-  navigation;
-- action revalidation after approval and explicit cancellation outcomes;
-- redacted attempted/terminal audit records and local operator interfaces.
+Implemented controls include:
 
-These are implementation facts. The incident and extraction/tool-result
-boundary, screenshot controls, guarded-secret and bounded-upload checks,
-lifecycle hardening, and special-URL boundary post-date the frozen benchmark
-rows and are not benchmark results. The secret checks are deterministic channel
-coverage, not universal DLP; semantically secret values with no recognized
-marker can still be missed. These mechanisms complete the selective-authority
-boundary described in the dissertation. Plan authority, multi-agent
-supervision, deployment hardening, and human behavioural evaluation remain
-separate future work.
+- domain, action, data-flow, and risk policy before execution;
+- targeted observation sanitisation with post-sanitisation verification;
+- quarantine and fresh recapture for unresolved browser/read observations;
+- whole-value removal for unresolved bounded extraction or tool-result text;
+- DOM-only interactive model input and no extension screenshot thumbnails;
+- special-URL navigation and observation boundaries;
+- narrow, expiring, run-local approval with live revalidation;
+- operator-initiated takeover, agent-requested control, and policy-forced human
+  steps for recognized protected values or unclassifiable uploads;
+- timeout, cancellation, shutdown, and reconnect handling that fail closed;
+- redacted Activity, trace, and extension projections.
 
-## Completed evidence map
+These mechanisms complete the bounded HITL implementation used by the thesis.
+The interface walkthroughs and tests establish technical behaviour. They do
+not constitute participant evaluation and do not support measured claims about
+comprehension, trust, workload, fatigue, usability, or approval behaviour.
 
-All values, denominators, paired transitions, telemetry counts, and exclusions
-are in [`EVALS.md`](EVALS.md).
+The secret checks are deterministic channel coverage, not universal DLP.
+Semantically secret values without a recognized marker can still be missed.
+The localhost API is an accepted prototype boundary, not same-user process
+isolation.
+
+## Evidence map
+
+All denominators, effects, telemetry counts, exclusions, and uncertainty are in
+[`EVALS.md`](EVALS.md).
 
 ### AgentDojo
 
 - [Full component replay](EVALS.md#agentdojo-v1-full-tier-1-component-run):
-  model-free detector, policy, benign-block, and approval-pressure evidence
-  across all v1 attack families. It is development-set evidence.
+  detector, policy, benign-block, and approval-pressure mechanism evidence.
 - [Detector-v2 scorecard](EVALS.md#detector-v2-goal-hijacking-coverage):
-  AgentDojo and WASP detector corpora, the live-representation correction,
-  false-positive disclosure, and post-hoc adaptation limit.
+  detector coverage, representation corrections, false positives, and
+  adaptation limits.
 - [Action-gating replay](EVALS.md#what-action-gating-does-and-does-not-cover):
-  why browser observation sanitisation remains primary and why blanket
-  tainted-side-effect gating was rejected.
-- [Gemini pilot and integration smoke](EVALS.md#gemini-pilot-and-integration-smoke):
-  secondary quota-limited and one-pair checks; neither is a headline result.
-- [Completed Qwen end-to-end results](EVALS.md#completed-agentdojo-end-to-end-results):
-  controlled 4B, 9B, and 27B off/enforce evidence with utility, native ASR,
-  secure utility, paired changes, diagnostics, and provenance limits.
+  the boundary of action-only controls and the role of observation governance.
+- [Completed end-to-end campaigns](EVALS.md#completed-agentdojo-end-to-end-results):
+  matched utility, native ASR, secure utility, and provenance-aware model rows.
 
-The AgentDojo results support the mechanism claim under the tested suites and
-models. Cross-model differences are descriptive, not a causal parameter-count
-effect. Low ASR must always be interpreted beside model capability and utility.
+AgentDojo supports the controlled mechanism claim under the tested suites and
+models. Cross-model differences are descriptive, not a causal model-size
+effect.
 
 ### WASP
 
-- [Browser-native results](EVALS.md#wasp-browser-native-enforcement-evaluation):
-  the final controlled three-seed 27B off/policy-only/full comparison,
-  variability, sanitisation telemetry, action-audited outcomes,
-  security-by-incompetence partition, historical 9B development rows,
-  exclusions, and uncertainty.
-- [Curated WASP ledger](evals/wasp/results/README.md): exact run identities,
-  row-level provenance, paired outcomes, validation, and machine-readable
-  summary links.
+- [Browser-native evaluation](EVALS.md#wasp-browser-native-enforcement-evaluation):
+  the admitted final comparison, sanitisation ablation, variability, action-
+  audited outcomes, mechanism telemetry, and historical development evidence.
+- [WASP evidence index](evals/wasp/results/README.md): exact run identities,
+  row-level provenance, validation, exclusions, and per-run records.
 
-Use the validated three-seed 27B row as the principal browser comparison. Use
-the older single-seed 27B row and 9B sequence as provenance-separated
-historical engineering and failure-analysis evidence. The 9B shape is one
-shared off baseline, then warning-only enforce, sanitisation V1 enforce, and
-sanitisation V2 enforce. Do not pool historical revisions into the final
-denominators or interpret 9B-versus-27B differences as an identified model-size
-effect.
+Use the validated three-seed 27B off/policy-only/full comparison as the
+principal browser result. The earlier single-seed 27B comparison and 9B
+sequence are provenance-separated historical and failure-analysis evidence;
+do not pool them with the final denominators or use them as a causal model-size
+comparison.
 
-### Non-headline checks
+The frozen benchmark rows measure only their recorded middleware versions.
+Current code may contain mechanisms that a particular trajectory did not
+exercise or that post-date an older row. Use the per-run provenance before
+attributing a quantitative effect.
 
-The deterministic security smoke, one-pair agent smoke, quota-limited Gemini
-pilot, historical non-thinking/8K run, and excluded WASP pilot validate
-contracts or document development history. Their status and any reported
-values are in `EVALS.md`; do not promote them to headline evidence.
+## Thesis contributions and boundaries
 
-No WASP oracle campaign has been run.
-
-### Final 27B replication
-
-The Qwen 3.5 27B replication covers seeds 0, 1, and 2 under `off`,
-`policy_only`, and `full` conditions. Its curated JSON and generated Markdown
-validate all six immutable campaigns, 756 task artefacts, 36 native-score
-cells, generated-input manifests, model-output reliability, action-audited
-security categories, provenance, latency, sanitisation, and intervention
-telemetry. Route quantitative claims through `EVALS.md` and
-[`evals/wasp/results/README.md`](evals/wasp/results/README.md); do not substitute
-the quarantined earlier multiseed attempt or compatibility canaries.
-
-## Thesis-ready contributions
-
-The current implementation and completed evidence support three contributions:
+The implementation and admitted evidence support three contributions:
 
 1. executor-side mediation of model-proposed privileged actions;
-2. post-verified observation sanitisation combined with selective, fail-closed
+2. post-verified observation governance combined with selective, fail-closed
    human authority, redaction, and paired audit; and
-3. controlled evaluation across AgentDojo mechanism evidence and WASP
-   browser-native transfer evidence, reporting utility, secure utility, native
-   attacker success, risky attempts and executions, and interventions together.
+3. controlled evaluation across AgentDojo mechanism evidence and WASP browser-
+   native transfer evidence, reporting security and utility together.
 
-The evidence is strongest for evaluated runtime containment under the tested
-models and tasks. It is not evidence of universal prevention or deployment
-readiness.
+The evidence supports evaluated runtime containment under tested models and
+tasks. It does not establish universal prevention, deployment readiness, or
+human-factors effectiveness.
 
-## Selective authority and remaining human-centred work
-
-Approval, direct takeover, unresolved-observation incidents, trace/audit, and
-their extension UI states are completed supporting mechanisms within the
-bounded prototype. Current tests establish their fail-closed server semantics.
-This is not a participant study or a claim about how effectively people use the
-interface.
-
-Do not claim the following as complete until separately implemented, frozen,
-and evaluated:
-
-- plan authority or multi-agent supervision;
-- benchmark effect sizes for the post-campaign unresolved-observation incident
-  and detected-secret takeover flows;
-- a completed broader HITL protocol or benchmark;
-- measured human approval behaviour, trust, workload, fatigue, usability, or
-  rubber-stamping;
-- participant-study findings;
-- a WASP oracle result;
-- provenance-hiding or plan-authority ablations without a frozen result.
-
-In plain language:
-
-- **Plan authority** means showing the user a short plan before the run—goal,
-  expected sites/data, permitted and prohibited actions, likely human steps,
-  and stop conditions. BrowserUse's private internal plan is not this feature.
-- **Provenance hiding** means withholding a whole category of untrusted
-  user-generated content based on its source, without first asking a detector
-  whether its wording looks malicious. It would be a separate upper-bound
-  comparison, not a replacement for the existing exposed-agent results.
-- **Multi-agent supervision** means one operator overseeing a queue of several
-  isolated agent runs. It is optional future work.
-
-`participant=deny`, `participant=none`, and a deterministic
-`participant=oracle` are benchmark controls, not human participants. A future
-oracle study would be a scripted-oversight upper bound only.
-
-The architecture, threat model, implementation, AgentDojo, WASP, results, and
-selective-authority mechanisms are ready to write up. Interface claims must
-remain technical; behavioural HITL claims require separate evidence.
+Scripted `participant=deny`, `participant=none`, and deterministic
+`participant=oracle` modes are benchmark controls, not people. Runtime pause
+counts, timing splits, and `understood` annotations are technical telemetry or
+walkthrough aids, not participant outcomes.
 
 ## Thesis writing route
 
-1. Define the executor-side trust boundary and non-claims.
-2. Explain policy evaluation, redaction, audit, approval, and sanitisation.
+1. Define the executor-side trust boundary and explicit non-claims.
+2. Explain observation governance, action policy, redaction, audit, approval,
+   and direct human steps.
 3. Use AgentDojo component replay to establish mechanism behaviour.
-4. Use matched AgentDojo end-to-end rows to quantify controlled enforcement.
-5. Use the final three-seed 27B WASP comparison and controlled sanitisation
-   ablation as browser-native transfer evidence.
-6. Use the 9B WASP sequence as transparent development and failure analysis.
-7. Discuss utility gains and losses, security by incompetence, benchmark
-   coverage, residual uncertainty, and provenance asymmetries.
-8. Describe approval, takeover, incident, audit, and extension states as
-   completed supporting mechanisms while reserving behavioural HITL claims for
-   future evaluation.
+4. Use matched AgentDojo rows to quantify controlled end-to-end enforcement.
+5. Use the final three-seed WASP comparison and sanitisation ablation as the
+   principal browser-native transfer evidence.
+6. Use historical WASP rows only for provenance-aware development and failure
+   analysis.
+7. Discuss utility, security by incompetence, benchmark coverage, residual
+   risk, and provenance limitations.
+8. Present the implemented authority and interface flows as technical systems
+   evidence while keeping participant claims outside the evidence supplied.
 
-## Keeping the documents synchronized
+## Document ownership
 
-When a benchmark is rerun:
+- `README.md` owns architecture and development guidance.
+- `THREAT-MODEL.md` owns security objectives, trust boundaries, and non-claims.
+- `POLICY.md` owns policy semantics; `policies/POLICY-SCHEMA.md` is the compact
+  configuration-field reference.
+- `EVALS.md` owns human-readable quantitative results and interpretation.
+- `evals/wasp/results/` owns curated WASP provenance and per-run records.
+- This file owns only the thesis argument, evidence route, and claim boundary.
 
-1. preserve the previous immutable row and use a new tag when provenance
-   changes;
-2. add or update the compact curated result artifact;
-3. update the methodology, result table, diagnostics, and interpretation in
-   `EVALS.md`;
-4. update the WASP ledger when applicable;
-5. change this file only if the evidence map, supported interpretation, or
-   thesis-readiness boundary changes.
-
-When a HITL or interface feature is completed, update the implementation map
-and remove an unfinished-work boundary only after the corresponding code,
-tests, and evaluation artifact exist.
+When evidence changes, preserve old immutable rows, update the curated result
+record and `EVALS.md`, then change this file only if the argument, evidence
+route, or supported claim boundary changes.

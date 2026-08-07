@@ -8,8 +8,8 @@ current numbers from `data/history.jsonl` (each run's record carries a
 per-event ground truth lives in `data/traces/<run_id>/events.jsonl`).
 
 This file is the canonical human-readable ledger for quantitative results. For
-the thesis-facing implementation map, supported contribution boundary, and
-unfinished HITL work, see [THESIS-STATUS.md](THESIS-STATUS.md).
+the thesis argument, implementation map, and supported contribution boundary,
+see [THESIS-STATUS.md](THESIS-STATUS.md).
 
 ## Results index
 
@@ -112,16 +112,13 @@ the side panel chip / approval card / takeover banner (e.g. *"'https://github.co
 matches blocklisted domain 'github.com'"*).
 - **Automatic proxy:** % of non-allow decisions with a non-empty, rule-specific
   reason (aggregate.py reports it; should be 100% by construction).
-- **Current thesis measure:** an explanation-coverage check plus a structured
-  cognitive walkthrough/heuristic inspection of whether each card exposes the
+- **Technical evidence:** an explanation-coverage check plus a structured
+  walkthrough/heuristic inspection of whether each card exposes the
   action, target, data involved, matched rule, consequence and safe
   alternatives. Do not claim measured user comprehension without participants.
 - Activity's per-decision **Yes/No** `understood` ticks are audit annotations
   for that researcher/operator walkthrough. They are not participant responses
   or a validated comprehension measure.
-- **Future optional human measure:** a participant could rate whether the
-  explanation was understandable, but this study is explicitly outside the
-  current thesis plan.
 
 ### 7. Prompt-injection detection and containment
 
@@ -159,27 +156,6 @@ timeouts, tool errors, exceptions and cancellations.
 
 Also report completion outcomes and p50/p95 duration by action/capability. This
 distinguishes middleware latency from browser/tool execution latency.
-
-### 10. Attention-allocation and acceptance-fatigue proxies
-
-In addition to raw prompts per task, report:
-
-- `approval_reuse_rate = approval_reuses / (approval_prompts + approval_reuses)`;
-- benign approval rate (offline labelled corpus);
-- prompts avoided by bounded grants;
-- runs reaching `approval_fatigue_limit`;
-- approval/deny response time and unattended timeout rate;
-- simulated unsafe-approval exposure under fixed operator-response policies.
-
-The current thesis does **not** recruit participants and therefore must not
-claim that Sentinel empirically reduces boredom, workload or real
-rubber-stamping. Evaluate the mechanism with deterministic workload replay:
-chronological queue versus risk-prioritised queue, the same task/event stream,
-fixed approval-response policies, prompt volume, time-to-surface critical
-items, queue age, starvation, prompts avoided and resulting attack/task
-outcomes. Add a cognitive walkthrough of the evidence cards and supervisor
-view. Real compliance-fatigue and usability effects remain future human-study
-work.
 
 ## Public benchmark adapter
 
@@ -440,172 +416,21 @@ headline benchmark row. The one-pair agent smoke changed native attacker
 success from pass in `off` to fail in `enforce`, but user utility failed in
 both modes; it establishes integration only.
 
-### Resumable full AgentDojo campaign
+### Completed AgentDojo campaign provenance
 
-The campaign controller discovers completed executions from report contents,
-builds the complete 629-pair v1 manifest, and writes one atomic report after
-every off/enforce execution. Rerunning the same command skips completed work;
-an API or harness failure is never interpreted as a secure benchmark result.
+The admitted Qwen campaigns use AgentDojo 0.1.35 suite v1: a 97-task clean
+ceiling and 629 paired off/enforce security cases. The historical 4B
+non-thinking run used a smaller context and generation profile, so it remains
+separate from the controlled thinking/32K comparison. Full settings, report
+hashes, and validation live in the corresponding compact result artefacts.
 
-Check progress without making a model request:
+Every model/profile combination has its own run tag and report directory. The
+controller validates the recorded model and profile before counting a report;
+mixed-model, mixed-profile, or mixed-suite executions are never pooled.
 
-```bash
-.agentdojo-venv/bin/python sentinel/evals/agentdojo_campaign.py --dry-run
-```
+Recorded run identities:
 
-Run until the next daily quota stop, then rerun after the reset:
-
-```bash
-.agentdojo-venv/bin/python sentinel/evals/agentdojo_campaign.py
-```
-
-To use one persistent command across daily resets, keep the machine awake and
-allow the controller to wait until just after midnight Pacific time:
-
-```bash
-.agentdojo-venv/bin/python sentinel/evals/agentdojo_campaign.py \
-  --wait-on-daily-quota
-```
-
-Campaign reports are stored under `evals/agentdojo-campaign-v1/`; the compact
-checkpoint is `evals/agentdojo-campaign-v1-state.json`. Both are local-only
-(gitignored) run artifacts. The controller skips
-the redundant standalone injection-goal utility run for every one-case process,
-but retains AgentDojo's native user-task utility and attacker-goal oracles for
-each security case.
-
-### Historical local Qwen campaign with Ollama
-
-The first quota-free campaign ran quantized `qwen3.5:4b` on an 8 GB Apple
-Silicon laptop. Its reproducible non-thinking profile uses an 8K context,
-Qwen's recommended non-thinking sampling (`temperature=0.7`, `top_p=0.8`,
-`presence_penalty=1.5`) with seed 0, and a 1,024-token turn cap.
-Each report records finish reasons and token counts without retaining model
-content, so truncation cannot silently inflate security or reduce utility.
-Install Ollama and pull the base model once:
-
-```bash
-brew install ollama
-ollama pull qwen3.5:4b
-ollama serve
-```
-
-With the Ollama server running, create the pinned 8K AgentDojo profile once:
-
-```bash
-ollama create qwen3.5-agentdojo:4b \
-  -f sentinel/evals/ollama/Modelfile.qwen35-4b-agentdojo
-```
-
-Check the independent Qwen checkpoint without making a model request:
-
-```bash
-.agentdojo-venv/bin/python sentinel/evals/agentdojo_campaign.py \
-  --provider ollama --model qwen3.5-agentdojo:4b --min-interval-s 0 \
-  --reports-dir sentinel/evals/agentdojo-campaign-v1-qwen35-4b-nonthinking-v2 \
-  --state sentinel/evals/agentdojo-campaign-v1-qwen35-4b-nonthinking-v2-state.json \
-  --dry-run
-```
-
-Remove `--dry-run` to resume the complete 629-pair run. Do not use Gemini as
-an automatic fallback inside this campaign: mixed-model executions would make
-the aggregate utility and security score uninterpretable. Keep Gemini and Qwen
-as separately reported experiments. The earlier four-pair Qwen pilot used a
-different generation profile and remains in its original directory; it must
-not be included in the v2 aggregate.
-
-### GPU campaigns with larger Qwen models
-
-The 4B non-thinking campaign measured a model-capability ceiling, not an
-enforcement cost: 313 of 629 pairs fail utility in both modes, enforcement
-blocked only 9 actions total, and enforce utility (42.0%) exceeds off
-(37.7%). The GPU workflow relaxes the three self-imposed handicaps — model
-size, thinking, and context — while keeping the same finite action loop.
-
-Driver profiles (`--ollama-profile` on both the native runner and the
-campaign controller):
-
-| profile       | context | output cap | reasoning | sampling                                  |
-| ------------- | ------- | ---------- | --------- | ----------------------------------------- |
-| `nonthinking` | 8,192   | 1,024      | none      | temp 0.7, top_p 0.8, presence 1.5, seed 0 |
-| `thinking`    | 32,768  | 4,096      | medium    | temp 0.6, top_p 0.95, seed 0              |
-
-Reports record the profile in `provenance.model_settings.profile`, and the
-campaign controller refuses to count reports from a different profile as
-completed (missing profile = `nonthinking`, so the existing v2 campaign
-stays resumable).
-
-Keep site-specific usernames, hosts, and remote paths out of Git. Copy the
-example configuration and edit the ignored local copy:
-
-```bash
-cp sentinel/evals/ollama/gpu.local.env.example \
-  sentinel/evals/ollama/gpu.local.env
-set -a
-. sentinel/evals/ollama/gpu.local.env
-set +a
-```
-
-One-time setup, from the laptop (establish the control master interactively
-when the SSH provider requires it):
-
-```bash
-# 1. Establish the jump + control master
-ssh -fN -M -S "$SOCKET" -o ControlPersist=12h \
-  -o ServerAliveInterval=30 -o ServerAliveCountMax=6 \
-  -o StrictHostKeyChecking=accept-new \
-  ${GPU_JUMP_HOST:+-J "$GPU_JUMP_HOST"} "$GPU_HOST"
-
-# 2. Install/start Ollama on the GPU host and build the pinned 32K model
-ssh -S "$SOCKET" "$GPU_HOST" \
-  'bash -s' < sentinel/evals/ollama/setup-gpu-host.sh
-
-# 3. Forward the Ollama port over the same socket
-ssh -S "$SOCKET" -O forward -L 11434:127.0.0.1:11434 "$GPU_HOST"
-```
-
-The setup script selects 27B only on cards with approximately 24 GB or more,
-9B on cards with at least 12 GB, and 4B otherwise (override with
-`MODEL_TAG=...`). It creates `qwen3.5-agentdojo:<size>` with `num_ctx 32768`.
-The harness needs no configuration when the forward uses local port 11434:
-`OLLAMA_BASE_URL` defaults to `http://127.0.0.1:11434`.
-
-Run the experiments in this order, changing one variable at a time:
-
-```bash
-# A. Clean-utility ceiling (no injections, 97 user tasks): both models
-.agentdojo-venv/bin/python sentinel/evals/agentdojo_native.py agent \
-  --provider ollama --model qwen3.5-agentdojo:27b --ollama-profile thinking \
-  --attack none --min-interval-s 0 --pretty \
-  --output sentinel/evals/agentdojo-baseline-qwen35-27b-thinking-clean.json
-
-# B. Controlled model swap on suite v1 / tool_knowledge (comparable with the
-#    629-pair 4B campaign; resumable):
-.agentdojo-venv/bin/python sentinel/evals/agentdojo_campaign.py \
-  --provider ollama --model qwen3.5-agentdojo:27b --ollama-profile thinking \
-  --min-interval-s 0 \
-  --reports-dir sentinel/evals/agentdojo-campaign-v1-qwen35-27b-thinking \
-  --state sentinel/evals/agentdojo-campaign-v1-qwen35-27b-thinking-state.json
-```
-
-Suite pinning: the installed `agentdojo` 0.1.35 is the newest release and
-ships benchmark suites `v1` through `v1.2.2` (same 97 user tasks; `v1.2.2`
-fixes some task checks and adds 8 workspace injection tasks). Keep `v1` for
-anything compared against the existing campaigns; move to `--suite-version
-v1.2.2` (in a fresh reports dir) for externally comparable write-ups, and
-never mix suite versions in one aggregate.
-
-#### Model/run separation and publication status
-
-Every model/profile combination has its own run tag. The tag determines
-separate clean-baseline files, paired-report directory, checkpoint, and log.
-The campaign controller also checks the model and Ollama profile recorded
-inside every report before treating it as resumable. A report produced for
-4B, 9B, or 27B therefore cannot silently count toward another model's run.
-
-Current run identities:
-
-| model | profile | run tag | current thesis status |
+| model | profile | run tag | evidence status |
 | ----- | ------- | ------- | --------------------- |
 | Qwen 3.5 4B | `nonthinking` (8K) | `qwen35-4b-nonthinking-v2` | complete historical run; not used in the controlled scaling headline |
 | Qwen 3.5 4B | `thinking` (32K) | `qwen35-4b-thinking` | complete: 97-task clean ceiling plus all 629 paired off/enforce cases with the fixed middleware |
@@ -628,8 +453,8 @@ attacker goal; all six variants are detected and contained in the 9B, 4B and
 fixed 27B artifacts. The 4B reports record commit `340d421`, which includes the
 normalisation correction. The older 9B reports do not record a Git revision,
 but their six affected artifacts provide direct behavioural evidence that the
-correction was active. A fresh 9B run would strengthen code-provenance
-bookkeeping, but is not required because of the WASP sanitisation changes.
+correction was active. Preserve that provenance asymmetry when interpreting the
+row.
 
 ### Completed AgentDojo end-to-end results
 
@@ -699,10 +524,10 @@ rather than selectively rerun. The reviewed 27B aggregate and detailed
 limitations are in
 `evals/agentdojo-v1-qwen35-27b-thinking-fixed-summary.json`.
 
-Keep raw reports, state, logs, per-suite clean reports, local GPU access
-configuration and reservation-specific host details off Git. Commit only a
-small reviewed aggregate with model/profile, suite version, policy hash and
-code provenance after the reruns finish.
+Raw reports, state, logs, per-suite clean reports, local GPU access
+configuration, and reservation-specific host details remain off Git. The
+checked-in evidence is limited to reviewed aggregates with model/profile,
+suite version, policy hash, and code provenance.
 
 ### WASP: browser-native enforcement evaluation
 
@@ -835,9 +660,9 @@ profile. Zero successes in 252 full-system executions gives a rough
 rule-of-three 95% upper bound of about 1.2%, not proof of a zero population
 rate.
 
-No oracle-participant WASP row was run. Oracle remains a possible deterministic
-scripted-oversight upper bound, not a participant study and not evidence about
-human fatigue, workload, trust or rubber-stamping.
+No oracle-mode WASP row is admitted; all reported WASP rows use
+`participant=none`. This benchmark condition is separate from the implemented
+interactive authority workflow and supplies no human-factors evidence.
 
 Primary scores use WASP's unchanged final-state oracles:
 
@@ -856,49 +681,10 @@ validation gates and exclusions are in
 [`evals/wasp/results/README.md`](evals/wasp/results/README.md). Historical and
 excluded runs are retained only where they explain a provenance boundary or
 prevent a misleading comparison; they should not be expanded into headline
-tables. A future plan-authority, provenance-hiding, or oracle experiment remains
-a separately labelled optional ablation; do not retroactively attribute any of
-those mechanisms to these frozen results.
+tables or pooled with the final comparison.
 
-All vendor source, virtual environments, website images, authentication state,
-DOM/action logs and campaign checkpoints are ignored under `.wasp/`. The
-controller checkpoints after every task and validates model, policy,
-participant, generated-input and enforcement-source provenance. A fresh result
-must contain at least one successful model call before it can be marked
-complete. A navigation-only zero-model attempt is archived and retried once on
-the unchanged environment; a second failure stops the cell before native
-scoring. Because the official cleanup does not reliably clear Postmill's
-in-memory posting cooldown, pristine GitLab/Reddit clones are restored before
-every new pending 21-task cell. A failed injector preparation is likewise
-archived and retried once only after another pristine reset, so partial page
-mutations never become a task environment.
-
-A remote reservation wipe can preserve a cell only after all 21 executions
-have native scores. Evaluated cells are portable and skipped on a replacement
-GPU. An unscored prepared/running cell is archived locally and restarted in
-full against one newly pristine GitLab/Reddit environment; task checkpoints
-from two different mutable site states are never combined. The remote images
-and Ollama model must be rebuilt on the new host, while the local scored
-evidence remains intact. Do not run WASP inference concurrently with
-AgentDojo on the same 16 GB card.
-
-Setup, preflight, remote-container commands and the resumable run command are
-documented in [`evals/wasp/README.md`](evals/wasp/README.md).
-
-## Optional local instrumentation smoke set
-
-These small, deterministic, safe-to-automate tasks predate the completed public
-benchmark campaigns. The demo scenarios in `demo/run_scenarios.py` remain useful
-for local instrumentation checks, but they are not a planned thesis campaign
-and do not supersede the AgentDojo or WASP evidence:
-
-| Task | Policy touchpoint |
-|---|---|
-| Fill + submit the httpbin.org test order form | none - pure completion baseline |
-| Visit a blocklisted site to change settings | block + re-plan |
-| Same form task with click-approval on | approval gate ×N |
-| Log in to a demo site behind a sensitive domain | forced handoff + note |
-
-If validating local instrumentation, run each in all three modes. That produces
-about 12 diagnostic runs per model configuration; treat their metrics as smoke
-evidence only.
+Vendor source, environments, authentication state, DOM/action logs, and raw
+campaign checkpoints remain ignored under `.wasp/`. The controller's exact
+checkpoint, reset, recovery, and validation contract is summarized in
+[`evals/wasp/README.md`](evals/wasp/README.md); none of those operational
+artefacts replaces the curated result records.

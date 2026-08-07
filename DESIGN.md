@@ -1,6 +1,6 @@
 ---
 name: Sentinel
-description: FUZER's "Control Room" design system applied to the Sentinel agent control plane — light, precise, amber-as-signal.
+description: Sentinel's agent-control design system — light, precise, amber-as-signal.
 colors:
   primary: "oklch(0.852 0.199 91.936)"
   primary-foreground: "oklch(0.421 0.095 57.708)"
@@ -79,9 +79,11 @@ components:
 
 # Design System: Sentinel
 
-**This is FUZER's organiser-dashboard system** (`fuzer/apps/frontend/DESIGN.md`, "The Control Room") applied to Sentinel. Read that file for the full rationale; this file records the port and the Sentinel-specific deltas. If a question isn't answered here, the FUZER document is the source of truth.
+This file is the design source of truth for Sentinel's extension, dashboard,
+setup page, and in-page controls. It is self-contained; do not import product
+positioning or UI rules from another repository.
 
-## The port, in one paragraph
+## Visual language
 
 Light-first white surfaces, near-black ink, hairline `border` dividers, flat-by-default (shadows only on true overlays: toasts, the floating in-page pill). One family — Sora — carries all hierarchy through weight and size; Geist Mono appears only for IDs, action names, params, domains, and model IDs. The brand amber `primary` is a rationed signal (≤10% of any screen): the primary button, the active nav item, the approval accent, the "agent is driving" page frame. Compact tactile controls: 32px height, 10px radius, `active:translateY(1px)`, 3px focus ring at 50% alpha. Sentence case everywhere — **no uppercase tracked eyebrows, no mono labels for prose, no border-left accent stripes, no glow shadows on in-flow cards** (all four were present in the old dark theme and are banned).
 
@@ -91,7 +93,7 @@ Light-first white surfaces, near-black ink, hairline `border` dividers, flat-by-
 - **Brand mark:** a small amber rounded square with a `primary-foreground` inner bar (the "signal block"), drawn inline (SVG/CSS) — replaces the old `▮` text glyph. Wordmark "Sentinel" in Sora 600–700, sentence case.
 - **Status colors:** running = `success`, paused / needs-you = `primary` (amber), stopped/offline/error = `destructive`, idle = neutral. Always dot + word or chip + label — never hue alone.
 - **Chips (verdicts, run status):** tinted-background badges, sentence case, 500 weight. Allowed/done = success tint with darkened-success text; blocked/error = destructive tint with destructive text; held/approval = primary tint with `primary-foreground` text; neutral/info = `secondary` with `secondary-foreground` text. The old blue "info" color is retired — off-palette.
-- **`accent-deep`** (`oklch(0.681 0.162 75.834)`, FUZER's `chart-3`/`sidebar-primary`): the darker amber used where the signal must be *text or icon on white* (active nav icon, step numbers, timers) — raw `primary` fails contrast as foreground on white.
+- **`accent-deep`** (`oklch(0.681 0.162 75.834)`): the darker amber used where the signal must be *text or icon on white* (active nav icon, step numbers, timers) — raw `primary` fails contrast as foreground on white.
 - **Approval / takeover cards** are a key control moment: white card, amber-mixed border, countdown meter in `primary`, one amber primary action ("Approve" / "Give control back"), destructive-tinted secondary ("Deny"). No box-shadow — they are in-flow, not overlays.
 - **Failed-sanitisation incidents are not ordinary handovers.** Use a persistent
   destructive-tinted card and red in-page frame with plain wording: Sentinel
@@ -113,6 +115,6 @@ Light-first white surfaces, near-black ink, hairline `border` dividers, flat-by-
 ## Surfaces
 
 1. **Side panel** (`extension/src/sidepanel`, ~320–420px): chat-first. White canvas, hairline header/footer, secondary-tinted user bubbles, bordered agent bubbles, amber only on the send action, approval/takeover cards, a persistent failed-sanitisation incident card, and steering tags. It is text-only: no page screenshot thumbnails.
-2. **Dashboard** (`extension/src/dashboard`): FUZER-style app shell — white sidebar with icon + sentence-case nav (active = `secondary` fill + `accent-deep` icon), headline + one primary Save action per tab, bordered section panels, quiet tables with sentence-case headers.
+2. **Dashboard** (`extension/src/dashboard`): white app shell with an icon sidebar and sentence-case navigation (active = `secondary` fill + `accent-deep` icon), one primary Save action per tab, bordered sections, and quiet tables with sentence-case headers.
 3. **Setup page** (`server/static/setup.html`): muted canvas, single white card, real numbered install steps, mono paths, amber "waiting" → success "connected" status row.
 4. **In-page overlay** (`extension/public/content.js`): amber frame + white floating pill, as above.

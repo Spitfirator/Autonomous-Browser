@@ -145,8 +145,8 @@ not expose it to the model or extension.
 - Screenshot-only or canvas-rendered attacks are not analyzed by the
   deterministic detector and are outside current evaluated coverage. Disabling
   vision removes that injection channel from the normal model input but may
-  also remove visual-only task information; a future visual path would require
-  its own filtering and evaluation.
+  also remove visual-only task information. Any visual model-input path would
+  require its own filtering and evaluation.
 - Generic text fields do not reveal business semantics perfectly. Sentinel
   recognizes password/OTP/payment metadata and common consequential button
   language; applications should still configure sensitive domains and trusted
@@ -165,51 +165,32 @@ not expose it to the model or extension.
   the URL-carried suffix remains withheld and the resulting DOM stays inside
   the ordinary untrusted-observation boundary; this is not a general browser
   content sandbox.
-- Approval, handover, trace and extension UI primitives exist, but there has
-  been no participant evaluation. Sentinel therefore makes no measured claim
-  about human comprehension, trust, workload, fatigue, usability or
+- The bounded HITL workflow is implemented, including approval, operator and
+  agent-requested takeover, policy-forced human steps, unresolved-observation
+  incidents, cancellation, audit, and extension projections. It has not been
+  evaluated as a participant study, so Sentinel makes no measured claim about
+  human comprehension, trust, workload, fatigue, usability, or
   rubber-stamping.
 
-## Benchmark evidence
+## Evidence boundary
 
-[`EVALS.md`](EVALS.md) is the canonical human-readable result ledger.
-`evals/security_benchmark.py` accepts a stable JSONL adapter format and reports
-detection precision/recall/FPR, side-effect containment, expected-verdict
-accuracy and benign approval rate.
+[`EVALS.md`](EVALS.md) is the canonical human-readable result ledger; curated
+per-run files preserve exact model, policy, middleware, benchmark, participant
+mode, and scaffold provenance. AgentDojo supplies controlled mechanism and
+end-to-end evidence. WASP supplies controlled browser-native transfer and
+limitation evidence. Neither is deployment in the wild.
 
-`evals/agentdojo_native.py` additionally evaluates AgentDojo's native tool
-names, arguments, environment objects and attacker/user oracles. Its exhaustive
-ground-truth replay is component evidence, while `agent` mode is the end-to-end
-model result. Reports label AgentDojo's injection oracle as
-`attack_success_rate` because the upstream boolean is true when the attacker
-goal succeeds; lower is better.
-
-AgentDojo provides controlled mechanism evidence. WASP provides controlled
-browser-native transfer and limitation evidence through BrowserUse, mutable
-GitLab/Reddit environments and native final-state oracles. The matched 27B WASP
-campaign is the primary browser comparison; the 9B sequence is
-provenance-separated development evidence. Neither benchmark is deployment in
-the wild.
-
-The completed rows are immutable historical evidence under their recorded
-policy, middleware, model and scaffold provenance. Human-only secret takeover,
-unresolved-sanitisation quarantine, bounded extraction/tool-result enforcement,
-post-approval revalidation, preflight audit hardening, interactive
-screenshot-channel hardening, and special-URL observation hardening were
-implemented after those campaigns. They are **not represented in the reported
-results**. The WASP profile itself already
-used DOM/accessibility observations without screenshots; the later screenshot
-work closes the ordinary extension and trace paths. These changes require
-targeted validation or a new immutable run tag before supporting new
-quantitative claims; do not rewrite or pool completed rows.
+Frozen rows measure only their recorded implementation. Do not infer that a
+current mechanism was exercised by an older trajectory, rewrite a completed
+row, or pool changed provenance. A new quantitative claim requires the
+corresponding validation artefact or a new immutable run tag.
 
 Report legitimate utility, secure utility, native attack success, risky
 attempts and executions, interventions, false blocks and provenance together.
 Low ASR alone is not security evidence because an incapable or inactive agent
 may also fail the attack.
 
-No WASP oracle campaign or human-participant study has been run.
-`participant=deny`, `participant=none` and deterministic
-`participant=oracle` are benchmark controls, not people. Future HITL evaluation
-may use deterministic workload and queue simulations, but measured human wait
-time or approval behaviour cannot be claimed without participants.
+`participant=deny`, `participant=none`, and deterministic
+`participant=oracle` are benchmark controls, not people. Implementation tests
+and walkthroughs can validate the authority protocol but cannot establish
+human outcomes without participant evidence.

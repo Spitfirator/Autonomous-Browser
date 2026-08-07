@@ -1,8 +1,8 @@
-# Sentinel policy schema
+# Sentinel policy behavior
 
-One JSON object governs everything the agent is allowed to do. It lives at
-`data/config.json` under the `policies` key, is edited live from the dashboard
-(Policies tab), or applied programmatically:
+Every proposed action passes through one policy object before privileged
+execution. The object lives under `policies` in `data/config.json` and can be
+edited from the dashboard or applied programmatically:
 
 ```bash
 curl -X PUT http://127.0.0.1:8765/api/config \
@@ -10,103 +10,10 @@ curl -X PUT http://127.0.0.1:8765/api/config \
      -d @policies/reference-policy.json
 ```
 
-Edits apply to the agent's **very next action**, even mid-run.
-
-## The schema
-
-```jsonc
-{
-  "policies": {
-    // enforce  - verdicts are applied (default)
-    // shadow   - everything is allowed, but would-be verdicts are still
-    //            evaluated and logged (measure false blocks / missed dangers)
-    // off      - no prompt boundary or verdict enforcement; redacted action
-    //            auditing remains so baseline runs are still measurable
-    "mode": "enforce",
-
-    // null = any site allowed. A list = ONLY these sites (entries matched the
-    // same way as every other domain list - see the table below).
-    "domain_allowlist": null,
-
-    // Never allowed, even if the allowlist would permit them.
-    "domain_blocklist": ["*.bank.com", "github.com"],
-
-    // Action types the agent may never use. Also removed from the LLM's
-    // tool schema at run start, so the model can't even plan with them.
-    "blocked_actions": ["upload_file"],
-
-    // ASK APPROVAL: the run pauses inside the step; the side panel shows an
-    // approve/deny card with a countdown. Deny (or timeout) returns an error
-    // the agent adapts to. By action type, by domain, or both.
-    "approval_required_actions": ["upload_file"],
-    "approval_required_domains": ["checkout.stripe.com", "*.paypal.com"],
-
-    // HANDOFF TO HUMAN: first touch of these domains freezes the agent and
-    // hands the browser to the human (in-page "Your turn" banner + panel
-    // card). The intercepted action is NOT executed. After the human hands
-    // control back (optionally with a note the agent reads), the agent may
-    // act on that domain for the rest of the run - the human vouched for it.
-    "sensitive_domains": ["accounts.google.com", "practicetestautomation.com"],
-
-    // Indirect prompt injection: page/read-state, extraction and wrapped tool
-    // result regions are always untrusted.
-    // Scores >= detection_threshold taint downstream actions and reinforce the
-    // model's system boundary. Protected sinks at/above block_threshold block.
-    "prompt_injection": {
-      "enabled": true,
-      "detection_threshold": 0.55,
-      "block_threshold": 0.85,
-      // In the interactive runtime, detected untrusted regions are removed
-      // before the model sees them. Frozen benchmark policies set this
-      // explicitly when they need historical warn-only behavior.
-      "browser_sanitize": true,
-      // The safe default continues silently after a confirmed clean removal.
-      // Explicit true adds the old model warning for a historical ablation. It
-      // never affects unresolved content: a current browser/read observation is
-      // quarantined for the operator, while a bounded extraction/history value
-      // is removed in full.
-      "alert_after_sanitize": false
-    },
-
-    // In enforce mode, recognized passwords/credentials, one-time codes, access
-    // tokens, payment details, private keys and secret placeholders are human-only
-    // regardless of this setting or destination: the agent action is withheld and
-    // control handed over.
-    // This block/approve setting applies only to other sensitive categories.
-    "data_flow": {
-      "enabled": true,
-      "trusted_domains": [],
-      "sensitive_data_verdict": "block" // or "approve"
-    },
-
-    // Risk-based prompts plus explicit, bounded consent reuse. Once the prompt
-    // budget is spent, hand over once (or block) instead of showing more cards.
-    "adaptive_approvals": {
-      "enabled": true,
-      "approval_risk_threshold": 55,
-      "grant_ttl_s": 300,
-      "grant_max_uses": 3,
-      "max_prompts_per_run": 4,
-      "fatigue_strategy": "handoff" // or "block"
-    },
-
-    // The interactive model is DOM/text-only and the extension never receives
-    // page screenshots. This flag only opts an operator into screenshot files
-    // in the local trace; model reasoning retention is independently opt-in.
-    "audit": {
-      "store_screenshots": false,
-      "store_model_reasoning": false
-    },
-
-    "budgets": {
-      "max_steps": 30,            // agent steps per task
-      "max_llm_calls": 60,        // graceful stop at limit, hard stop +2 later
-      "approval_timeout_s": 120,  // unanswered approval => denied
-      "handover_timeout_s": 900   // unanswered handoff => agent must re-plan
-    }
-  }
-}
-```
+Edits apply to the next governed action, including mid-run. The complete field
+shape, validation constraints, and example policy are in
+[`policies/POLICY-SCHEMA.md`](policies/POLICY-SCHEMA.md). This file owns
+decision precedence and runtime semantics.
 
 Every domain-list entry (blocklist, allowlist, approval, sensitive) is matched
 against a URL's **host** with these four shapes, most rigid to most precise:
@@ -325,15 +232,8 @@ to be an OS sandbox.
 
 ## Evidence boundary
 
-The completed AgentDojo and WASP rows in [`EVALS.md`](EVALS.md) remain frozen
-under their recorded code, policy and run provenance. The guarded secret
-handoff channels, bounded upload inspection, unresolved browser-observation
-quarantine, bounded extraction/tool-result enforcement, approval revalidation,
-explicit stop cancellation, preflight-audit and screenshot-boundary changes
-described above were added after those campaigns and are **not represented in
-their reported results**.
-The WASP profile itself already used DOM/accessibility observations without
-screenshots; the later change hardens the ordinary interactive extension and
-trace path. These changes require targeted validation or a new immutable run
-tag before supporting new quantitative claims; completed rows must not be
-rewritten or pooled.
+This file describes the current policy implementation. Completed AgentDojo and
+WASP rows in [`EVALS.md`](EVALS.md) remain tied to their recorded code, policy,
+model, and run provenance. Do not infer that a current policy mechanism was
+measured by an older row. New quantitative claims require a matching validation
+artefact or immutable run tag; completed rows must not be rewritten or pooled.

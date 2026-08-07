@@ -45,29 +45,22 @@ beyond the core material, original interpretation, substantial self-directed
 work, and only very minor faults. Prose polish alone is insufficient; the
 evidence chain and final visual QA must make those qualities easy to mark.
 
-## Submission evidence freeze
+## Submission evidence boundary
 
-The unavailable Qwen 3.5 27B multi-seed replication and proposed sanitisation
-ablation provide no submission evidence, and the author has confirmed that the
-submission must not wait for them. A future aggregate would remain inadmissible
-until it passed an independent completeness and provenance audit. The
-submission therefore:
+Use the validated three-seed Qwen 3.5 27B off/policy-only/full comparison as
+the principal browser-native result. Its curated JSON, generated Markdown, and
+independent validator are indexed from `sentinel/EVALS.md` and
+`sentinel/evals/wasp/results/README.md`.
 
-- retain the verified single-seed matched result in the manuscript;
-- do not quote partial checkpoints, controller logs, or per-seed snapshots;
-- do not change the one-seed limitation to a multi-seed claim;
-- do not call `policy_only` a pure action-policy condition: it also retains the
-  boundary neutralisation and detector warning;
-- do not pool any future conditions with historical 9B or 27B rows; and
-- do not hold final manuscript or PDF release for the unavailable replication.
-
-If a validated JSON and Markdown aggregate later supports a post-submission
-revision, update the abstract, the third contribution in the introduction,
-the WASP method, the principal WASP result table and interpretation, the
-discussion of uncertainty and ablation, the conclusion, and appendix
-provenance together. Keep per-seed results and between-seed variation visible;
-report exact denominators and distinguish actual human intervention from
-scripted `participant=none` outcomes.
+- Keep per-seed results, between-seed variation, and exact denominators visible.
+- Do not call `policy_only` a pure action-policy condition: it also retains
+  boundary neutralisation and the detector warning.
+- Keep the earlier single-seed 27B comparison and 9B development sequence
+  provenance-separated; do not pool them with the final experiment.
+- Distinguish actual human intervention from scripted `participant=none`
+  outcomes.
+- Treat approval, takeover, incident, Activity, and extension walkthroughs as
+  implementation evidence, not participant or usability evidence.
 
 ## Completed release checks
 

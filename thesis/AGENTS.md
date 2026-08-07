@@ -3,187 +3,102 @@
 These instructions apply to thesis work under this directory. The repository
 root `AGENTS.md` also applies.
 
-## Mandatory project handoff
+## Evidence routing
 
-Before outlining, drafting, revising, or checking thesis claims, read
-`../sentinel/THESIS-STATUS.md`. It is the cross-project map of the current
-implementation, completed AgentDojo and WASP evidence, provenance limitations,
-supported interpretation, and unfinished work.
+Before outlining, drafting, revising, or checking a claim, read
+`../sentinel/THESIS-STATUS.md`. It is a concise argument and evidence map, not a
+live result ledger.
 
-For quantitative claims, prefer curated result JSON or per-run result Markdown,
-then frozen campaign provenance and task reports, then `../sentinel/EVALS.md`
-and the WASP result ledger. Do not use the current Git `HEAD` as retrospective
-provenance for an older run.
+For quantitative claims, use this order:
 
-`../sentinel/EVALS.md` is the canonical human-readable result ledger.
-`../sentinel/THESIS-STATUS.md` routes and interprets the evidence but should not
-duplicate quantitative result tables.
+1. curated result JSON or the corresponding per-run Markdown;
+2. frozen campaign provenance, task artefacts, and native scores;
+3. `../sentinel/EVALS.md` and the WASP result ledger;
+4. the thesis evidence map.
 
-Current thesis readiness:
+Do not use the current Git `HEAD` as retrospective provenance for an older
+run. Do not copy result tables into instruction or status files.
 
-- the threat model, runtime architecture, policy and audit mechanisms,
-  AgentDojo evaluation, WASP evaluation, results, and non-HITL limitations are
-  ready to draft;
-- later benchmark reruns should update existing tables and interpretation
-  without pooling incompatible provenance;
-- approval, takeover, unresolved-observation incident, audit, and extension UI
-  are completed supporting mechanisms within the dissertation's bounded
-  prototype; broader plan-authority work and human evaluation remain incomplete;
-- no human-participant findings or WASP oracle results currently exist.
-- the final Qwen 3.5 27B three-seed replication and controlled policy-only,
-  no-sanitisation ablation are complete, validated, and indexed in the curated
-  WASP results. Use that controlled comparison as the principal browser-native
-  evidence. Retain the earlier single-seed row and failed development attempts
-  as provenance-separated historical evidence; do not pool them.
+## Thesis position
 
-## Confirmed thesis direction
+Use the single research question, three-part evidence chain, and contribution
+wording in `../sentinel/THESIS-STATUS.md`. Do not introduce a second empirical
+question or redefine the frozen baseline.
 
-Use one research question to keep the dissertation focused:
-
-> To what extent can an independent runtime-enforcement layer reduce
-> prompt-injection-driven browser-agent violations while preserving task
-> utility?
-
-The evidence should form one connected argument:
-
-1. AgentDojo tests the enforcement mechanisms in a controlled tool setting.
-2. WASP tests whether those mechanisms transfer to a more realistic browser
-   setting.
-3. Selective authority supplies fail-closed supporting mechanisms for cases
-   where automatic enforcement cannot resolve uncertainty safely; it is not a
-   second empirical question or a claim about human effectiveness.
-
-The possible future features are easy to confuse:
-
-- **Plan authority** would show the user a short, inspectable run plan before
-  execution: what the agent intends to do, which sites or data it expects to
-  use, where human help may be needed, and what it must not do. This may be
-  added later as part of HITL; it is not implemented or evaluated now.
-- **Provenance hiding** would deliberately withhold an entire class of
-  untrusted user-generated page content from the agent based on where it came
-  from, rather than trying to detect malicious wording inside it. This is only
-  a possible separately labelled comparison and is not required current work.
-- **Multi-agent supervision** would give one operator a queue of several agent
-  runs. It remains optional future work unless it is later implemented and
-  evaluated.
+Follow that file's authority-workflow boundary: the bounded HITL implementation
+is complete, while technical tests and walkthroughs are not participant
+evidence. Do not infer measured comprehension, trust, workload, fatigue,
+usability, or approval behaviour.
 
 ## Formal requirements
 
-- Write the dissertation entirely in LaTeX, using
-  `project_report - pg.tex` as the official UCL template and compilation root.
+- Write in LaTeX using `project_report - pg.tex` as the official UCL template
+  and compilation root. `sentinel-submission.tex` is the synchronized
+  submission root.
 - Use the title *Sentinel: Independent Runtime Enforcement for Browser Agents*
   everywhere, including PDF metadata.
-- Format the dissertation text in 12-point type with explicit one-and-a-half
-  spacing, following the current module guidance.
+- Use 12-point text with explicit one-and-a-half spacing.
 - Target 43--45 counted pages and never exceed 45. Count everything except the
-  title page, table of contents, abstract, acknowledgements, references, and
-  appendices; the Lists of Figures and Tables are therefore counted.
-- The current technical assurance appendix is part of the submission. Keep the
-  complete submission, including appendices, at or below 100 pages.
-- Plan and monitor the page budget while writing; do not defer length control
-  until the final edit.
-- `project_plan.tex` is the thesis outline, not the official report template.
-- Manage references with BibTeX in `references.bib`. Retain only sources that
-  have actually been verified; never invent placeholder citation records.
-- Keep the labelled browser-integrated figures and the bounded appendix
-  control-plane figure tied to the live and deterministic local walkthroughs
-  documented in `FIGURE-PROVENANCE.md`. Use visibly distinct page fixtures
-  where separate browser contexts are shown. Describe every capture as
-  implementation evidence, not benchmark or participant evidence. Do not
-  fabricate UI evidence or turn the appendix into a screenshot gallery.
-- Do not add a GenAI, Codex, or ImageGen acknowledgement.
+  title page, contents, abstract, acknowledgements, references, and appendices;
+  the Lists of Figures and Tables are counted.
+- Keep the complete submission, including appendices, at or below 100 pages.
+- Manage references with BibTeX in `references.bib`. Retain only verified
+  sources; never invent placeholder records.
+- Keep browser-integrated figures tied to the live and deterministic local
+  walkthroughs in `FIGURE-PROVENANCE.md`. Describe them as implementation
+  evidence, not benchmark, participant, or usability evidence.
+- Do not fabricate UI evidence or add a GenAI, Codex, or ImageGen
+  acknowledgement.
 
-## Structure and argument
+## Writing and argument
 
-Treat thesis work as submission-quality academic writing. Do not trade rigour,
-completeness, originality, or coherence for speed. Before substantial drafting,
-inspect the relevant project evidence and establish a clear outline and
-argumentative through-line appropriate to the requested chapter or section.
+- Write submission-quality academic prose with a clear argumentative
+  through-line from research question to threat model, design, methodology,
+  results, limitations, and conclusion.
+- Explain the state of the art and the precise gap Sentinel addresses. Compare
+  work by threat model, trusted abstraction, enforcement point, guarantees,
+  browser applicability, evaluation strength, and limitations—not raw
+  cross-paper ASR rankings.
+- Make original contributions explicit without overstating them.
+- Introduce concepts before relying on them, use consistent terminology, and
+  explain why evidence matters.
+- Remove filler, generic boilerplate, repetitive summaries, unsupported
+  transitions, and list-like prose.
+- Evaluate the approach critically: where it works, where it fails, and what
+  the evidence does and does not establish.
 
-A conventional structure is title page, abstract, contents, introduction,
-background and related work, research and results chapters, conclusion,
-references, and appendices. This is a default, not a constraint: deviate when
-the research is presented more clearly another way while preserving the formal
-requirements.
-
-- Address one or more challenging security problems and motivate their
-  importance without exaggeration.
-- Explain the state of the art, including the important peer-reviewed
-  literature, and identify the precise gap the thesis addresses.
-- Present the proposed approach, or explain rigorously why no solution was
-  found.
-- Evaluate the approach critically and in balance: where it works, where it
-  fails, when another approach is preferable, and what the evidence supports
-  or does not support.
-- Connect the research question, threat model, design, methodology, results,
-  limitations, and conclusion into one coherent argument.
-- Give every section a clear purpose. Introduce concepts before relying on
-  them, connect claims to evidence, use meaningful transitions, and keep
-  terminology consistent.
-- Avoid filler, generic boilerplate, repetitive summaries, unsupported leaps,
-  and abrupt list-like prose. Explain why evidence matters, not merely what it
-  contains.
-- Identify further research questions discovered during the work without
-  presenting unanswered questions as completed contributions.
-
-## Originality and contributions
-
-Make original contributions unmistakable. Include a clearly labelled
-contributions subsection in the introduction unless another structure is more
-effective. State exactly which ideas, questions, designs, techniques,
-implementations, or findings are the author's own, without overstating them.
-Restate the demonstrated contributions in the conclusion and relate each one
-to the evidence presented.
-
-## Evidence and factual integrity
+## Evidence integrity
 
 - Never invent facts, results, quotations, citations, authors, venues, dates,
   identifiers, or implementation details.
-- Verify quantitative and experimental claims against current code, immutable
-  provenance, or curated final result artefacts. Label provisional evidence as
-  provisional.
-- Support external factual and comparative claims with sources that directly
-  establish them. Prefer primary sources and distinguish peer-reviewed work
-  from preprints.
-- Cover important contrary and competing evidence; do not select literature or
-  results only because they favour Sentinel.
-- If a claim, reference, intended argument, or requirement cannot be verified
-  or confidently resolved, ask the user before including it. Do not turn a
-  plausible recollection or silent assumption into thesis prose.
-- Distinguish the current implementation and measured evidence from proposed,
-  feasible, or future work. Preserve the project framing and non-participant
-  claim boundaries in the root instructions.
+- Verify quantitative and experimental claims against curated artefacts and
+  immutable provenance. Label provisional evidence explicitly.
+- Prefer primary sources and distinguish peer-reviewed work from preprints.
+- Include material contrary and competing evidence.
+- Ask the user before including a claim, reference, requirement, or argument
+  that cannot be verified or confidently resolved.
+- Distinguish current implementation from the middleware version measured by
+  each frozen result. A later mechanism is not retroactive benchmark evidence.
 - Describe AgentDojo as controlled mechanism evidence and WASP as controlled
   browser-native transfer and limitation evidence, not deployment in the wild.
-- Report legitimate utility, secure utility, native ASR, risky attempts and
-  executions, interventions, false blocks, and provenance where the artifact
-  supports them. Low ASR alone is not security evidence.
-- Use the final controlled three-seed Qwen 3.5 27B WASP comparison, including
-  its policy-only/no-sanitisation ablation, as the principal browser-native
-  evidence. Keep the earlier single-seed 27B row historical and non-pooled.
-  Present the 9B WASP sequence as provenance-separated development and
-  failure-analysis evidence: one shared off baseline, then warning-only
-  enforce, sanitisation V1 enforce, and sanitisation V2 enforce.
-- Treat the post-campaign browser-observation incident, bounded
-  extraction/tool-result enforcement, human-only secret takeover, lifecycle
-  fixes, DOM-only interactive model path, and special-URL observation boundary
-  as implementation changes, not as results measured by the frozen AgentDojo
-  or WASP rows.
-- Treat Activity's security-pause count and review time as runtime telemetry.
-  Its `understood` ticks are researcher/operator walkthrough annotations, not
-  participant comprehension data; its within-run timing split is accounting,
-  not a matched estimate of execution without enforcement.
-- Treat HITL, plan authority, provenance hiding, and deterministic oracle work
-  as unfinished unless a separate frozen implementation and evaluation artifact
-  establishes otherwise. Scripted benchmark participant modes are not humans.
+- Report utility, secure utility, native ASR, risky attempts and executions,
+  interventions, false blocks, and provenance where supported. Low ASR alone
+  is not security evidence.
+- Keep historical and changed-provenance rows separate. Use the curated WASP
+  synthesis to identify the principal comparison and the role of development
+  rows.
+- Scripted benchmark participant modes are controls, not people. Runtime pause
+  counts, timing, and `understood` annotations are technical telemetry or
+  walkthrough aids, not participant outcomes.
 
 ## LaTeX workflow
 
-- Edit LaTeX source and required assets, not ignored `.log`, `.pdf`,
-  `.synctex.gz`, or other generated output.
-- Compile the relevant root document with Tectonic and inspect the fresh PDF,
-  including page count, spacing, references, figures, tables, cross-references,
-  and overflow.
+- Edit source and required assets, not ignored `.log`, `.pdf`, `.synctex.gz`,
+  or other generated output.
+- Keep `sentinel-submission.tex` and `project_report - pg.tex` synchronized.
+- Compile both relevant roots and inspect fresh PDFs for page count, spacing,
+  references, figures, tables, cross-references, overflow, metadata, and A4
+  geometry.
 - If compilation fails around an image, verify every `\includegraphics` path
   and required asset before changing the toolchain.
 - A successful compilation is not sufficient: visually inspect the rendered
