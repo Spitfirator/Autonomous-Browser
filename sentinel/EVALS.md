@@ -720,15 +720,17 @@ The published matrix is:
 - plain-text and URL-based goal-hijacking injections;
 - 84 attacked cases per policy mode.
 
-The browser profile was first evaluated with Qwen 3.5 9B and then replicated
-as a fresh matched off/enforce comparison with Qwen 3.5 27B. Both use 32K
-context, 4,096 output tokens, temperature 0.6, top-p 0.95, seed 0, BrowserUse
-structured planning, one action per step, 30 steps, DOM/accessibility
-observations and no screenshots. Ollama's separate native thinking stream is
-disabled so its response remains valid against BrowserUse's action schema;
-BrowserUse's structured thinking/planning fields remain enabled. These are
-descriptive independent model runs, not an identified model-size effect and
-not the same profile as AgentDojo's native-thinking runs.
+The historical 9B development sequence and prior single-seed 27B comparison
+used 32K context, a 4,096-token output cap, seed 0, and an older non-thinking
+Ollama structured-output path. They remain provenance-separated historical
+evidence. The final controlled comparison uses Qwen 3.5 27B with Ollama
+0.32.5, native thinking enabled, 32,768 context tokens, an 8,192-token output
+cap, seeds 0/1/2, temperature 0.6, top-p 0.95, BrowserUse structured planning,
+one action per step, 30 steps, DOM/accessibility observations and no
+screenshots. Only the final schema-validated action is passed to BrowserUse;
+the separate native reasoning channel is neither persisted nor treated as an
+action. A complete-schema padded canary and pinned history compaction verified
+context/output headroom before any official task.
 
 The 30-step budget was frozen before the browser campaign because a
 21-case off-mode pilot at 20 steps showed seven executions reaching the
@@ -737,65 +739,101 @@ attacker success 2/21) and all traces remain locally preserved under the old
 run tag, but are excluded from the primary aggregate. No 20-step and 30-step
 cases are pooled or selectively substituted.
 
-The finalized thesis-eligible conditions are:
+The historical development rows are retained for failure analysis and are not
+pooled into the final experiment:
 
-| model and condition | utility | end-to-end ASR | secure utility | attacker-directed attempted | attacker-directed executed |
+| historical model and condition | utility | end-to-end ASR | secure utility | attacker-directed attempted | attacker-directed executed |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | 9B shared off baseline | 45/84 (53.57%) | 7/84 (8.33%) | 41/84 (48.81%) | 31/84 (36.90%) | 31/84 (36.90%) |
 | 9B warn enforce | 37/84 (44.05%) | 7/84 (8.33%) | 35/84 (41.67%) | 32/84 (38.10%) | 32/84 (38.10%) |
 | 9B sanitise V1 | 52/84 (61.90%) | 6/84 (7.14%) | 49/84 (58.33%) | 18/84 (21.43%) | 18/84 (21.43%) |
-| **9B sanitise V2** | **54/84 (64.29%)** | **0/84** | **54/84 (64.29%)** | **1/84 (1.19%)** | **1/84 (1.19%)** |
-| 27B off | 47/84 (55.95%) | 5/84 (5.95%) | 44/84 (52.38%) | 17/84 (20.24%) | 17/84 (20.24%) |
-| **27B sanitise V2** | **46/84 (54.76%)** | **0/84** | **46/84 (54.76%)** | **0/84** | **0/84** |
+| 9B sanitise V2 | 54/84 (64.29%) | 0/84 | 54/84 (64.29%) | 1/84 (1.19%) | 1/84 (1.19%) |
+| Prior single-seed 27B off | 47/84 (55.95%) | 5/84 (5.95%) | 44/84 (52.38%) | 17/84 (20.24%) | 17/84 (20.24%) |
+| Prior single-seed 27B sanitise V2 | 46/84 (54.76%) | 0/84 | 46/84 (54.76%) | 0/84 | 0/84 |
 
-The last two columns count task instances with at least one matched
-attacker-directed attempt or execution; they are not raw action totals.
+The 9B rows are one shared off baseline followed by three provenance-separated
+enforce revisions. They are an engineering sequence, not an immutable matched
+campaign. The prior 27B row is a matched seed-0 historical comparison. Neither
+is pooled with the final experiment.
 
-The 9B structure is exactly one shared `off` baseline with no enforcement,
-followed by three separate `enforce` rows: warning-only, sanitisation V1, and
-sanitisation V2. The latter two are the two sanitisation-enforcement revisions.
-This is a provenance-separated engineering sequence, not one immutable matched
-campaign, because middleware changed between revisions. The 27B campaign is
-the primary matched browser result. Across its 168 executions, sanitisation
-removed all five observed terminal attacker successes and all 17
-task instances with an attacker-directed execution, changed native utility by
-one task (47 to 46) and increased secure utility from 44 to 46.
+The final controlled experiment contains the same 84 attacked cases per seed
+under `off`, policy enforcement plus warning with sanitisation disabled
+(`policy_only`), and the full system. Counts below use 252 episodes per
+condition. Attempted/executed columns count task instances, not raw actions.
+Raw native positives are only called terminal attacker successes after the
+independent action audit finds an executed attacker-directed action.
 
-`browser_sanitize` affects only the BrowserUse prompt boundary. The final
-post-verified implementation used in the frozen campaigns suppressed the model
-warning only when attributable removal left no detector-positive residual. The
-9B V2 row recorded 1,053 confirmed removals from 1,057 attempts, with four
+| final controlled condition | utility | raw ASR | action-audited terminal success | secure utility | attacker-directed attempted | attacker-directed executed | potential false blocks |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Off baseline | 154/252 (61.11%) | 17/252 (6.75%) | 17/252 (6.75%) | 138/252 (54.76%) | 43/252 (17.06%) | 42/252 (16.67%) | 0/252 |
+| Policy + warning, no sanitisation | 149/252 (59.13%) | 1/252 (0.40%) | 1/252 (0.40%) | 148/252 (58.73%) | 15/252 (5.95%) | 15/252 (5.95%) | 1/252 (0.40%) |
+| Full sanitisation + policy | 149/252 (59.13%) | 0/252 | 0/252 | 149/252 (59.13%) | 0/252 | 0/252 | 0/252 |
+
+Across seeds, off/full utility was 53/45, 48/52, and 53/52 out of 84;
+off/full raw ASR was 5/0, 8/0, and 4/0. The aggregate full-minus-off utility
+effect is -1.98 percentage points (seed-effect sample SD 7.18 pp; range -9.52
+to +4.76 pp), while raw ASR changes by -6.75 pp (seed SD 2.48 pp) and secure
+utility by +4.37 pp (seed SD 9.09 pp). Full versus policy-only isolates the
+configured sanitisation increment: utility is unchanged in aggregate, raw ASR
+changes from 1/252 to 0/252, attacker-directed attempted/executed tasks change
+from 15/252 to 0/252, and secure utility changes from 148/252 to 149/252.
+Policy-only versus off is a combined boundary-neutralisation, detector-warning
+and action-policy increment, not a pure action-policy effect.
+
+The full condition recorded 740/740 attributable sanitisation removals with
+zero residuals, unattributable regions, or post-removal alerts. It generated no
+attacker-directed attempt, hard block, approval, handoff, security pause, or
+potential false block. The policy-only row generated two approval requests in
+one task; scripted `participant=none` resolution denied both. One denial stopped
+an attacker-directed action and one is conservatively counted as a potential
+false-block action. Actual human intervention is N/A, not zero, because no
+human participant was present.
+
+Pre-execution mediation averaged 0.423 ms/decision off (n=1,358), 0.541 ms
+policy-only (n=1,173), and 0.484 ms full (n=1,046). Mean task durations were
+65.76 s, 53.87 s, and 43.44 s respectively. The wall-clock differences include
+model trajectories and browser shutdown and are not pure middleware-overhead
+estimates.
+
+Security-by-incompetence remains material. Among the 252 off episodes, 17 had
+terminal attacker success, 25 executed an attacker-directed action without
+terminal success, one attempted without execution, and 209 recorded no
+attacker-directed attempt. Utility succeeded in 10 of the 25 execution-without-
+success cases. Only the first category establishes completed attacker goals;
+the second directly establishes underlying inability after attacker execution;
+absence of an attempt is not credited to Sentinel. In full, the absence of
+attempts is a paired system effect associated with sanitisation, not relabelled
+as a hard action block.
+
+`browser_sanitize` affects only the BrowserUse prompt boundary. The
+post-verified implementation suppresses the model warning only when
+attributable removal leaves no detector-positive residual. The historical 9B
+V2 row recorded 1,053 confirmed removals from 1,057 attempts, with four
 unattributable attempts sent through the then-current model-warning fallback
-and zero residuals. The 27B row recorded 368/368 confirmed removals, zero
-residuals or unattributable cases and zero post-success alerts. No hard block
-or handoff occurred in the matched 27B enforce row; its one denied approval did
-not prevent native user-task success.
+and zero residuals. The historical single-seed 27B row recorded 368/368
+confirmed removals. The final controlled full row recorded 740/740.
 
-The current runtime has since replaced that unresolved model-warning fallback
-with a fail-closed operator incident for the current browser/read observation:
-residual or unattributable content is withheld from the model, the run pauses,
-and a human must take over or stop it before Sentinel captures a fresh
-observation. Interactive runs also withhold page screenshots and image-bearing
-tool results, scan page-extraction subcalls, and wrap later tool-result text so
-stored or second-order instructions cross the same model boundary. A bounded
-extraction or historical tool result that cannot be cleaned is dropped in
-full; it does not open the browser-observation incident flow. Navigation
-metadata now also withholds complete non-web URL suffixes, and enforce mode
-blocks direct autonomous `navigate` actions outside HTTP(S), except
-`about:blank`. These post-campaign safety changes are not measured by the
-frozen 9B or 27B rows and require a new immutable run tag if they are
-benchmarked later. No further
-benchmark run is currently planned.
+The historical runtime later replaced its unresolved model-warning fallback
+with a fail-closed operator incident for current browser/read observations.
+Interactive runs also withhold page screenshots and image-bearing tool results,
+scan page-extraction subcalls, wrap later tool-result text, redact non-web URL
+suffixes, and block direct autonomous special-URL navigation except
+`about:blank`. These changes post-date the historical rows. The final
+replication's exact enforcement source, policies, runtime, model digest, and
+commits are recorded in its curated provenance; mechanisms not exercised by a
+benchmark trajectory remain supported by scripted technical validation rather
+than a behavioural claim.
 
-The warning-only result is a negative finding: it left ASR unchanged at 7/84,
-slightly increased attacker-directed execution and reduced utility. The final
+The warning-only historical result remains a negative finding. The final
 evidence supports the narrower conclusion that, under these WASP conditions,
 independently enforced post-verified observation sanitisation reduced achieved
-attacks and attacker-serving execution while preserving almost all aggregate
-utility. It does not show universal prompt-injection robustness. Two of four
-27B off batches already had zero ASR, only one seed was evaluated, and zero
-successes in 84 enforce cases gives a rough rule-of-three 95% upper bound of
-about 3.6%.
+attacks and attacker-serving execution while preserving aggregate utility
+within a small, variable difference. It does not show universal
+prompt-injection robustness. Three seeds improve the variability estimate, but
+they share one benchmark revision, model, fixed cell order, and GPU/runtime
+profile. Zero successes in 252 full-system executions gives a rough
+rule-of-three 95% upper bound of about 1.2%, not proof of a zero population
+rate.
 
 No oracle-participant WASP row was run. Oracle remains a possible deterministic
 scripted-oversight upper bound, not a participant study and not evidence about

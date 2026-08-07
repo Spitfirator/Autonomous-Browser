@@ -1,0 +1,51 @@
+{
+  "policies": {
+    "mode": "enforce",
+    "domain_allowlist": null,
+    "domain_blocklist": [],
+    "blocked_actions": [],
+    "approval_required_actions": [],
+    "approval_required_domains": [],
+    "sensitive_domains": [],
+    "prompt_injection": {
+      "enabled": true,
+      "detection_threshold": 0.55,
+      "block_threshold": 0.85,
+      "browser_sanitize": false,
+      "hard_block_sinks": [
+        "search",
+        "navigate",
+        "input",
+        "send_keys",
+        "upload_file",
+        "evaluate",
+        "write_file",
+        "replace_file"
+      ],
+      "alert_after_sanitize": false
+    },
+    "data_flow": {
+      "enabled": true,
+      "trusted_domains": [],
+      "sensitive_data_verdict": "block"
+    },
+    "adaptive_approvals": {
+      "enabled": true,
+      "approval_risk_threshold": 70,
+      "grant_ttl_s": 300,
+      "grant_max_uses": 3,
+      "max_prompts_per_run": 4,
+      "fatigue_strategy": "block"
+    },
+    "audit": {
+      "store_screenshots": false,
+      "store_model_reasoning": false
+    },
+    "budgets": {
+      "max_steps": 20,
+      "max_llm_calls": 30,
+      "approval_timeout_s": 1,
+      "handover_timeout_s": 0.05
+    }
+  }
+}

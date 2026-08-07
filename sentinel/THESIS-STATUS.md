@@ -59,20 +59,19 @@ The contribution chain is:
    attack families.
 2. WASP tests browser-native transfer through observations, navigation, and
    privileged actions.
-3. The extension and governance layer provide the technical basis for
-   selective human authority under uncertainty, but the HITL contribution is
-   not yet complete or empirically evaluated.
+3. The extension and governance layer implement selective, fail-closed human
+   authority as a supporting systems mechanism. They are not empirical evidence
+   about human effectiveness.
 
-The two central questions, in simple terms, are:
+The single thesis research question is:
 
-1. Can a separate enforcement layer reduce unsafe browser-agent actions without
-   stopping useful work?
-2. When automatic enforcement cannot decide safely, when and how should it
-   pause and hand control to the user?
+> To what extent can an independent runtime-enforcement layer reduce
+> prompt-injection-driven browser-agent violations while preserving task
+> utility?
 
 This is the intended argumentative link: AgentDojo tests enforcement in
-isolation, WASP tests transfer to browser interaction, and HITL addresses the
-remaining cases where safe automatic resolution is not possible.
+isolation, WASP tests transfer to browser interaction, and selective authority
+supports remaining cases where safe automatic resolution is not possible.
 
 ## Confirmed decisions as of 2026-07-29
 
@@ -106,9 +105,18 @@ remaining cases where safe automatic resolution is not possible.
 - The localhost-only, origin-checked API is the accepted deployment boundary
   for this local thesis prototype. Protection from another compromised process
   running as the same OS user is out of scope and must remain a stated limit.
-- Do not launch another benchmark campaign now. Preserve the completed rows;
-  mention historical/excluded runs only when they explain provenance or prevent
-  a misleading comparison.
+- Do not launch another benchmark campaign without an explicit user request.
+  The earlier Qwen 3.5 27B multiseed attempt is quarantined as exploratory
+  operational evidence after the Ollama 0.30.8/non-thinking structured-output
+  failure. Preserve every checkpoint; do not pool or selectively rerun it. The
+  completed repaired native-thinking/Ollama 0.32.5 design uses an 8,192-token generation
+  cap within the task-specific 32,768-token context, with a neutral padded
+  context/headroom launch canary and explicitly pinned early history
+  compaction rather than a late library default. The controller records GPU
+  model, memory and driver, and requires the complete model to remain resident
+  in VRAM at the exact context before official execution. All six immutable
+  `v2` campaigns, 756 episodes and 36 native-score cells passed the independent
+  final validator with no controller restart or recorded operational failure.
 - Plan authority and multi-agent supervision are possible later HITL work, not
   current contributions. Provenance hiding is only an optional separate
   comparison, not required current work.
@@ -160,9 +168,11 @@ These are implementation facts. The incident and extraction/tool-result
 boundary, screenshot controls, guarded-secret and bounded-upload checks,
 lifecycle hardening, and special-URL boundary post-date the frozen benchmark
 rows and are not benchmark results. The secret checks are deterministic channel
-coverage, not universal DLP; semantically
-secret values with no recognized marker can still be missed. These mechanisms
-also do not mean every governance or HITL workflow is finished.
+coverage, not universal DLP; semantically secret values with no recognized
+marker can still be missed. These mechanisms complete the selective-authority
+boundary described in the dissertation. Plan authority, multi-agent
+supervision, deployment hardening, and human behavioural evaluation remain
+separate future work.
 
 ## Completed evidence map
 
@@ -193,19 +203,21 @@ effect. Low ASR must always be interpreted beside model capability and utility.
 ### WASP
 
 - [Browser-native results](EVALS.md#wasp-browser-native-enforcement-evaluation):
-  all finalized 9B development rows, the primary matched 27B comparison,
-  sanitisation telemetry, warning-only negative evidence, exclusions, and
-  uncertainty.
+  the final controlled three-seed 27B off/policy-only/full comparison,
+  variability, sanitisation telemetry, action-audited outcomes,
+  security-by-incompetence partition, historical 9B development rows,
+  exclusions, and uncertainty.
 - [Curated WASP ledger](evals/wasp/results/README.md): exact run identities,
   row-level provenance, paired outcomes, validation, and machine-readable
   summary links.
 
-Use the matched 27B row as the principal browser comparison. Use the 9B sequence
-as provenance-separated engineering and failure-analysis evidence. Its exact
-shape is one shared off baseline, then warning-only enforce, sanitisation V1
-enforce, and sanitisation V2 enforce. The final two are the two sanitisation
-revisions. Do not pool the revisions or interpret 9B-versus-27B differences as
-an identified model-size effect.
+Use the validated three-seed 27B row as the principal browser comparison. Use
+the older single-seed 27B row and 9B sequence as provenance-separated
+historical engineering and failure-analysis evidence. The 9B shape is one
+shared off baseline, then warning-only enforce, sanitisation V1 enforce, and
+sanitisation V2 enforce. Do not pool historical revisions into the final
+denominators or interpret 9B-versus-27B differences as an identified model-size
+effect.
 
 ### Non-headline checks
 
@@ -216,35 +228,46 @@ values are in `EVALS.md`; do not promote them to headline evidence.
 
 No WASP oracle campaign has been run.
 
+### Final 27B replication
+
+The Qwen 3.5 27B replication covers seeds 0, 1, and 2 under `off`,
+`policy_only`, and `full` conditions. Its curated JSON and generated Markdown
+validate all six immutable campaigns, 756 task artefacts, 36 native-score
+cells, generated-input manifests, model-output reliability, action-audited
+security categories, provenance, latency, sanitisation, and intervention
+telemetry. Route quantitative claims through `EVALS.md` and
+[`evals/wasp/results/README.md`](evals/wasp/results/README.md); do not substitute
+the quarantined earlier multiseed attempt or compatibility canaries.
+
 ## Thesis-ready contributions
 
-The current implementation and completed evidence support discussion of:
+The current implementation and completed evidence support three contributions:
 
-1. an executor-side, model-independent runtime boundary;
-2. fail-closed policy, approval, handover, redaction, and audit semantics;
-3. post-verified sanitisation that stays silent only after attributable removal
-   and clean re-detection;
-4. controlled evaluation across AgentDojo mechanism evidence and WASP
-   browser-native transfer evidence;
-5. an evaluation approach that reports utility, secure utility, native
-   attacker success, risky attempts and executions, interventions, false
-   blocks, and provenance rather than treating low ASR as sufficient.
+1. executor-side mediation of model-proposed privileged actions;
+2. post-verified observation sanitisation combined with selective, fail-closed
+   human authority, redaction, and paired audit; and
+3. controlled evaluation across AgentDojo mechanism evidence and WASP
+   browser-native transfer evidence, reporting utility, secure utility, native
+   attacker success, risky attempts and executions, and interventions together.
 
 The evidence is strongest for evaluated runtime containment under the tested
 models and tasks. It is not evidence of universal prevention or deployment
 readiness.
 
-## HITL and interface work: unfinished
+## Selective authority and remaining human-centred work
 
-Basic approval, handover, trace, and extension UI primitives exist. This is not
-the same as a completed HITL contribution.
+Approval, direct takeover, unresolved-observation incidents, trace/audit, and
+their extension UI states are completed supporting mechanisms within the
+bounded prototype. Current tests establish their fail-closed server semantics.
+This is not a participant study or a claim about how effectively people use the
+interface.
 
 Do not claim the following as complete until separately implemented, frozen,
 and evaluated:
 
-- the final selective-authority and plan-authority feature set;
-- a completed evaluation of the implemented unresolved-sanitisation incident
-  and operator-resolution flow;
+- plan authority or multi-agent supervision;
+- benchmark effect sizes for the post-campaign unresolved-observation incident
+  and detected-secret takeover flows;
 - a completed broader HITL protocol or benchmark;
 - measured human approval behaviour, trust, workload, fatigue, usability, or
   rubber-stamping;
@@ -269,8 +292,8 @@ In plain language:
 oracle study would be a scripted-oversight upper bound only.
 
 The architecture, threat model, implementation, AgentDojo, WASP, results, and
-non-HITL limitations are ready to draft. HITL and interface sections must
-remain proposed, in progress, or method-only until evidence exists.
+selective-authority mechanisms are ready to write up. Interface claims must
+remain technical; behavioural HITL claims require separate evidence.
 
 ## Thesis writing route
 
@@ -278,13 +301,14 @@ remain proposed, in progress, or method-only until evidence exists.
 2. Explain policy evaluation, redaction, audit, approval, and sanitisation.
 3. Use AgentDojo component replay to establish mechanism behaviour.
 4. Use matched AgentDojo end-to-end rows to quantify controlled enforcement.
-5. Use the matched 27B WASP row as browser-native transfer evidence.
+5. Use the final three-seed 27B WASP comparison and controlled sanitisation
+   ablation as browser-native transfer evidence.
 6. Use the 9B WASP sequence as transparent development and failure analysis.
 7. Discuss utility gains and losses, security by incompetence, benchmark
    coverage, residual uncertainty, and provenance asymmetries.
-8. Describe the incident card and guarded detected-secret takeover as
-   implemented mechanisms, while treating broader HITL claims as unfinished
-   until an evaluation is frozen.
+8. Describe approval, takeover, incident, audit, and extension states as
+   completed supporting mechanisms while reserving behavioural HITL claims for
+   future evaluation.
 
 ## Keeping the documents synchronized
 

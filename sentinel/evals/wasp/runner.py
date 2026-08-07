@@ -15,6 +15,7 @@ from typing import Any, Literal
 from urllib.parse import urlparse
 
 from browser_use import Agent, BrowserSession
+from browser_use.agent.views import MessageCompactionSettings
 
 from evals.wasp.contract import (
 	INJECTION_FORMATS,
@@ -63,6 +64,10 @@ def _operational_failure_from_history(history: Any) -> str | None:
 	if history is None or history.is_done():
 		return None
 	errors = '\n'.join(str(error) for error in history.errors() if error).lower()
+	if 'structured_output:' in errors:
+		return 'StructuredOutputFailure'
+	if 'provider_connection' in errors or 'provider_timeout' in errors:
+		return 'ModelProviderUnavailable'
 	if 'failed to connect to ollama' in errors or 'modelprovidererror' in errors:
 		return 'ModelProviderUnavailable'
 	if 'net::err_connection_refused' in errors:
@@ -80,6 +85,17 @@ def validate_completed_execution(result: TaskResult) -> None:
 			f'{result.case_id} has no successful model calls; '
 			'treat it as an operational failure, not a benchmark result'
 		)
+	if result.provenance.model_settings.native_thinking:
+		diagnostics = result.model_output
+		if diagnostics.structured_requests < 1 or diagnostics.structured_successes < 1:
+			raise ValueError(
+				f'{result.case_id} has no successful schema-validated model output; '
+				'treat it as an operational failure, not a benchmark result'
+			)
+		if diagnostics.successes != int(result.event_counts.get('llm_call', 0)):
+			raise ValueError(
+				f'{result.case_id} model-output successes do not match llm_call telemetry'
+			)
 
 
 class OracleDecision(SentinelEvent):
@@ -493,6 +509,7 @@ async def run_task(
 		model=settings.model,
 		host=settings.ollama_host,
 		timeout=300,
+		native_thinking=settings.native_thinking,
 		ollama_options={
 			'num_ctx': settings.context_tokens,
 			'num_predict': settings.output_tokens,
@@ -554,6 +571,15 @@ async def run_task(
 		enable_signal_handler=False,
 		enable_planning=True,
 		planning_replan_on_stall=3,
+		message_compaction=MessageCompactionSettings(
+			enabled=settings.message_compaction_enabled,
+			compact_every_n_steps=settings.message_compaction_every_n_steps,
+			trigger_char_count=settings.message_compaction_trigger_chars,
+			keep_last_items=settings.message_compaction_keep_last_items,
+			summary_max_chars=settings.message_compaction_summary_max_chars,
+			include_read_state=False,
+		),
+		max_clickable_elements_length=settings.max_clickable_elements_length,
 	)
 
 	provenance = Provenance(
@@ -617,6 +643,7 @@ async def run_task(
 		enforcement=ctx.enforcement_summary(),
 		event_counts=dict(recorder.counts),
 		action_names=action_names,
+		model_output=inner.diagnostics_snapshot(),
 	)
 	atomic_write_json(task_dir / 'task-result.json', result)
 	if error is not None:
@@ -641,12 +668,31 @@ def _parse_args() -> argparse.Namespace:
 	parser.add_argument('--model', default='qwen3.5-agentdojo:9b')
 	parser.add_argument('--ollama-host', default='http://127.0.0.1:11435')
 	parser.add_argument('--max-steps', type=int, default=30)
+	parser.add_argument('--context-tokens', type=int, default=32768)
+	parser.add_argument('--output-tokens', type=int, default=4096)
+	parser.add_argument('--temperature', type=float, default=0.6)
+	parser.add_argument('--top-p', type=float, default=0.95)
+	parser.add_argument(
+		'--native-thinking',
+		action=argparse.BooleanOptionalAction,
+		default=False,
+		help='enable Ollama native model thinking while validating only the final content',
+	)
 	return parser.parse_args()
 
 
 def main() -> None:
 	args = _parse_args()
-	settings = ModelSettings(model=args.model, ollama_host=args.ollama_host, max_steps=args.max_steps)
+	settings = ModelSettings(
+		model=args.model,
+		ollama_host=args.ollama_host,
+		context_tokens=args.context_tokens,
+		output_tokens=args.output_tokens,
+		temperature=args.temperature,
+		top_p=args.top_p,
+		max_steps=args.max_steps,
+		native_thinking=args.native_thinking,
+	)
 	batch = WaspBatch(user_goal_index=args.user_goal_index, injection_format=args.injection_format)
 	result = asyncio.run(
 		run_task(

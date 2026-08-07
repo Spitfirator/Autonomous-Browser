@@ -30,10 +30,11 @@ Current thesis readiness:
   are completed supporting mechanisms within the dissertation's bounded
   prototype; broader plan-authority work and human evaluation remain incomplete;
 - no human-participant findings or WASP oracle results currently exist.
-- the unavailable Qwen 3.5 27B multi-seed replication and proposed
-  sanitisation ablation provide no submission evidence. The submission freezes
-  the verified single-seed result; do not cite partial replication checkpoints
-  or wait for a rerun.
+- the final Qwen 3.5 27B three-seed replication and controlled policy-only,
+  no-sanitisation ablation are complete, validated, and indexed in the curated
+  WASP results. Use that controlled comparison as the principal browser-native
+  evidence. Retain the earlier single-seed row and failed development attempts
+  as provenance-separated historical evidence; do not pool them.
 
 ## Confirmed thesis direction
 
@@ -157,9 +158,11 @@ to the evidence presented.
 - Report legitimate utility, secure utility, native ASR, risky attempts and
   executions, interventions, false blocks, and provenance where the artifact
   supports them. Low ASR alone is not security evidence.
-- Use the matched Qwen 3.5 27B WASP campaign as the principal browser-native
-  comparison. Present the 9B WASP sequence as provenance-separated development
-  and failure-analysis evidence: one shared off baseline, then warning-only
+- Use the final controlled three-seed Qwen 3.5 27B WASP comparison, including
+  its policy-only/no-sanitisation ablation, as the principal browser-native
+  evidence. Keep the earlier single-seed 27B row historical and non-pooled.
+  Present the 9B WASP sequence as provenance-separated development and
+  failure-analysis evidence: one shared off baseline, then warning-only
   enforce, sanitisation V1 enforce, and sanitisation V2 enforce.
 - Treat the post-campaign browser-observation incident, bounded
   extraction/tool-result enforcement, human-only secret takeover, lifecycle

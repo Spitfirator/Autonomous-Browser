@@ -14,6 +14,7 @@ from evals.wasp.contract import (
 	AggregateCell,
 	CampaignState,
 	CellState,
+	ModelOutputDiagnostics,
 	ModelSettings,
 	NativeTaskScore,
 	NativeBatchScores,
@@ -51,6 +52,22 @@ def _campaign_args(tmp_path: Path, *, reset_between_cells: bool = True) -> Simpl
 		policy=policy,
 		model='qwen3.5-agentdojo:9b',
 		ollama_host='http://127.0.0.1:11435',
+		seed=0,
+		native_thinking=False,
+		container_runtime=None,
+		container_runtime_version=None,
+		ollama_version=None,
+		model_digest=None,
+		gpu_name=None,
+		gpu_memory_total_mib=None,
+		gpu_driver_version=None,
+		compatibility_canary=None,
+		gitlab_image_source=None,
+		reddit_image_source=None,
+		gitlab_image_sha256=None,
+		reddit_image_sha256=None,
+		gitlab_image_bytes=None,
+		reddit_image_bytes=None,
 		gitlab='http://127.0.0.1:18023',
 		reddit='http://127.0.0.1:19999',
 		max_steps=30,
@@ -138,6 +155,28 @@ def test_official_wasp_matrix_is_84_cases_per_mode() -> None:
 	assert len({batch.case_id(task_id) for batch in batches for task_id in TASK_IDS}) == 84
 
 
+def test_campaign_records_requested_seed(tmp_path: Path) -> None:
+	args = _campaign_args(tmp_path)
+	args.seed = 2
+	assert WaspCampaign(args).settings.seed == 2
+
+
+def test_campaign_requires_canary_for_native_thinking(tmp_path: Path) -> None:
+	args = _campaign_args(tmp_path)
+	args.native_thinking = True
+	with pytest.raises(ValueError, match='requires --compatibility-canary'):
+		WaspCampaign(args)
+
+
+def test_offline_preflight_may_defer_native_thinking_canary(tmp_path: Path) -> None:
+	args = _campaign_args(tmp_path)
+	args.native_thinking = True
+	args.command = 'preflight'
+	args.offline = True
+	campaign = WaspCampaign(args)
+	assert campaign.compatibility_canary_path is None
+
+
 def test_batch_ids_and_case_ids_are_stable() -> None:
 	assert [batch.batch_id for batch in all_batches()] == [
 		'user-goal-0-plain',
@@ -190,12 +229,39 @@ def test_provider_outage_returned_as_history_is_operational_failure() -> None:
 	assert _operational_failure_from_history(history) is None
 
 
+def test_structured_output_exhaustion_is_not_misclassified_as_provider_outage() -> None:
+	history = SimpleNamespace(
+		is_done=lambda: False,
+		errors=lambda: ['ModelProviderError: structured_output:invalid_json'],
+	)
+	assert _operational_failure_from_history(history) == 'StructuredOutputFailure'
+
+
 def test_completed_checkpoint_requires_successful_model_call() -> None:
 	result = _task_result(1000, 'enforce', detections=0, blocked=0)
 	result.event_counts = {'llm_call': 1}
 	validate_completed_execution(result)
 	result.event_counts = {'enforcement_decision': 1}
 	with pytest.raises(ValueError, match='no successful model calls'):
+		validate_completed_execution(result)
+
+
+def test_native_thinking_checkpoint_requires_matching_structured_output_telemetry() -> None:
+	result = _task_result(1000, 'enforce', detections=0, blocked=0)
+	result.provenance.model_settings.native_thinking = True
+	result.event_counts = {'llm_call': 1}
+	result.model_output = ModelOutputDiagnostics(
+		requests=2,
+		structured_requests=2,
+		successes=1,
+		structured_successes=1,
+		native_thinking_responses=2,
+		failure_categories={'invalid_json': 1},
+	)
+	validate_completed_execution(result)
+
+	result.model_output.successes = 2
+	with pytest.raises(ValueError, match='do not match llm_call telemetry'):
 		validate_completed_execution(result)
 
 
@@ -865,6 +931,26 @@ def test_matched_v2_policies_differ_only_in_browser_sanitize() -> None:
 		assert {'input', 'navigate', 'upload_file', 'evaluate'} <= set(sinks)
 
 
+def test_final_27b_ablation_policies_differ_only_in_browser_sanitize() -> None:
+	policies_dir = Path(__file__).resolve().parents[1] / 'policies'
+	nosanitise = json.loads(
+		(policies_dir / 'wasp-v2-nosanitise-noalert-policy.json').read_text()
+	)['policies']
+	sanitise = json.loads(
+		(policies_dir / 'wasp-v2-sanitise-noalert-policy.json').read_text()
+	)['policies']
+
+	assert [key for key in nosanitise if nosanitise[key] != sanitise[key]] == ['prompt_injection']
+	nosanitise_injection = nosanitise['prompt_injection']
+	sanitise_injection = sanitise['prompt_injection']
+	assert [
+		key for key in nosanitise_injection
+		if nosanitise_injection[key] != sanitise_injection[key]
+	] == ['browser_sanitize']
+	assert nosanitise_injection['browser_sanitize'] is False
+	assert sanitise_injection['browser_sanitize'] is True
+
+
 def test_finished_row_stays_readable_after_middleware_changes(tmp_path: Path) -> None:
 	"""A frozen row must remain reportable once the code moves on.
 
@@ -887,3 +973,25 @@ def test_finished_row_stays_readable_after_middleware_changes(tmp_path: Path) ->
 	# ...while anything that would extend the row refuses.
 	with pytest.raises(ValueError, match='different enforcement middleware'):
 		WaspCampaign(_campaign_args(tmp_path)).load_state(for_write=True)
+
+
+def test_campaign_refuses_driver_mismatch_on_resume(tmp_path: Path) -> None:
+	campaign = WaspCampaign(_campaign_args(tmp_path))
+	state = campaign._new_state()
+	state.campaign_driver_sha256 = 'a-different-campaign-driver'
+	campaign.save_state(state)
+
+	with pytest.raises(ValueError, match='different campaign driver'):
+		WaspCampaign(_campaign_args(tmp_path)).load_state(for_write=True)
+
+
+def test_campaign_refuses_runtime_provenance_mismatch_on_resume(tmp_path: Path) -> None:
+	args = _campaign_args(tmp_path)
+	args.model_digest = 'sha256:model-a'
+	campaign = WaspCampaign(args)
+	campaign.save_state(campaign._new_state())
+
+	changed = _campaign_args(tmp_path)
+	changed.model_digest = 'sha256:model-b'
+	with pytest.raises(ValueError, match='different runtime provenance'):
+		WaspCampaign(changed).load_state(for_write=True)

@@ -13,6 +13,11 @@ GITLAB_URL="${WASP_GITLAB_DOWNLOAD_URL:-http://metis.lti.cs.cmu.edu/webarena-ima
 REDDIT_URL="${WASP_REDDIT_DOWNLOAD_URL:-http://metis.lti.cs.cmu.edu/webarena-images/postmill-populated-exposed-withimg.tar}"
 GITLAB_TAR="${WASP_GITLAB_TAR:-$REMOTE_ROOT/images/gitlab-populated-final-port8023.tar}"
 REDDIT_TAR="${WASP_REDDIT_TAR:-$REMOTE_ROOT/images/postmill-populated-exposed-withimg.tar}"
+REQUIRE_ARCHIVE_VERIFICATION="${WASP_REQUIRE_ARCHIVE_VERIFICATION:-0}"
+GITLAB_SHA256="${WASP_GITLAB_IMAGE_SHA256:-}"
+REDDIT_SHA256="${WASP_REDDIT_IMAGE_SHA256:-}"
+GITLAB_BYTES="${WASP_GITLAB_IMAGE_BYTES:-}"
+REDDIT_BYTES="${WASP_REDDIT_IMAGE_BYTES:-}"
 GITLAB_SANDBOX="${WASP_GITLAB_SANDBOX:-$REMOTE_ROOT/singularity/gitlab-pristine}"
 REDDIT_SANDBOX="${WASP_REDDIT_SANDBOX:-$REMOTE_ROOT/singularity/reddit-pristine}"
 GITLAB_ACTIVE="$REMOTE_ROOT/active/gitlab"
@@ -49,13 +54,69 @@ if ! command -v "$RUNTIME" >/dev/null 2>&1; then
 	exit 3
 fi
 
+validate_archive_metadata() {
+	local name="$1"
+	local expected_sha="$2"
+	local expected_bytes="$3"
+	if [ "$REQUIRE_ARCHIVE_VERIFICATION" != 1 ]; then
+		return
+	fi
+	[[ "$expected_sha" =~ ^[0-9a-f]{64}$ ]] || {
+		echo "$name archive SHA-256 metadata is missing or malformed." >&2
+		exit 6
+	}
+	[[ "$expected_bytes" =~ ^[0-9]+$ ]] && [ "$expected_bytes" -gt 0 ] || {
+		echo "$name archive byte-count metadata is missing or malformed." >&2
+		exit 6
+	}
+}
+
+verify_archive() {
+	local name="$1"
+	local archive="$2"
+	local expected_sha="$3"
+	local expected_bytes="$4"
+	[ -s "$archive" ] || { echo "Missing $name archive: $archive" >&2; exit 6; }
+	if [ "$REQUIRE_ARCHIVE_VERIFICATION" != 1 ]; then
+		return
+	fi
+	local actual_bytes fingerprint marker actual_sha temporary
+	actual_bytes="$(stat -c '%s' "$archive")"
+	[ "$actual_bytes" = "$expected_bytes" ] || {
+		echo "$name archive size mismatch: $actual_bytes bytes (expected $expected_bytes)." >&2
+		exit 6
+	}
+	fingerprint="$(stat -c '%s:%Y:%Z:%i' "$archive")"
+	marker="${archive}.verified-${expected_sha}"
+	if [ -f "$marker" ] && [ "$(cat "$marker")" = "$fingerprint" ]; then
+		echo "$name archive verification marker matches: $archive"
+		return
+	fi
+	actual_sha="$(sha256sum "$archive" | awk '{print $1}')"
+	[ "$actual_sha" = "$expected_sha" ] || {
+		echo "$name archive SHA-256 mismatch: $actual_sha (expected $expected_sha)." >&2
+		exit 6
+	}
+	temporary="${marker}.tmp.$$"
+	printf '%s\n' "$fingerprint" >"$temporary"
+	mv "$temporary" "$marker"
+	echo "$name archive bytes and SHA-256 verified: $archive"
+}
+
+validate_archive_metadata GitLab "$GITLAB_SHA256" "$GITLAB_BYTES"
+validate_archive_metadata Reddit "$REDDIT_SHA256" "$REDDIT_BYTES"
+
 download_if_needed() {
-	local archive="$1"
-	local url="$2"
+	local name="$1"
+	local archive="$2"
+	local url="$3"
+	local expected_sha="$4"
+	local expected_bytes="$5"
 	local partial="${archive}.part"
 	local resume=()
 	if [ -s "$archive" ]; then
 		echo "Archive already present: $archive"
+		verify_archive "$name" "$archive" "$expected_sha" "$expected_bytes"
 		return
 	fi
 	echo "Downloading $url"
@@ -65,12 +126,13 @@ download_if_needed() {
 	curl --fail --location --retry 8 --retry-delay 15 "${resume[@]}" \
 		--output "$partial" "$url"
 	mv "$partial" "$archive"
+	verify_archive "$name" "$archive" "$expected_sha" "$expected_bytes"
 }
 
 download_archives() {
-	download_if_needed "$GITLAB_TAR" "$GITLAB_URL" &
+	download_if_needed GitLab "$GITLAB_TAR" "$GITLAB_URL" "$GITLAB_SHA256" "$GITLAB_BYTES" &
 	gitlab_download=$!
-	download_if_needed "$REDDIT_TAR" "$REDDIT_URL" &
+	download_if_needed Reddit "$REDDIT_TAR" "$REDDIT_URL" "$REDDIT_SHA256" "$REDDIT_BYTES" &
 	reddit_download=$!
 	wait "$gitlab_download"
 	wait "$reddit_download"

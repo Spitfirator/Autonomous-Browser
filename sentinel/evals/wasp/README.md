@@ -90,17 +90,122 @@ HITL work, not an authorized next benchmark.
 
 ## Model/scaffold profile
 
-The initial profile is `qwen3.5-agentdojo:9b`; the final matched replication
-uses `qwen3.5-agentdojo:27b`. Both use 32,768 context tokens, 4,096 output
-tokens, temperature 0.6, top-p 0.95 and seed 0. BrowserUse uses one structured
-action per step, a 30-step cap, DOM/accessibility observations and no
-screenshots. Its explicit structured planning/thinking fields are enabled.
+The initial profile is `qwen3.5-agentdojo:9b`; the prior matched comparison and
+the controlled replication use `qwen3.5-agentdojo:27b`. Historical rows use
+32,768 context tokens and a 4,096-token output cap. The repaired controlled
+replication retains the task-specific 32,768 context but raises the output cap
+to 8,192 because Ollama's generation budget includes native reasoning as well
+as the final action JSON. An 8,192 cap is not a request to generate that many
+tokens: normal stop conditions still end generation earlier. Temperature 0.6
+and top-p 0.95 remain fixed. The historical 9B and single-seed 27B rows used
+seed 0; the controlled replication varies only the declared seed across 0, 1
+and 2. BrowserUse uses one structured action per step, a 30-step cap,
+DOM/accessibility observations and no screenshots. Its explicit structured
+planning/thinking fields are enabled. To bound the 32,768-token context, the
+final profile pins BrowserUse history compaction rather than inheriting library
+defaults: after step 5 it checks on every step, compacts once accumulated
+history reaches 20,000 characters, preserves the first and latest six items in
+addition to a summary of at most 6,000 characters, and caps the current
+interactive-elements section at 40,000 characters. The compaction request uses
+the same frozen model and is counted separately from schema-validated action
+requests in reliability telemetry.
 
-Ollama's separate native `think` stream is disabled because BrowserUse needs
-the response body to be valid against its action schema. Do not describe this
-as the same reasoning profile as the AgentDojo `thinking` runs: the WASP
-experiment answers cross-environment enforcement questions, not the
-4B/9B/27B parameter-scaling question.
+The repaired final profile also enables Qwen 3.5's native Ollama `think`
+channel. Ollama returns that reasoning separately; Sentinel neither gives it
+to BrowserUse nor persists it. Only the final response body may satisfy the
+complete BrowserUse action schema. The profile pins Ollama `0.32.5`, which
+contains the upstream structured-output repair missing from the historical
+`0.30.8` runtime. The older non-thinking multiseed attempts remain exploratory
+operational evidence and must not be pooled with the new immutable rows.
+
+Before any official task, `compatibility.py` makes one neutral complete-schema
+request for each declared seed. Each request uses the real BrowserUse system
+prompt and a deterministic 50,000-character synthetic state, but contains no
+WASP task, attack or outcome. It verifies the exact model digest/runtime,
+native-thinking separation, a schema-valid benign `done` action, no length
+termination, an identical action schema across off, policy-only and full, and
+enough measured prompt headroom to retain the complete 8,192-token output
+budget inside the 32,768-token context. Distinct start/end sentinels must both
+survive in the final action, so silent prompt-edge truncation also fails. The
+report contains counts, hashes,
+latency and token totals only—no prompts, responses or reasoning—and its
+SHA-256 is frozen into every campaign state. Official task results additionally
+record per-task prompt and completion high-water marks; context saturation or
+length termination is an operational failure to report, not a cue for a
+selective rerun.
+
+Before the first official episode, the final controller also records the single
+reserved GPU's model, total memory and driver. It requires at least 22,000 MiB,
+then checks Ollama's live process report after the canary: the 27B model must
+have `size_vram == size` and its loaded context must equal 32,768. Runtime
+provenance must remain identical across all three seeds, so latency is not
+silently pooled across hardware drift.
+
+## Replicated 27B controlled design
+
+The final controlled replication uses seeds `0`, `1`, and `2`. Each seed
+contains the same 84 attacked cases under three conditions, for 252 episodes
+per condition and 756 episodes overall:
+
+1. `off`: policy mode `off`; the untrusted-observation boundary and action
+   policy are bypassed;
+2. `policy_only`: enforce mode with `browser_sanitize=false`; boundary
+   neutralisation, the detector warning, and action-policy enforcement remain;
+3. `full`: enforce mode with `browser_sanitize=true`; the policy is otherwise
+   byte-identical and confirmed removal suppresses the warning.
+
+The `full - policy_only` paired effect therefore isolates the configured
+sanitisation increment. `policy_only - off` is a combined
+boundary-neutralisation, warning, and action-policy increment; it is not a pure
+action-policy effect.
+
+Immutable run tags are:
+
+- `wasp-qwen35-27b-browser32k-output8k-30step-v2-sanitise-noalert-none-replication-seed-{0,1,2}-v2`
+  for matched `off,enforce` cells;
+- `wasp-qwen35-27b-browser32k-output8k-30step-v2-nosanitise-noalert-none-replication-seed-{0,1,2}-v2`
+  for the enforce-only policy/no-sanitisation cells.
+
+Within each seed, the full campaign runs every batch as `off` then `enforce`;
+the four policy-only cells follow. A pristine website reset precedes every
+cell. This order is fixed, not randomised, and must be reported as a design
+limitation. Participant mode is `none`: approval denials and handoff timeouts
+are scripted controls, while actual human intervention is `N/A`.
+
+After filling the ignored `wasp.local.env` with the pinned host-independent
+runtime identities and validated archive digests, run the sole controller from
+the repository root:
+
+```bash
+set -a
+. sentinel/evals/wasp/wasp.local.env
+set +a
+bash sentinel/evals/wasp/run-27b-multiseed.sh
+```
+
+The controller reads machine-local connection and archive values first, then
+overwrites every fixed experimental identity with the preregistered profile.
+It fails closed on the complete-schema canary, model digest, runtime, policy,
+campaign-driver, and checkpoint provenance drift. On complete input it also
+generates
+`results/wasp-qwen35-27b-multiseed-thinking8k-replication-v2.json` and the
+corresponding Markdown. To independently regenerate those files without
+running inference:
+
+```bash
+PYTHONPATH=sentinel:browser-use browser-use/.venv/bin/python \
+  sentinel/evals/wasp/replication.py \
+  --run-root .wasp/runs \
+  --output /tmp/wasp-replication.json \
+  --markdown-output /tmp/wasp-replication.md
+```
+
+The completed final campaign produced all six campaigns, 36 native-score cells,
+and 756 task checkpoints with zero controller restarts or recorded operational
+failure. The independent final validator regenerated the JSON and Markdown
+from raw ignored checkpoints and matched both curated files byte-for-byte. The
+validated aggregate is therefore thesis-eligible; the design and launch canary
+alone remain non-result evidence.
 
 ## One-time local setup
 
@@ -143,8 +248,8 @@ stay on the laptop. Ollama, its model weights, GitLab, Reddit and their mutable
 state live on the reserved host. A replacement GPU therefore needs those
 remote services rebuilt, but it does not need completed local cells rerun.
 
-After updating the private host and socket fields in `wasp.local.env`, establish
-an interactive SSH control master:
+If the GPU host is directly reachable, establish one interactive SSH control
+master after updating the private host and socket fields in `wasp.local.env`:
 
 ```bash
 set -a
@@ -155,19 +260,54 @@ ssh -M -S "$WASP_SSH_SOCKET" -o ControlPersist=yes -N "$WASP_REMOTE_HOST"
 ```
 
 Run that in a dedicated terminal, or add `-f` after authentication if the host
-permits it. On the new host, install the pinned, checksummed user-space Ollama
-release into scratch and create the 32K 9B campaign model:
+permits it.
+
+For a workstation reachable only through a CS gateway, establish two masters
+instead. Do not also establish the direct master above. The second master owns
+the three experiment forwards; every later script talks only to that
+already-authenticated target master:
+
+```bash
+ssh -M -S "$WASP_GATEWAY_SOCKET" -fN \
+  -o "ControlPersist=${WASP_SSH_CONTROL_PERSIST:-96h}" \
+  -o ServerAliveInterval=15 -o ServerAliveCountMax=4 \
+  -o IdentitiesOnly=yes -o PubkeyAuthentication=no \
+  -o PreferredAuthentications=keyboard-interactive,password \
+  -o StrictHostKeyChecking=accept-new \
+  -o "UserKnownHostsFile=$WASP_GATEWAY_KNOWN_HOSTS" \
+  "$WASP_GATEWAY_HOST"
+
+ssh -M -S "$WASP_SSH_SOCKET" -fN \
+  -o "ControlPersist=${WASP_SSH_CONTROL_PERSIST:-96h}" \
+  -o ServerAliveInterval=15 -o ServerAliveCountMax=4 \
+  -o ExitOnForwardFailure=yes \
+  -o IdentitiesOnly=yes -o PubkeyAuthentication=no \
+  -o PreferredAuthentications=keyboard-interactive,password \
+  -o StrictHostKeyChecking=accept-new \
+  -o "UserKnownHostsFile=$WASP_REMOTE_KNOWN_HOSTS" \
+  -o "ProxyCommand=ssh -S $WASP_GATEWAY_SOCKET -W %h:%p $WASP_GATEWAY_HOST" \
+  -L "${WASP_GITLAB_LOCAL_PORT}:127.0.0.1:${WASP_GITLAB_REMOTE_PORT}" \
+  -L "${WASP_REDDIT_LOCAL_PORT}:127.0.0.1:${WASP_REDDIT_REMOTE_PORT}" \
+  -L "${WASP_OLLAMA_LOCAL_PORT}:127.0.0.1:${WASP_OLLAMA_REMOTE_PORT}" \
+  "$WASP_REMOTE_HOST"
+```
+
+`ControlPersist` must outlast the reservation. Refuse to reuse a stale socket,
+and verify both masters with `ssh -S ... -O check` before remote setup.
+
+On the new host, install the pinned, checksummed user-space Ollama release into
+scratch and create the final 32K 27B campaign model:
 
 ```bash
 ssh -S "$WASP_SSH_SOCKET" "$WASP_REMOTE_HOST" \
   "env OLLAMA_DIR='$WASP_REMOTE_ROOT/ollama' \
    OLLAMA_MODELS='$WASP_REMOTE_ROOT/ollama-models' \
    OLLAMA_LOG_FILE='$WASP_REMOTE_ROOT/ollama-server.log' \
-   MODEL_TAG='qwen3.5:9b' NUM_CTX='32768' bash -s" \
+   MODEL_TAG='qwen3.5:27b' NUM_CTX='32768' bash -s" \
   < sentinel/evals/ollama/setup-gpu-host.sh
 ```
 
-The installer pins Ollama `v0.30.8`, downloads the versioned
+The installer pins Ollama `v0.32.5`, downloads the versioned
 `ollama-linux-amd64.tar.zst` GitHub asset and verifies its SHA-256 before
 extracting. The model and website data are expected to be wiped with an
 ephemeral reservation; rebuilding them is an operational prerequisite, not a
@@ -201,6 +341,11 @@ scp -o ControlPath="$WASP_SSH_SOCKET" \
 ssh -S "$WASP_SSH_SOCKET" "$WASP_REMOTE_HOST" \
   "nohup env WASP_CONTAINER_RUNTIME='$WASP_CONTAINER_RUNTIME' \
    WASP_REMOTE_ROOT='$WASP_REMOTE_ROOT' \
+   WASP_REQUIRE_ARCHIVE_VERIFICATION='$WASP_REQUIRE_ARCHIVE_VERIFICATION' \
+   WASP_GITLAB_IMAGE_SHA256='$WASP_GITLAB_IMAGE_SHA256' \
+   WASP_REDDIT_IMAGE_SHA256='$WASP_REDDIT_IMAGE_SHA256' \
+   WASP_GITLAB_IMAGE_BYTES='$WASP_GITLAB_IMAGE_BYTES' \
+   WASP_REDDIT_IMAGE_BYTES='$WASP_REDDIT_IMAGE_BYTES' \
    bash '$WASP_REMOTE_ROOT/remote-environment.sh' download \
    >'$WASP_REMOTE_ROOT/download.log' 2>&1 </dev/null &"
 ```
@@ -219,6 +364,11 @@ ssh -S "$WASP_SSH_SOCKET" "$WASP_REMOTE_HOST" \
    WASP_REDDIT_TAR='$WASP_REDDIT_TAR' \
    WASP_GITLAB_SANDBOX='$WASP_GITLAB_SANDBOX' \
    WASP_REDDIT_SANDBOX='$WASP_REDDIT_SANDBOX' \
+   WASP_REQUIRE_ARCHIVE_VERIFICATION='$WASP_REQUIRE_ARCHIVE_VERIFICATION' \
+   WASP_GITLAB_IMAGE_SHA256='$WASP_GITLAB_IMAGE_SHA256' \
+   WASP_REDDIT_IMAGE_SHA256='$WASP_REDDIT_IMAGE_SHA256' \
+   WASP_GITLAB_IMAGE_BYTES='$WASP_GITLAB_IMAGE_BYTES' \
+   WASP_REDDIT_IMAGE_BYTES='$WASP_REDDIT_IMAGE_BYTES' \
    WASP_GITLAB_IMAGE='$WASP_GITLAB_IMAGE' \
    WASP_REDDIT_IMAGE='$WASP_REDDIT_IMAGE' \
    WASP_GITLAB_REMOTE_PORT='$WASP_GITLAB_REMOTE_PORT' \
@@ -335,9 +485,9 @@ This is not seamless at the in-flight-cell level: task checkpoints from an
 unscored cell cannot be combined with a new mutable GitLab/Reddit state. It is
 seamless for every already native-scored cell.
 
-All thesis-eligible campaigns listed above are complete and frozen. Their
-status and summaries can be inspected without contacting a GPU. For example,
-the matched 27B result is:
+The final three-seed campaign and the historical campaigns are complete and
+frozen. Their status and summaries can be inspected without contacting a GPU.
+For example, the prior matched single-seed 27B result is:
 
 ```bash
 bash sentinel/evals/wasp/run-wasp.sh status \
@@ -364,6 +514,8 @@ The thesis-ready synthesis of all finalized, eligible WASP conditions is:
 
 The immutable per-run records are:
 
+- [final controlled three-seed 27B Markdown](results/wasp-qwen35-27b-multiseed-thinking8k-replication-v2.md)
+  and [JSON](results/wasp-qwen35-27b-multiseed-thinking8k-replication-v2.json);
 - [final 9B sanitisation V2 Markdown](results/wasp-qwen35-9b-browser32k-30step-v2-sanitise-noalert-none-v3.md)
   and [JSON](results/wasp-qwen35-9b-browser32k-30step-v2-sanitise-noalert-none-v3.json);
 - [matched 27B sanitisation V2 Markdown](results/wasp-qwen35-27b-browser32k-30step-v2-sanitise-noalert-none-v1.md)

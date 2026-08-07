@@ -14,16 +14,16 @@
 #   MODEL_TAG=qwen3.5:14b   force a specific base tag (skips VRAM auto-pick)
 #   OLLAMA_DIR=/scratch/... install Ollama outside an ephemeral home quota
 #   OLLAMA_MODELS=/path     store model weights outside $HOME (quota relief)
-#   OLLAMA_VERSION=v0.30.8  pinned Ollama release
+#   OLLAMA_VERSION=v0.32.5  pinned Ollama release
 #   OLLAMA_SHA256=...       required when overriding OLLAMA_VERSION
 #   NUM_CTX=32768           context length pinned into the campaign model
 set -euo pipefail
 
 OLLAMA_DIR="${OLLAMA_DIR:-$HOME/.local/ollama}"
-OLLAMA_VERSION="${OLLAMA_VERSION:-v0.30.8}"
+OLLAMA_VERSION="${OLLAMA_VERSION:-v0.32.5}"
 if [ -z "${OLLAMA_SHA256:-}" ]; then
-	if [ "$OLLAMA_VERSION" = "v0.30.8" ]; then
-		OLLAMA_SHA256="ffe2b2c2f2f5f5b30c081ec353c2e0bb2d9ead516064a8e22663b24b8fd8dca0"
+	if [ "$OLLAMA_VERSION" = "v0.32.5" ]; then
+		OLLAMA_SHA256="f7d6bdbcf71b83aa8670c4e7dc4b6936c0952fcf8b114eaf6a11cbadb9684214"
 	else
 		echo "Set OLLAMA_SHA256 when overriding OLLAMA_VERSION=$OLLAMA_VERSION" >&2
 		exit 1
@@ -36,10 +36,15 @@ LOG_FILE="${OLLAMA_LOG_FILE:-$OLLAMA_DIR/ollama-server.log}"
 
 say() { printf '\n== %s\n' "$*"; }
 
+binary_matches_version() {
+	local candidate="$1"
+	"$candidate" --version 2>&1 | grep -Eq "(^|[^0-9])${OLLAMA_VERSION#v}([^0-9]|$)"
+}
+
 # --- 1. Install a user-space Ollama if none is available -------------------
-if command -v ollama >/dev/null 2>&1; then
+if command -v ollama >/dev/null 2>&1 && binary_matches_version "$(command -v ollama)"; then
 	OLLAMA_BIN="$(command -v ollama)"
-elif [ -x "$OLLAMA_DIR/bin/ollama" ]; then
+elif [ -x "$OLLAMA_DIR/bin/ollama" ] && binary_matches_version "$OLLAMA_DIR/bin/ollama"; then
 	OLLAMA_BIN="$OLLAMA_DIR/bin/ollama"
 else
 	say "Installing Ollama into $OLLAMA_DIR (user-space, no sudo)"
@@ -76,7 +81,13 @@ if ! curl -fsS "http://$OLLAMA_HOST_ADDR/api/version" >/dev/null 2>&1; then
 fi
 curl -fsS "http://$OLLAMA_HOST_ADDR/api/version" >/dev/null 2>&1 \
 	|| { echo "ollama server failed to start; see $LOG_FILE" >&2; exit 1; }
-say "Server up: $(curl -fsS "http://$OLLAMA_HOST_ADDR/api/version")"
+SERVER_VERSION="$(curl -fsS "http://$OLLAMA_HOST_ADDR/api/version" \
+	| sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')"
+[ "$SERVER_VERSION" = "${OLLAMA_VERSION#v}" ] || {
+	echo "Ollama server version is $SERVER_VERSION, expected ${OLLAMA_VERSION#v}; stop the old server and rerun" >&2
+	exit 1
+}
+say "Server up: Ollama $SERVER_VERSION"
 
 # --- 3. Choose a base model tag by VRAM unless MODEL_TAG is set -----------
 if [ -z "${MODEL_TAG:-}" ]; then

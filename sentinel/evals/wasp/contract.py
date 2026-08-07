@@ -67,16 +67,28 @@ class ModelSettings(BaseModel):
 
 	model: str = 'qwen3.5-agentdojo:9b'
 	ollama_host: str = 'http://127.0.0.1:11435'
-	context_tokens: int = 32768
-	output_tokens: int = 4096
-	temperature: float = 0.6
-	top_p: float = 0.95
+	context_tokens: int = Field(default=32768, ge=8192)
+	output_tokens: int = Field(default=4096, ge=256)
+	temperature: float = Field(default=0.6, ge=0.0)
+	top_p: float = Field(default=0.95, gt=0.0, le=1.0)
 	seed: int = 0
 	native_thinking: bool = False
 	browseruse_structured_thinking: bool = True
 	use_vision: bool = False
-	max_steps: int = 30
-	max_actions_per_step: int = 1
+	max_steps: int = Field(default=30, ge=1)
+	max_actions_per_step: int = Field(default=1, ge=1)
+	message_compaction_enabled: bool = True
+	message_compaction_every_n_steps: int = Field(default=5, ge=1)
+	message_compaction_trigger_chars: int = Field(default=20000, ge=1000)
+	message_compaction_keep_last_items: int = Field(default=6, ge=0)
+	message_compaction_summary_max_chars: int = Field(default=6000, ge=1)
+	max_clickable_elements_length: int = Field(default=40000, ge=1000)
+
+	@model_validator(mode='after')
+	def output_fits_context(self) -> 'ModelSettings':
+		if self.output_tokens >= self.context_tokens:
+			raise ValueError('output token budget must be smaller than the context window')
+		return self
 
 
 class Provenance(BaseModel):
@@ -97,6 +109,46 @@ class Provenance(BaseModel):
 	# cover uncommitted edits, and a detector change silently alters what every
 	# later execution measures.
 	enforcement_sha256: str | None = None
+
+
+class ModelOutputDiagnostics(BaseModel):
+	"""Privacy-safe structured-output reliability evidence for one task."""
+
+	model_config = ConfigDict(extra='forbid')
+
+	requests: int = Field(default=0, ge=0)
+	structured_requests: int = Field(default=0, ge=0)
+	successes: int = Field(default=0, ge=0)
+	structured_successes: int = Field(default=0, ge=0)
+	native_thinking_responses: int = Field(default=0, ge=0)
+	prompt_tokens: int = Field(default=0, ge=0)
+	completion_tokens: int = Field(default=0, ge=0)
+	max_prompt_tokens: int = Field(default=0, ge=0)
+	max_completion_tokens: int = Field(default=0, ge=0)
+	stop_reasons: dict[str, int] = Field(default_factory=dict)
+	failure_categories: dict[str, int] = Field(default_factory=dict)
+
+	@model_validator(mode='after')
+	def counts_are_consistent(self) -> 'ModelOutputDiagnostics':
+		if self.structured_requests > self.requests:
+			raise ValueError('structured requests cannot exceed total model requests')
+		if self.successes > self.requests:
+			raise ValueError('successful model calls cannot exceed total model requests')
+		if self.structured_successes > self.structured_requests:
+			raise ValueError('structured successes cannot exceed structured requests')
+		if self.structured_successes > self.successes:
+			raise ValueError('structured successes cannot exceed successful model calls')
+		if self.native_thinking_responses > self.requests:
+			raise ValueError('thinking responses cannot exceed total model requests')
+		if self.max_prompt_tokens > self.prompt_tokens:
+			raise ValueError('maximum prompt tokens cannot exceed total prompt tokens')
+		if self.max_completion_tokens > self.completion_tokens:
+			raise ValueError('maximum completion tokens cannot exceed total completion tokens')
+		if any(count < 0 for count in (*self.stop_reasons.values(), *self.failure_categories.values())):
+			raise ValueError('model-output category counts cannot be negative')
+		if self.successes + sum(self.failure_categories.values()) > self.requests:
+			raise ValueError('successful and failed model-output counts cannot exceed requests')
+		return self
 
 
 class TaskResult(BaseModel):
@@ -126,6 +178,7 @@ class TaskResult(BaseModel):
 	enforcement: dict[str, Any] = Field(default_factory=dict)
 	event_counts: dict[str, int] = Field(default_factory=dict)
 	action_names: list[str] = Field(default_factory=list)
+	model_output: ModelOutputDiagnostics = Field(default_factory=ModelOutputDiagnostics)
 
 	@model_validator(mode='after')
 	def error_has_type(self) -> 'TaskResult':
@@ -170,6 +223,98 @@ class CellState(BaseModel):
 	restart_count: int = Field(default=0, ge=0)
 
 
+class RuntimeProvenance(BaseModel):
+	"""Runtime identities external to the tracked campaign checkout."""
+
+	model_config = ConfigDict(extra='forbid')
+
+	container_runtime: str | None = None
+	container_runtime_version: str | None = None
+	ollama_version: str | None = None
+	model_digest: str | None = None
+	gpu_name: str | None = None
+	gpu_memory_total_mib: int | None = Field(default=None, ge=1)
+	gpu_driver_version: str | None = None
+	gitlab_image_source: str | None = None
+	reddit_image_source: str | None = None
+	gitlab_image_sha256: str | None = None
+	reddit_image_sha256: str | None = None
+	gitlab_image_bytes: int | None = Field(default=None, ge=1)
+	reddit_image_bytes: int | None = Field(default=None, ge=1)
+	compatibility_canary_sha256: str | None = Field(default=None, pattern=r'^[0-9a-f]{64}$')
+
+
+class CompatibilityCanaryCase(BaseModel):
+	"""One neutral complete-action-schema compatibility probe."""
+
+	model_config = ConfigDict(extra='forbid')
+
+	seed: int = Field(ge=0)
+	succeeded: bool
+	latency_s: float = Field(ge=0.0)
+	action_name: str
+	native_thinking_observed: bool
+	stop_reason: str | None = None
+	prompt_tokens: int | None = Field(default=None, ge=0)
+	completion_tokens: int | None = Field(default=None, ge=0)
+
+
+class CompatibilityCanaryReport(BaseModel):
+	"""Launch gate for the frozen Qwen/Ollama/BrowserUse output path."""
+
+	model_config = ConfigDict(extra='forbid')
+
+	schema_version: int = 2
+	created_at: str
+	sentinel_commit: str
+	browser_use_commit: str
+	enforcement_sha256: str = Field(pattern=r'^[0-9a-f]{64}$')
+	campaign_driver_sha256: str = Field(pattern=r'^[0-9a-f]{64}$')
+	ollama_version: str
+	model_digest: str = Field(pattern=r'^[0-9a-f]{64}$')
+	settings_by_seed: list[ModelSettings]
+	action_schema_sha256: str = Field(pattern=r'^[0-9a-f]{64}$')
+	condition_schema_sha256: dict[str, str]
+	context_probe_chars: int = Field(ge=40000)
+	cases: list[CompatibilityCanaryCase]
+
+	@model_validator(mode='after')
+	def complete_three_seed_gate_passed(self) -> 'CompatibilityCanaryReport':
+		if [settings.seed for settings in self.settings_by_seed] != [0, 1, 2]:
+			raise ValueError('compatibility canary must contain ordered settings for seeds 0, 1 and 2')
+		for settings in self.settings_by_seed:
+			if not settings.native_thinking or not settings.browseruse_structured_thinking:
+				raise ValueError('compatibility canary requires both native and BrowserUse thinking')
+		if set(self.condition_schema_sha256) != {'off', 'policy_only', 'full'}:
+			raise ValueError('compatibility canary must cover off, policy_only and full schemas')
+		if any(
+			len(digest) != 64 or any(character not in '0123456789abcdef' for character in digest)
+			for digest in self.condition_schema_sha256.values()
+		):
+			raise ValueError('compatibility canary condition schemas must use full SHA-256 digests')
+		if set(self.condition_schema_sha256.values()) != {self.action_schema_sha256}:
+			raise ValueError('comparison conditions do not expose one identical action schema')
+		if [case.seed for case in self.cases] != [0, 1, 2]:
+			raise ValueError('compatibility canary must contain ordered cases for seeds 0, 1 and 2')
+		if any(
+			not case.succeeded
+			or case.action_name != 'done'
+			or not case.native_thinking_observed
+			or case.stop_reason == 'length'
+			or case.prompt_tokens is None
+			or case.completion_tokens is None
+			for case in self.cases
+		):
+			raise ValueError('every compatibility case must pass with native thinking and one done action')
+		for settings, case in zip(self.settings_by_seed, self.cases, strict=True):
+			assert case.prompt_tokens is not None
+			if case.prompt_tokens + settings.output_tokens > settings.context_tokens:
+				raise ValueError(
+					'compatibility context probe does not leave the complete configured output budget'
+				)
+		return self
+
+
 class CampaignState(BaseModel):
 	model_config = ConfigDict(extra='forbid')
 
@@ -180,6 +325,8 @@ class CampaignState(BaseModel):
 	policy_sha256: str
 	participant: ParticipantMode = 'none'
 	enforcement_sha256: str | None = None
+	campaign_driver_sha256: str | None = None
+	runtime_provenance: RuntimeProvenance = Field(default_factory=RuntimeProvenance)
 	cells: dict[str, CellState] = Field(default_factory=dict)
 
 
@@ -222,6 +369,8 @@ class CampaignSummary(BaseModel):
 	cells: list[AggregateCell]
 	participant: ParticipantMode = 'none'
 	enforcement_sha256: str | None = None
+	campaign_driver_sha256: str | None = None
+	runtime_provenance: RuntimeProvenance = Field(default_factory=RuntimeProvenance)
 	input_manifests: dict[str, str] = Field(default_factory=dict)
 
 
@@ -240,6 +389,7 @@ ENFORCEMENT_SOURCES = (
 	# The harness that wires the middleware into BrowserUse is part of what a
 	# run measures: approval/handover timeouts and the oracle live here.
 	Path('evals') / 'wasp' / 'runner.py',
+	Path('server') / 'ollama_chat.py',
 	Path('server') / 'config.py',
 	Path('server') / 'governance' / 'security.py',
 	Path('server') / 'governance' / 'governed_llm.py',
@@ -259,6 +409,37 @@ def enforcement_source_sha256(sentinel_root: Path) -> str:
 		path = sentinel_root / relative
 		if not path.is_file():
 			raise FileNotFoundError(f'enforcement source is missing: {path}')
+		hasher.update(relative.as_posix().encode('utf-8'))
+		hasher.update(b'\0')
+		hasher.update(path.read_bytes())
+		hasher.update(b'\0')
+	return hasher.hexdigest()
+
+
+# The complete local driver used to prepare, canary, reset, execute and resume
+# the final campaign. Runtime/provider identities are recorded separately, but
+# changing any of these sources must force a new immutable run tag.
+CAMPAIGN_DRIVER_SOURCES = (
+	Path('evals') / 'ollama' / 'setup-gpu-host.sh',
+	Path('evals') / 'wasp' / 'bootstrap.sh',
+	Path('evals') / 'wasp' / 'campaign.py',
+	Path('evals') / 'wasp' / 'compatibility.py',
+	Path('evals') / 'wasp' / 'contract.py',
+	Path('evals') / 'wasp' / 'remote-environment.sh',
+	Path('evals') / 'wasp' / 'reset-between-cells.sh',
+	Path('evals') / 'wasp' / 'run-27b-multiseed.sh',
+	Path('evals') / 'wasp' / 'run-wasp.sh',
+)
+
+
+def campaign_driver_source_sha256(sentinel_root: Path) -> str:
+	"""Hash every source that defines final campaign setup and execution."""
+
+	hasher = hashlib.sha256()
+	for relative in CAMPAIGN_DRIVER_SOURCES:
+		path = sentinel_root / relative
+		if not path.is_file():
+			raise FileNotFoundError(f'campaign driver source is missing: {path}')
 		hasher.update(relative.as_posix().encode('utf-8'))
 		hasher.update(b'\0')
 		hasher.update(path.read_bytes())

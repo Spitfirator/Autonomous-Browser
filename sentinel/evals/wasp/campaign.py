@@ -18,11 +18,13 @@ from evals.wasp.contract import (
 	CampaignState,
 	CampaignSummary,
 	CellState,
+	CompatibilityCanaryReport,
 	ModelSettings,
 	NativeBatchScores,
 	NativeTaskScore,
 	ParticipantMode,
 	PolicyMode,
+	RuntimeProvenance,
 	TASK_IDS,
 	TaskResult,
 	WASP_COMMIT,
@@ -31,6 +33,7 @@ from evals.wasp.contract import (
 	aggregate_cell,
 	all_batches,
 	atomic_write_json,
+	campaign_driver_source_sha256,
 	cell_id,
 	load_json,
 	sha256_file,
@@ -55,6 +58,10 @@ DEFAULT_RUN_TAG = os.environ.get(
 	'wasp-qwen35-9b-browser32k-30step-v1',
 )
 DEFAULT_MAX_STEPS = int(os.environ.get('WASP_MAX_STEPS', '30'))
+DEFAULT_CONTEXT_TOKENS = int(os.environ.get('WASP_CONTEXT_TOKENS', '32768'))
+DEFAULT_OUTPUT_TOKENS = int(os.environ.get('WASP_OUTPUT_TOKENS', '4096'))
+DEFAULT_TEMPERATURE = float(os.environ.get('WASP_TEMPERATURE', '0.6'))
+DEFAULT_TOP_P = float(os.environ.get('WASP_TOP_P', '0.95'))
 DEFAULT_PARTICIPANT = os.environ.get('WASP_PARTICIPANT', 'none')
 PREPARATION_ATTEMPTS = 2
 
@@ -72,6 +79,7 @@ def _environment_flag(name: str, default: bool = False) -> bool:
 
 
 DEFAULT_RESET_BETWEEN_CELLS = _environment_flag('WASP_RESET_BETWEEN_CELLS')
+DEFAULT_NATIVE_THINKING = _environment_flag('WASP_NATIVE_THINKING')
 DEFAULT_RESET_SCRIPT = Path(
 	os.environ.get(
 		'WASP_RESET_SCRIPT',
@@ -158,14 +166,51 @@ class WaspCampaign:
 		self.summary_path = self.run_root / 'summary.json'
 		self.environment_events_path = self.run_root / 'environment-events.jsonl'
 		self.operational_failures_path = self.run_root / 'operational-failures.jsonl'
+		self.compatibility_canary_path = (
+			args.compatibility_canary.resolve() if args.compatibility_canary is not None else None
+		)
+		offline_preflight = (
+			getattr(args, 'command', None) == 'preflight'
+			and bool(getattr(args, 'offline', False))
+		)
+		if args.native_thinking and self.compatibility_canary_path is None and not offline_preflight:
+			raise ValueError('--native-thinking requires --compatibility-canary')
+		canary_sha = (
+			sha256_file(self.compatibility_canary_path)
+			if self.compatibility_canary_path is not None and self.compatibility_canary_path.is_file()
+			else None
+		)
 		self.settings = ModelSettings(
 			model=args.model,
 			ollama_host=args.ollama_host,
+			context_tokens=getattr(args, 'context_tokens', DEFAULT_CONTEXT_TOKENS),
+			output_tokens=getattr(args, 'output_tokens', DEFAULT_OUTPUT_TOKENS),
+			temperature=getattr(args, 'temperature', DEFAULT_TEMPERATURE),
+			top_p=getattr(args, 'top_p', DEFAULT_TOP_P),
+			seed=args.seed,
 			max_steps=args.max_steps,
+			native_thinking=args.native_thinking,
 		)
 		self.participant: ParticipantMode = args.participant
 		self.policy_sha = sha256_file(self.policy_path)
 		self.enforcement_sha = enforcement_source_sha256(SENTINEL_ROOT)
+		self.campaign_driver_sha = campaign_driver_source_sha256(SENTINEL_ROOT)
+		self.runtime_provenance = RuntimeProvenance(
+			container_runtime=args.container_runtime,
+			container_runtime_version=args.container_runtime_version,
+			ollama_version=args.ollama_version,
+			model_digest=args.model_digest,
+			gpu_name=args.gpu_name,
+			gpu_memory_total_mib=args.gpu_memory_total_mib,
+			gpu_driver_version=args.gpu_driver_version,
+			gitlab_image_source=args.gitlab_image_source,
+			reddit_image_source=args.reddit_image_source,
+			gitlab_image_sha256=args.gitlab_image_sha256,
+			reddit_image_sha256=args.reddit_image_sha256,
+			gitlab_image_bytes=args.gitlab_image_bytes,
+			reddit_image_bytes=args.reddit_image_bytes,
+			compatibility_canary_sha256=canary_sha,
+		)
 		self._row_enforcement_sha: str | None = None
 		self.env = _subprocess_env(self.wasp_root, self.external_root)
 		self.env['GITLAB'] = args.gitlab
@@ -173,6 +218,36 @@ class WaspCampaign:
 
 	def preflight(self, *, require_services: bool = True) -> list[str]:
 		checks: list[str] = []
+		if self.settings.native_thinking and self.compatibility_canary_path is not None:
+			if not self.compatibility_canary_path.is_file():
+				raise FileNotFoundError(
+					f'compatibility canary missing: {self.compatibility_canary_path}'
+				)
+			canary = CompatibilityCanaryReport.model_validate(
+				load_json(self.compatibility_canary_path)
+			)
+			expected_settings = next(
+				(settings for settings in canary.settings_by_seed if settings.seed == self.settings.seed),
+				None,
+			)
+			if expected_settings != self.settings:
+				raise ValueError('compatibility canary model settings do not match this campaign')
+			if canary.enforcement_sha256 != self.enforcement_sha:
+				raise ValueError('compatibility canary was produced by different model/enforcement code')
+			if canary.campaign_driver_sha256 != self.campaign_driver_sha:
+				raise ValueError('compatibility canary was produced by a different campaign driver')
+			if (
+				canary.ollama_version != self.runtime_provenance.ollama_version
+				or canary.model_digest != self.runtime_provenance.model_digest
+			):
+				raise ValueError('compatibility canary runtime does not match campaign provenance')
+			if sha256_file(self.compatibility_canary_path) != self.runtime_provenance.compatibility_canary_sha256:
+				raise ValueError('compatibility canary content hash changed')
+			checks.append('three-seed complete-action-schema compatibility canary verified')
+		elif self.settings.native_thinking:
+			if require_services:
+				raise ValueError('--native-thinking requires --compatibility-canary')
+			checks.append('native-thinking compatibility canary deferred to online launch preflight')
 		if not self.wasp_root.is_dir():
 			raise FileNotFoundError(f'WASP checkout missing: {self.wasp_root}; run bootstrap.sh first')
 		revision = git_revision(self.wasp_root)
@@ -213,15 +288,41 @@ class WaspCampaign:
 			_http_reachable(self.args.reddit)
 			checks.append(f'GitLab reachable at {self.args.gitlab}')
 			checks.append(f'Reddit reachable at {self.args.reddit}')
+			version_payload = _http_json(f'{self.args.ollama_host.rstrip("/")}/api/version')
+			live_version = str(version_payload.get('version'))
+			if self.args.ollama_version and live_version != self.args.ollama_version:
+				raise ValueError(
+					f'Ollama version is {live_version!r}, expected {self.args.ollama_version!r}'
+				)
 			models = _http_json(f'{self.args.ollama_host.rstrip("/")}/api/tags')
-			names = {str(item.get('name')) for item in models.get('models', [])}
-			names.update(str(item.get('model')) for item in models.get('models', []))
+			model_entries = models.get('models', [])
+			if not isinstance(model_entries, list) or any(
+				not isinstance(item, dict) for item in model_entries
+			):
+				raise ValueError('Ollama /api/tags returned malformed model metadata')
+			names = {str(item.get('name')) for item in model_entries}
+			names.update(str(item.get('model')) for item in model_entries)
 			if self.args.model not in names:
 				raise ValueError(
 					f'Ollama is reachable but {self.args.model!r} is not installed; '
 					f'available models: {", ".join(sorted(name for name in names if name)) or "(none)"}'
 				)
-			checks.append(f'Ollama model {self.args.model} is reachable')
+			model_entry = next(
+				(
+					item
+					for item in model_entries
+					if item.get('name') == self.args.model or item.get('model') == self.args.model
+				),
+				None,
+			)
+			live_digest = str(model_entry.get('digest') or '') if model_entry is not None else ''
+			if self.args.model_digest and live_digest != self.args.model_digest:
+				raise ValueError(
+					f'Ollama model digest is {live_digest!r}, expected {self.args.model_digest!r}'
+				)
+			checks.append(
+				f'Ollama {live_version} model {self.args.model} digest verified and reachable'
+			)
 		return checks
 
 	def _new_state(self) -> CampaignState:
@@ -238,6 +339,8 @@ class WaspCampaign:
 			policy_sha256=self.policy_sha,
 			participant=self.participant,
 			enforcement_sha256=self.enforcement_sha,
+			campaign_driver_sha256=self.campaign_driver_sha,
+			runtime_provenance=self.runtime_provenance,
 			cells=cells,
 		)
 
@@ -268,6 +371,15 @@ class WaspCampaign:
 			raise ValueError(
 				'campaign state was produced by different enforcement middleware; choose a new --run-tag'
 			)
+		if state.campaign_driver_sha256 is None:
+			if for_write:
+				raise ValueError(
+					'campaign state predates campaign-driver fingerprinting; choose a new --run-tag'
+				)
+		elif state.campaign_driver_sha256 != self.campaign_driver_sha and for_write:
+			raise ValueError('campaign state uses a different campaign driver; choose a new --run-tag')
+		if state.runtime_provenance != self.runtime_provenance and for_write:
+			raise ValueError('campaign state uses different runtime provenance; choose a new --run-tag')
 		# Checkpoints are validated for internal consistency against the middleware
 		# that produced the row, not against whatever the working tree holds now.
 		# A finished row must stay readable after the code moves on; the guard
@@ -581,6 +693,29 @@ class WaspCampaign:
 			except BaseException as exc:
 				cell.last_error = type(exc).__name__
 				self.save_state(state)
+				failed_result: TaskResult | None = None
+				if result_path.is_file():
+					try:
+						failed_result = TaskResult.model_validate(load_json(result_path))
+					except (OSError, ValueError):
+						failed_result = None
+				self._append_jsonl(
+					self.operational_failures_path,
+					{
+						'type': 'task_execution_failed',
+						'observed_at': datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
+						'cell_id': cell_id(batch, mode),
+						'task_id': task_id,
+						'error_type': (
+							failed_result.error_type if failed_result is not None else type(exc).__name__
+						),
+						'model_output': (
+							failed_result.model_output.model_dump(mode='json')
+							if failed_result is not None
+							else None
+						),
+					},
+				)
 				raise
 			cell.completed_task_ids = sorted({*cell.completed_task_ids, task_id})
 			cell.last_error = None
@@ -1020,6 +1155,8 @@ class WaspCampaign:
 			cells=cells,
 			participant=state.participant,
 			enforcement_sha256=state.enforcement_sha256,
+			campaign_driver_sha256=state.campaign_driver_sha256,
+			runtime_provenance=state.runtime_provenance,
 			input_manifests=input_manifests,
 		)
 		atomic_write_json(self.summary_path, summary)
@@ -1097,6 +1234,61 @@ def _common_parser(parser: argparse.ArgumentParser) -> None:
 	parser.add_argument('--participant', choices=('none', 'oracle'), default=DEFAULT_PARTICIPANT)
 	parser.add_argument('--model', default=os.environ.get('WASP_MODEL', 'qwen3.5-agentdojo:9b'))
 	parser.add_argument('--ollama-host', default=os.environ.get('WASP_OLLAMA_HOST', 'http://127.0.0.1:11435'))
+	parser.add_argument('--seed', type=int, default=int(os.environ.get('WASP_SEED', '0')))
+	parser.add_argument('--context-tokens', type=int, default=DEFAULT_CONTEXT_TOKENS)
+	parser.add_argument('--output-tokens', type=int, default=DEFAULT_OUTPUT_TOKENS)
+	parser.add_argument('--temperature', type=float, default=DEFAULT_TEMPERATURE)
+	parser.add_argument('--top-p', type=float, default=DEFAULT_TOP_P)
+	parser.add_argument(
+		'--native-thinking',
+		action=argparse.BooleanOptionalAction,
+		default=DEFAULT_NATIVE_THINKING,
+		help=(
+			'enable Ollama native thinking while keeping reasoning separate from '
+			'the schema-validated action response (default: WASP_NATIVE_THINKING)'
+		),
+	)
+	parser.add_argument('--container-runtime', default=os.environ.get('WASP_CONTAINER_RUNTIME'))
+	parser.add_argument(
+		'--container-runtime-version', default=os.environ.get('WASP_CONTAINER_RUNTIME_VERSION')
+	)
+	parser.add_argument('--ollama-version', default=os.environ.get('WASP_OLLAMA_VERSION'))
+	parser.add_argument('--model-digest', default=os.environ.get('WASP_MODEL_DIGEST'))
+	parser.add_argument('--gpu-name', default=os.environ.get('WASP_GPU_NAME'))
+	parser.add_argument(
+		'--gpu-memory-total-mib',
+		type=int,
+		default=(
+			int(os.environ['WASP_GPU_MEMORY_TOTAL_MIB'])
+			if os.environ.get('WASP_GPU_MEMORY_TOTAL_MIB')
+			else None
+		),
+	)
+	parser.add_argument('--gpu-driver-version', default=os.environ.get('WASP_GPU_DRIVER_VERSION'))
+	parser.add_argument(
+		'--compatibility-canary',
+		type=Path,
+		default=(
+			Path(os.environ['WASP_COMPATIBILITY_CANARY'])
+			if os.environ.get('WASP_COMPATIBILITY_CANARY')
+			else None
+		),
+		help='immutable successful complete-schema canary report required by --native-thinking',
+	)
+	parser.add_argument('--gitlab-image-source', default=os.environ.get('WASP_GITLAB_IMAGE_SOURCE'))
+	parser.add_argument('--reddit-image-source', default=os.environ.get('WASP_REDDIT_IMAGE_SOURCE'))
+	parser.add_argument('--gitlab-image-sha256', default=os.environ.get('WASP_GITLAB_IMAGE_SHA256'))
+	parser.add_argument('--reddit-image-sha256', default=os.environ.get('WASP_REDDIT_IMAGE_SHA256'))
+	parser.add_argument(
+		'--gitlab-image-bytes',
+		type=int,
+		default=int(os.environ['WASP_GITLAB_IMAGE_BYTES']) if os.environ.get('WASP_GITLAB_IMAGE_BYTES') else None,
+	)
+	parser.add_argument(
+		'--reddit-image-bytes',
+		type=int,
+		default=int(os.environ['WASP_REDDIT_IMAGE_BYTES']) if os.environ.get('WASP_REDDIT_IMAGE_BYTES') else None,
+	)
 	parser.add_argument('--gitlab', default=os.environ.get('GITLAB', 'http://127.0.0.1:18023'))
 	parser.add_argument('--reddit', default=os.environ.get('REDDIT', 'http://127.0.0.1:19999'))
 	parser.add_argument('--max-steps', type=int, default=DEFAULT_MAX_STEPS)
