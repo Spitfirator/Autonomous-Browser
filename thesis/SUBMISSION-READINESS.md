@@ -15,7 +15,7 @@ claims and numbers.
   substantive revisions in those chapter files and compile the new master to
   obtain the submission version.
 - Keep `project_report - pg.tex` as the original official-template root. Do not
-  overwrite it merely to update the submission filename.
+  overwrite it solely to update the submission filename.
 - The argument is organised around one research question and three
   contributions: executor-side mediation; post-verified observation governance
   with selective authority; and a two-environment security--utility evaluation.
@@ -64,6 +64,14 @@ independent validator are indexed from `sentinel/EVALS.md` and
 
 ## Completed release checks
 
+- The final editorial pass makes the argument more direct and readable without
+  weakening its scope. The abstract and research question now state the
+  security--utility objective plainly; the contributions and design chapter
+  explain the enforcement and authority boundaries in more natural academic
+  prose; and repetitive contrasts and implementation-detail digressions have
+  been removed. Tables 2.1 and 6.1--6.3 were also revised for clearer spacing,
+  cross-model comparison, and a non-duplicative presentation of per-seed WASP
+  effects.
 - The abstract, introduction, methodology, results, discussion, conclusion, and
   assurance appendix now use the validated three-seed Qwen 3.5 27B WASP
   off/policy-only/full comparison as the principal browser-native evidence. The
@@ -115,7 +123,7 @@ independent validator are indexed from `sentinel/EVALS.md` and
 - The release copy is
   `output/pdf/Sentinel-Independent-Runtime-Enforcement-for-Browser-Agents-submission-ready.pdf`
   with SHA-256
-  `25aea5a37ed4aaf9bf2db35c2423a47d76fe52b9763a6ab5e562af1b11bd1010`.
+  `b6d80e59145adabb4be3ced58cd97a952787a433398b99bb5e8daf7233bd64b4`.
 - The title page records the supervisor as Arthur below the submission date.
 
 ## Final gate

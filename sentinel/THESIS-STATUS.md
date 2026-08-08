@@ -40,8 +40,8 @@ deployment-ready, or has demonstrated human-factors benefits.
 The research question is:
 
 > To what extent can an independent runtime-enforcement layer reduce
-> prompt-injection-driven browser-agent violations while preserving task
-> utility?
+> prompt-injection-driven browser-agent violations while retaining useful task
+> performance?
 
 The evidence chain is:
 

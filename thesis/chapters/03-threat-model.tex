@@ -25,8 +25,8 @@ where $P$ is live policy and $C_t$ is run-local governance state. The
 executor is called only when $d_t$ returns \emph{allow}, including an action
 whose narrow approval remains valid after fresh preflight. Block, timeout,
 cancellation, unavailable required context, and unresolved authority do not
-execute $a_t$. The model is therefore a proposal generator rather than the
-source of authority for privileged effects.
+execute $a_t$. The model therefore generates proposals but does not hold the
+authority for privileged effects.
 
 \section{Assets and trust boundary}
 
@@ -73,7 +73,7 @@ bypass a refusal. \\
 
 Page and external data: untrusted inputs & DOM, accessibility text, URLs,
 extracted text, files, and tool results supply task context. & Cannot acquire
-instruction authority merely by appearing in an observation. \\
+instruction authority simply by appearing in an observation. \\
 \addlinespace[3pt]
 
 Browser automation and tools: privileged executor & Perform the concrete effect
@@ -118,8 +118,8 @@ evaluations identified in \cref{chap:discussion}.
 \section{Security requirements}
 \label{sec:security-objectives}
 
-The requirements form a dependency chain rather than a list of desirable
-features. Observation control limits what can shape a proposal; action control
+The requirements form a dependency chain. Observation control limits what can
+shape a proposal; action control
 limits what that proposal can do; authority control prevents an interface
 response from becoming a transferable permission; audit control makes every
 outcome accountable without replaying the attack. A break in any earlier link

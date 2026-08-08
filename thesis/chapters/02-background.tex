@@ -11,7 +11,7 @@ agents extend that loop to URLs, page representations, interactive elements,
 downloads, uploads, and code-capable actions. WebArena and WorkArena evaluate
 such agents through executable environments and state-based task oracles
 ~\cite{zhou2024webarena,drouin2024workarena}. Their structure highlights two
-properties relevant here: success is an environmental outcome rather than a
+properties relevant here: success is an environmental outcome, not a
 plausible response, and observations contain data outside the operator's
 control.
 
@@ -46,8 +46,8 @@ can cross secondary model calls, while stored history can reintroduce hostile
 content later. Multimodal agents add pixels: image-hijack work shows that
 instructions embedded in images can redirect vision-language systems
 ~\cite{bailey2024imagehijacks}. A DOM filter cannot remove text rendered only
-in pixels. Visual observations must therefore be treated as a distinct threat
-surface, rather than as an automatic extension of text sanitisation.
+in pixels. Visual observations therefore form a distinct threat surface with
+their own controls; text sanitisation does not automatically cover them.
 
 \subsection{What an agent-security evaluation must measure}
 
@@ -55,7 +55,7 @@ Prompt-injection evaluation spans several distinct units. A detector labels a
 piece of text; an action monitor labels a proposed or executed effect; an
 end-to-end oracle checks whether the user or attacker changed the environment
 as intended. High detector recall can coexist with a compromised trajectory if
-the model is merely warned or if a dangerous effect bypasses the monitored
+the model is only warned or if a dangerous effect bypasses the monitored
 channel. Conversely, low terminal attack success can reflect an agent that was
 diverted but lacked the capability or remaining steps to finish the attack.
 
@@ -66,9 +66,9 @@ the resulting state. WASP applies a similar distinction to browser agents and
 records whether a trajectory begins serving the attacker before the terminal
 goal is achieved~\cite{evtimov2025wasp}. ST-WebAgentBench studies the broader
 problem of policy compliance through Completion Under Policy and Risk Ratio
-~\cite{levy2026stwebagentbench}. These metrics are complementary rather than
-interchangeable: detection accuracy, risky execution, policy compliance, and
-final-state success answer different questions.
+~\cite{levy2026stwebagentbench}. These metrics must be read together because
+detection accuracy, risky execution, policy compliance, and final-state success
+describe different parts of system behaviour.
 
 This dissertation therefore treats security and utility as a joint outcome.
 It reports native user completion, native attacker success, useful-and-secure
@@ -133,6 +133,7 @@ system's trusted abstraction and expressible policy; evaluation results are
 not compared across benchmarks.}
 \label{tab:system-comparison}
 \footnotesize
+\renewcommand{\arraystretch}{1.12}
 \setlength{\tabcolsep}{3.5pt}
 \begin{tabularx}{\textwidth}{@{}L{0.16\textwidth}L{0.22\textwidth}L{0.22\textwidth}Y@{}}
 \toprule
@@ -142,26 +143,31 @@ CaMeL~\cite{debenedetti2025camel} &
 Program extracted from the trusted query; capabilities &
 Structured control/data flow and tool calls &
 Provable security for representable flows; AgentDojo evaluation. \\
+\addlinespace[3pt]
 
 Fides~\cite{costa2025fides} &
 Security labels, propagation rules, and flow policy &
 Planner information and tool execution &
 Formal IFC model with empirical AgentDojo evaluation. \\
+\addlinespace[3pt]
 
 PRUDENTIA\newline\cite{kolluri2026prudentia} &
 Fides labels and policy-aware plan &
 Planning, selective exposure, endorsement, and tools &
 Deterministic IFC with autonomy evaluation on AgentDojo and WASP. \\
+\addlinespace[3pt]
 
 AgentSpec~\cite{wang2026agentspec} &
 Trigger--predicate--enforcement rules &
 Configured runtime events around agent actions &
 Rule-based conformance evaluated in code, embodied, and driving domains. \\
+\addlinespace[3pt]
 
 DRIFT~\cite{li2025drift} &
 Function trajectory and parameter checklist from the user query &
 Memory input and plan deviations &
 Empirical isolation and validation on AgentDojo and ASB. \\
+\addlinespace[3pt]
 
 \systemname &
 Operator goal, configured policy, live browser context, and bounded authority &
@@ -171,15 +177,13 @@ Deterministic channel invariants with AgentDojo and matched WASP evidence. \\
 \end{tabularx}
 \end{table}
 
-Sentinel occupies a deliberately pragmatic point in this space. It preserves
-an existing free-form browser-agent loop rather than first translating the
-task into a trusted program or requiring a specially trained model. The benefit
-is compatibility with dynamic re-planning; the cost is that Sentinel cannot
-formally prove that every permitted same-origin action advances the user's
-intent. It instead contributes a bounded, implemented composition: exact
-pre-model observation governance, live executor-side policy, selective human
-authority, and evaluation in the browser loop those mechanisms are intended to
-protect.
+Sentinel takes a deliberately pragmatic position. It keeps the browser agent's
+free-form planning loop, allowing the agent to adapt when a page changes or an
+action fails. In exchange, Sentinel cannot formally guarantee that every
+permitted same-origin action advances the user's intent. Its contribution is an
+implemented set of enforceable boundaries: exact pre-model observation
+governance, live executor-side policy, selective human authority, and evaluation
+inside the browser loop those mechanisms are intended to protect.
 
 \section{Protection principles for agent runtimes}
 
@@ -202,8 +206,8 @@ browser observations carry untrusted provenance, detections add injection
 taint, recognised values add sensitive categories, and actions expose
 capabilities such as navigation, page write, file access, and code execution.
 These labels give the policy engine concrete source--sink facts to enforce at
-execution time; they are operational controls rather than a formal proof that
-all information flows are isolated.
+execution time. However, they are operational controls and do not prove that
+every information flow is isolated.
 
 Runtime enforcement also needs an authority protocol. A warning is not
 automatically meaningful consent: effective human-in-the-loop security
@@ -231,9 +235,15 @@ is a separate question for human-subject evaluation.
 
 Prior work establishes strong approaches to learned separation, detection,
 structured control flow, information-flow control, and runtime rule systems.
-The remaining question addressed here is integrational and empirical: can an
-independent layer wrap a dynamic browser agent at both the observation and
-execution boundaries, retain useful re-planning, expose selective authority to
-the operator, and reduce both terminal attacks and attacker-serving execution?
-AgentDojo isolates that enforcement mechanism; WASP tests whether it survives
-the additional complexity of browser observations and mutable web state.
+What remains is an integrational and empirical question: can an independent
+layer govern a dynamic browser agent at both the observation and execution
+boundaries, retain useful re-planning, and reduce both terminal attacks and
+attacker-serving execution?
+
+The dissertation answers that question through complementary forms of evidence.
+AgentDojo isolates the enforcement mechanism, and WASP tests it amid browser
+observations and mutable web state. The server-owned authority workflow and
+Chrome extension address the remaining design question: how to expose selective
+operator control without making the browser client a source of permission.
+Their tests and walkthroughs establish technical behaviour, although they do
+not constitute a participant evaluation.

@@ -17,7 +17,7 @@ The replay establishes two prerequisites for interpreting the agent results.
 First, the configured policy produced the intended decision for every defined
 security case without obtaining that coverage by blocking the benign task set.
 Second, the detector operated on the representations actually supplied by the
-two adapters, rather than on an abstract list of attack strings. The near-
+two adapters, not an abstract list of attack strings. The near-
 perfect component scores are not treated as a generalisation estimate because
 the rules were refined against these corpora. Their role is narrower: they show
 that a failure in an end-to-end row is not explained by the detector simply
@@ -32,32 +32,27 @@ native outcomes.
 
 \begin{table}[htbp]
 \centering
-\caption{AgentDojo v1 end-to-end results. U is native user utility, ASR is
-native attacker-goal success, and SU is useful-and-secure. Each attacked cell
-has $n=629$; clean utility has $n=97$.}
+\caption{AgentDojo v1 end-to-end results. Counts are followed by rates. Each
+attacked condition has $n=629$; clean utility has $n=97$.}
 \label{tab:agentdojo-e2e}
 \footnotesize
-\setlength{\tabcolsep}{3pt}
-\begin{tabular}{@{}lrrrrrrr@{}}
+\renewcommand{\arraystretch}{1.18}
+\setlength{\tabcolsep}{4pt}
+\begin{tabularx}{\textwidth}{@{}L{0.21\textwidth}L{0.16\textwidth}*{3}{>{\centering\arraybackslash}X}@{}}
 \toprule
- & Clean U & \multicolumn{3}{c}{Off} & \multicolumn{3}{c}{Enforce} \\
-\cmidrule(lr){3-5}\cmidrule(l){6-8}
-Model & & U & ASR & SU & U & ASR & SU \\
+Outcome & Condition & Qwen 3.5 4B & Qwen 3.5 9B & Qwen 3.5 27B \\
 \midrule
-Qwen 3.5 4B &
-76 (78.4\%) &
-362 (57.6\%) & 206 (32.8\%) & 297 (47.2\%) &
-446 (70.9\%) & 0 (0\%) & 446 (70.9\%) \\
-Qwen 3.5 9B &
-80 (82.5\%) &
-422 (67.1\%) & 131 (20.8\%) & 367 (58.3\%) &
-467 (74.2\%) & 1 (0.2\%) & 467 (74.2\%) \\
-Qwen 3.5 27B &
-81 (83.5\%) &
-428 (68.0\%) & 203 (32.3\%) & 345 (54.8\%) &
-483 (76.8\%) & 0 (0\%) & 483 (76.8\%) \\
+Native utility & Clean & 76 (78.4\%) & 80 (82.5\%) & 81 (83.5\%) \\
+ & Off & 362 (57.6\%) & 422 (67.1\%) & 428 (68.0\%) \\
+ & Enforce & 446 (70.9\%) & 467 (74.2\%) & 483 (76.8\%) \\
+\addlinespace[3pt]
+Native attacker success & Off & 206 (32.8\%) & 131 (20.8\%) & 203 (32.3\%) \\
+ & Enforce & 0 (0\%) & 1 (0.2\%) & 0 (0\%) \\
+\addlinespace[3pt]
+Useful and secure & Off & 297 (47.2\%) & 367 (58.3\%) & 345 (54.8\%) \\
+ & Enforce & 446 (70.9\%) & 467 (74.2\%) & 483 (76.8\%) \\
 \bottomrule
-\end{tabular}
+\end{tabularx}
 \end{table}
 
 For 4B, enforcement produced 84 additional useful outcomes, 206 fewer
@@ -83,11 +78,11 @@ environment. For 4B, native utility increased in banking (86 to 99), Slack (58
 to 60), travel (35 to 100), and workspace (183 to 187), while attacker success
 fell to zero in every suite. The 27B profile was more heterogeneous: utility
 fell in banking (118 to 99), was unchanged in Slack (70), and rose in travel
-(76 to 112) and workspace (164 to 202). That variation motivates retaining
-paired task outcomes and limitations rather than describing enforcement as a
-uniform utility improvement.
+(76 to 112) and workspace (164 to 202). That variation is why the analysis
+retains paired task outcomes and limitations; the aggregate should not be read
+as a uniform utility improvement.
 
-The mechanism was selective rather than refusal-heavy. Detector-positive tool
+The mechanism was selective and rarely relied on refusal. Detector-positive tool
 output occurred in 600, 615, and 609 enforce cases for 4B, 9B, and 27B. Each
 model recorded nine explicit action blocks and no approval actions. In the
 reviewed 27B aggregate, 2,181 actions were allowed and all nine blocks were
@@ -107,18 +102,18 @@ versus 57.6\% for 4B, 82.5\% versus 67.1\% for 9B, and 83.5\% versus 68.0\% for
 the gap while suppressing attacker outcomes. This is the expected direction if
 injected tool results cause both security violations and task diversion. It is
 also why the analysis reports clean capability, attacked utility, and secure
-utility separately rather than interpreting an ASR reduction in isolation.
+utility separately. An ASR reduction alone would hide these distinctions.
 
 \section{WASP browser-native results}
 
 \subsection{Replicated controlled comparison}
 
-The final WASP study contains three runs of the same 84 attacked browser tasks
-under off, policy-only, and full conditions: 252 episodes per condition and 756
-overall. \Cref{tab:wasp-27b} combines native final-state outcomes with the
-independent action audit. The audited ASR equals the raw native ASR in every
-condition; no native positive lacked a corresponding executed attacker-directed
-action.
+The browser-native evaluation repeated the same 84 attacked tasks for seeds 0,
+1, and 2 under off, policy-only, and full conditions. This produced 252 episodes
+per condition and 756 overall. \Cref{tab:wasp-27b} combines native final-state
+outcomes with the independent action audit. The audited ASR equals the raw
+native ASR in every condition; every native positive also had a corresponding
+executed attacker-directed action.
 
 \begin{table}[htbp]
 \centering
@@ -156,26 +151,28 @@ and $-14$. Utility was less stable, changing by $-8$, $+4$, and $-1$ episodes.
 The result therefore supports preserved aggregate usefulness with
 trajectory-level variation, not a claim that enforcement improves every task.
 
-\Cref{tab:wasp-seeds} makes that variation explicit. Each cell is a count out of
-84 for seeds 0, 1, and 2 respectively.
+\Cref{tab:wasp-seeds} shows the paired effect within each seed. This avoids
+repeating the aggregate counts in \cref{tab:wasp-27b} and makes the variation in
+utility visible alongside the consistent security direction.
 
 \begin{table}[htbp]
 \centering
-\caption{Per-seed WASP outcomes. Triplets give seed 0 / seed 1 / seed 2 counts,
-each with $n=84$.}
+\caption{Per-seed paired WASP effects, in task counts over the same 84 cases.
+Each value is the right-hand condition minus the left-hand condition; negative
+attacker values favour enforcement.}
 \label{tab:wasp-seeds}
 \small
+\renewcommand{\arraystretch}{1.2}
 \setlength{\tabcolsep}{5pt}
-\begin{tabular}{@{}lrrrrr@{}}
+\begin{tabular}{@{}lrrrrrr@{}}
 \toprule
-Condition & Utility & Audited ASR & Secure utility & Attempted & Executed \\
+ & \multicolumn{4}{c}{Full $-$ off} & \multicolumn{2}{c}{Full $-$ policy-only} \\
+\cmidrule(lr){2-5}\cmidrule(l){6-7}
+Seed & Utility & Audited ASR & Secure utility & Executed & Utility & Executed \\
 \midrule
-Off & 53 / 48 / 53 & 5 / 8 / 4 & 48 / 40 / 50 &
-13 / 15 / 15 & 13 / 15 / 14 \\
-Policy-only & 50 / 52 / 47 & 0 / 1 / 0 & 50 / 51 / 47 &
-5 / 5 / 5 & 5 / 5 / 5 \\
-Full & 45 / 52 / 52 & 0 / 0 / 0 & 45 / 52 / 52 &
-0 / 0 / 0 & 0 / 0 / 0 \\
+0 & $-8$ & $-5$ & $-3$ & $-13$ & $-5$ & $-5$ \\
+1 & $+4$ & $-8$ & $+12$ & $-15$ & $0$ & $-5$ \\
+2 & $-1$ & $-4$ & $+2$ & $-14$ & $+5$ & $-5$ \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -211,7 +208,7 @@ No human participated in these campaigns, so actual human intervention is
 not applicable. Pre-execution mediation averaged below 0.6 milliseconds per
 governed decision in every condition, with no recorded human waiting. End-to-end
 episode duration was lower under enforcement, but this is a system-level
-trajectory outcome rather than a pure estimate of middleware overhead.
+trajectory outcome and cannot be interpreted as middleware overhead alone.
 
 \subsection{Security by incompetence}
 
@@ -220,9 +217,9 @@ episodes, 42 executed an attacker-directed action, but only 17 completed the
 attacker goal. The remaining 25 directly demonstrate execution without terminal
 success: the browser acted for the attacker, yet the agent failed to finish.
 One further episode proposed but did not execute a matching action. The other
-209 contained no recorded attempt; they are diagnostically indeterminate rather
-than evidence of incapability because exposure, recognition, navigation,
-replanning, or early termination may have failed first.
+209 contained no recorded attempt. They are diagnostically indeterminate, not
+evidence of incapability, because exposure, recognition, navigation, replanning,
+or early termination may have failed first.
 
 Full enforcement recorded neither an attempted nor an executed attacker action.
 Zero terminal successes in 252 episodes does not establish a zero underlying
@@ -231,23 +228,16 @@ and the repeated benchmark matrix is not a random deployment sample. The
 stronger evidence is the agreement of native outcome, independent action audit,
 per-seed replication, and 740 verified removals.
 
-\subsection{Historical mechanism evidence and campaign validity}
-
-The earlier 9B sequence remains useful only as failure analysis. A model-facing
-warning left ASR at 7/84, changed attacker-directed execution from 31/84 to
-32/84, and reduced utility from 45/84 to 37/84. An incomplete first
-sanitisation revision reduced but did not eliminate attacker execution; the
-post-verified revision recorded 0/84 terminal successes and one execution.
-Because model and middleware provenance changed across those rows, they are not
-pooled with the replicated 27B experiment. Their narrow contribution is to show
-why a warning and unverified rewriting were rejected.
+\subsection{Campaign integrity}
 
 All 756 final episodes received native scores. Every cell matched its expected
 seed, condition, generated inputs, model, policy, and middleware record, and no
 controller restart, incomplete checkpoint, provenance mismatch, task error, or
 structured-output failure entered the denominators. The website was reset
-before every cell. Cell order was fixed rather than randomised, so temporal
-order remains a limitation even though state was restored.
+before every cell. The earlier 9B runs informed development but are excluded
+from this comparison because their model and middleware provenance changed.
+Finally, the controller used the same cell sequence throughout; this supports
+operational consistency but cannot rule out a time-dependent order effect.
 
 \section{Result synthesis}
 

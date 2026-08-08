@@ -18,7 +18,7 @@ changed attacker-directed execution from 42/252 episodes to zero and
 action-audited terminal success from 17/252 to zero. Legitimate completion
 changed from 154/252 to 149/252, while secure utility rose from 138/252 to
 149/252. The security gain therefore coexisted with a small aggregate utility
-cost and larger between-seed variation rather than hiding either.
+cost and substantial between-seed variation, both of which remain visible.
 
 Third, the sanitisation ablation and telemetry provide a consistent mechanism
 account. Enforcement without sanitisation still left attacker-directed
@@ -37,11 +37,12 @@ when influence or ordinary model error remains.
 
 \section{Security and utility are coupled}
 
-Security mechanisms are often expected to impose a utility cost. AgentDojo
-instead produced net utility gains for every model. Indirect injection explains
-why: an attack can consume steps, alter memory, and redirect the agent away
-from the user's task. Removing the injected result may therefore recover task
-completion as well as suppress the attacker goal.
+The AgentDojo results show that security and utility did not move in opposite
+directions: utility increased under enforcement for all three models. Indirect
+injection explains how this can happen. An attack can consume steps, alter
+memory, and redirect the agent away from the user's task. Removing the injected
+result can therefore recover task completion as well as suppress the attacker
+goal.
 
 This observation changes how a defence should be evaluated. Clean utility
 estimates model capability without an attack; it is not the counterfactual for
@@ -115,24 +116,22 @@ attacker-executing episodes fell to zero, with a five-episode decrement in every
 seed; aggregate utility remained 149/252. Terminal success changed by only one
 episode because most policy-only diversions already failed to complete the
 attacker goal. The action audit is therefore essential: it shows that verified
-removal changed what the model attempted, rather than merely changing the last
-step of a mostly incapable baseline.
+removal changed what the model attempted, not only the last step of a mostly
+incapable baseline.
 
-The historical 9B sequence explains why the final ablation was necessary.
+The historical 9B runs also explain why the final ablation was necessary.
 Warning-only enforcement left ASR unchanged and increased attacker-directed
-execution, while an early sanitisation revision failed on instructions split
-across accessibility-tree lines. These are development observations, not pooled
-causal estimates, but they identify the failure modes answered by the final
-post-condition: the exact reconstructed model input must change and then pass
-re-detection.
+execution. Because provenance changed during development, these runs are not
+pooled causal estimates. They nevertheless motivated a clear post-condition:
+the exact reconstructed model input must change and then pass re-detection.
 
 That post-condition also motivates current unresolved-content behaviour. If
 attribution or clean re-detection fails, sending the suspicious content with a
 warning recreates the ineffective authority structure. Sentinel instead
 withholds the current observation and permits continuation only from a fresh
 capture after operator review. The final WASP rows recorded no such unresolved
-case; the incident mechanism is established by tests and implementation
-walkthrough rather than benchmark effect.
+case; tests and an implementation walkthrough establish the incident mechanism,
+but the benchmark does not measure its effect.
 
 \section{Intermediate execution and security by incompetence}
 
@@ -157,20 +156,20 @@ The same principle constrains cross-model interpretation. Off-condition ASR is
 not monotonic from 4B to 27B, and the models differ in capability as well as
 size. A more capable agent may complete more legitimate and malicious goals.
 Security comparisons should therefore report utility, attacker outcome, and
-executed effects together rather than treating model size or low ASR as an
-independent security axis.
+executed effects together. Neither model size nor a low ASR is an independent
+security axis.
 
 \section{Policy as a backstop}
 
 Most WASP attacker goals culminate in the same same-origin forms and controls
 used by legitimate tasks. Treating every side effect after a detector finding
-as approval-requiring would therefore convert untrusted provenance into broad
-denial of service. Sentinel instead applies strong deterministic rules to
+as approval-requiring would convert untrusted provenance into broad denial of
+service. Sentinel applies strong deterministic rules to
 independently dangerous sinks, including cross-origin flow, protected values,
 local files, code, unsafe schemes, and configured consequential targets, while
 post-verified sanitisation handles the observation that shaped the plan.
 
-This division is pragmatic rather than a complete semantic judge. A
+This division is pragmatic, but it is not a complete semantic judge. A
 natural-looking same-origin instruction can evade the detector and resemble a
 legitimate task step. Task Shield, MELON, and DRIFT introduce task-derived or
 counterfactual abstractions that can address semantic alignment
@@ -196,68 +195,51 @@ safe to send to the model, so there is no action to approve at all. These states
 have different completion conditions even if the interface renders each as an
 interruption.
 
-As a thesis contribution, this is a completed systems mechanism rather than a
-second behavioural study. The implementation supplies expiring scopes,
+The contribution here is a completed systems mechanism; no second behavioural
+study is claimed. The implementation supplies expiring scopes,
 one-terminal-outcome audit, timeout and cancellation, fresh-observation
-semantics, and browser-integrated presentation. Those properties make the
-authority path reproducible and testable, and they prevent an unavailable
-interface from silently becoming permission. Whether people interpret the
-cards correctly remains a separate empirical question; it is not needed to
-establish that the acting model does not own the decision.
+semantics, and browser-integrated presentation. These properties make the
+authority path reproducible and testable. Furthermore, an unavailable interface
+cannot silently become permission. Whether people interpret the cards correctly
+remains a separate empirical question; it is not needed to establish that the
+acting model does not own the decision.
 
-\section{Relationship to system-level work}
+\section{Implications for system-level defences}
 
-Sentinel is part of a broader shift from model-only defence towards independent
-system enforcement. CaMeL and Fides offer stronger structural guarantees by
-representing control/data flow or security labels explicitly
-~\cite{debenedetti2025camel,costa2025fides}. PRUDENTIA shows how policy-aware
-planning can recover autonomy within an IFC architecture
-~\cite{kolluri2026prudentia}. AgentSpec expresses auditable runtime rules over
-configured events~\cite{wang2026agentspec}, while DRIFT validates deviations
-from a user-derived trajectory and masks conflicting memory content
-~\cite{li2025drift}.
+The architectural comparison in \cref{tab:system-comparison} located Sentinel
+among systems that move security decisions outside the acting model. The results
+now clarify what its particular trade-off delivers. Sentinel does not inherit
+the formal guarantees of CaMeL or Fides because it keeps an existing free-form
+browser loop. Instead, it supplies empirical evidence that exact pre-model
+rewriting, immediate pre-tool enforcement, server-owned authority, and paired
+audit can operate together while retaining useful task performance. Structured
+planners offer stronger guarantees for tasks they can represent; an
+executor-side wrapper offers a practical boundary when the agent exposes no
+trusted program.
 
-Sentinel targets a different point in the assurance--adaptability trade-off. It
-does not inherit the proof claims of CaMeL or Fides because it preserves an
-existing free-form browser loop instead of requiring a trusted program or
-labelled planner. Its contribution is empirical and integrational: exact
-pre-model rewriting, immediate pre-tool enforcement, server-owned selective
-authority, privacy-preserving paired audit, and a matched browser evaluation
-within one system. The approaches are therefore complementary. Structured
-planners provide stronger guarantees for tasks they can represent; an
-executor-side wrapper can add enforceable boundaries to dynamic agents that do
-not expose such a program.
-
-The architectural comparison also exposes where assurance originates. CaMeL
-and Fides derive stronger claims from restricting or labelling information
-flows; AgentSpec derives auditable behaviour from an explicit rule language;
-DRIFT derives a runtime reference from the user's task. Sentinel's assurance is
-instead layered: deterministic invariants at the executor, an empirical
-detector and verifiable rewriting post-condition at the observation boundary,
-and native end-to-end oracles for measured outcomes. Conflating these would
-overstate the detector as a proof or understate the value of an enforceable
-policy rule.
-
-A useful hybrid would preserve these distinct assurance types. A structured,
-trusted task abstraction could decide which content and effects are relevant;
-Sentinel's executor boundary could still enforce non-negotiable local rules and
-bind human authority to live browser state. This would reduce reliance on
-surface signatures without returning the final decision to the acting model.
-The empirical question would then be whether the added semantic monitor
-improves coverage without introducing enough false intervention to offset the
-utility retained here.
+This distinction also identifies a useful hybrid. A structured task abstraction
+could judge whether ambiguous content and effects remain relevant to the user's
+goal, while Sentinel's executor boundary continues to enforce non-negotiable
+local rules and bind human authority to live browser state. Such a design would
+reduce reliance on surface signatures without returning the final decision to
+the acting model. Its value would depend on whether the semantic monitor adds
+coverage without enough false intervention to erase the utility retained here.
 
 \section{Limitations and validity}
 \label{sec:discussion-limitations}
 
-The principal construct limitation is detector adaptation. Sentinel's
-signatures were revised after AgentDojo and WASP failures, including a
-live-representation correction for URL attacks whose hidden link target was
-absent from BrowserUse's accessibility text. The scorecard is therefore
-regression coverage for known families. Clean re-detection proves a
-configuration-specific post-condition, not that the remaining text is free of
-attacker intent. Adaptive optimisation against the frozen whole system is the
-appropriate next test~\cite{zhan2025adaptive}.
+Iterative fixes are a strength of the engineering process: observed failures
+revealed gaps and led to a better enforcement boundary. The validity limitation
+comes from evaluating detector coverage on attack families that also informed
+those fixes. For example, Sentinel's signatures were revised after AgentDojo
+and WASP development failures, including a correction for URL attacks whose
+hidden link target was absent from BrowserUse's accessibility text. The
+scorecard should therefore be read as regression coverage for known families,
+not as an estimate of performance on unseen attacks or other benchmarks. Clean
+re-detection establishes a configuration-specific post-condition; it cannot
+show that the remaining text is free of attacker intent. Adaptive optimisation
+against a frozen whole system is the appropriate next test
+~\cite{zhan2025adaptive}.
 
 The results do not extend to visual observations or tasks that require visual
 grounding. A future visual path needs its own provenance, isolation, and
@@ -266,9 +248,12 @@ surface~\cite{bailey2024imagehijacks,koh2024visualwebarena}.
 
 Experimental scope is bounded by three Qwen AgentDojo rows, three WASP sampling
 seeds over one fixed 84-case matrix, one pinned WASP revision, a 30-step browser
-budget, and the configured policies. Website state was reset before every cell,
-but the condition order was fixed rather than randomised. The 9B WASP rows are
-development revisions, not part of the final controlled experiment. Some
+budget, and the configured policies. Website state was reset before every cell.
+However, the controller always ran the cells in the same sequence, so a change
+in runtime conditions over time could align with a particular condition.
+Randomising or counterbalancing the sequence would reduce that risk. The 9B
+WASP rows are development revisions and are not part of the final controlled
+experiment. Some
 historical AgentDojo artefacts also predate the final provenance schema, which
 limits exact environment reconstruction even though task identities and native
 counts are preserved. These constraints preclude deployment-population and
@@ -280,7 +265,8 @@ same-origin click can have server-side consequences unavailable to local DOM
 inspection. Loopback origin checks are suitable for the local prototype but do
 not isolate it from a compromised same-user process. Current hardening of
 incidents, secret takeover, revalidation, extraction/history handling, and
-special URLs is supported by tests rather than by the frozen benchmark rows.
+special URLs is supported by tests; the frozen benchmark rows did not exercise
+those mechanisms.
 
 Finally, the authority interface has no participant evaluation. Approval
 counts, security-pause duration, and Activity annotations are technical
@@ -298,7 +284,8 @@ larger randomised seed design.
 The next architectural step is a short, operator-visible task contract that
 states expected origins, data classes, permitted effects, human steps, and stop
 conditions before exposure to untrusted content. It should be evaluated as a
-separate mechanism rather than retrofitted into the present rows.
+separate mechanism in future work; the present rows cannot supply that evidence
+retrospectively.
 
 Visual mediation and human evaluation form distinct work packages. A visual
 guard should emit bounded, provenance-aware representations and connect

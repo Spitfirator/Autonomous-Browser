@@ -15,11 +15,12 @@ The same loop creates a security problem. Web observations mix application
 content, user-generated data, embedded resources, and text controlled by an
 attacker. An indirect prompt injection places instructions in that data so the
 agent encounters them while pursuing a legitimate goal~\cite{greshake2023indirect}.
-The attack exploits an authority ambiguity rather than a malformed API call:
-the model is expected to understand novel page content, yet must also decide
+The attack does not depend on a malformed API call. It exploits an authority
+ambiguity: the model is expected to understand novel page content, yet must
+also decide
 whether that content is entitled to redirect its behaviour. Once the model can
 invoke privileged tools, a successful redirection can change remote state or
-disclose information instead of merely producing incorrect prose.
+disclose information instead of producing incorrect prose alone.
 Prompt reminders, delimiters, and detectors can reduce exposure, but they
 leave the acting model responsible for respecting the distinction between the
 operator's goal and hostile data. Classical protection principles suggest a
@@ -49,7 +50,7 @@ The thesis is that \emph{independent runtime enforcement can reduce evaluated
 policy violations while preserving useful autonomy under the tested
 conditions}. Independence means that an allow, block, approval, or takeover
 outcome is determined outside the acting model. The claim is tied to defined
-tool and browser benchmarks rather than to prompt injection in general.
+tool and browser benchmarks; it does not extend to prompt injection in general.
 
 \section{Approach}
 
@@ -82,39 +83,41 @@ navigation, and browser re-planning~\cite{evtimov2025wasp}. The principal
 browser study repeats the 84-case matrix across three seeds and compares
 enforcement off, enforcement without sanitisation, and the full system. This
 design tests browser transfer and isolates the configured sanitisation
-increment. Earlier 9B runs remain only as provenance-separated development
-evidence for the move from warning to verified removal.
+increment. The earlier 9B experiments served a different purpose: they showed
+why warnings alone were insufficient and are kept separate from the final
+comparison.
 
 \section{Contributions}
 \label{sec:contributions}
 
-The dissertation makes three contributions.
+The dissertation contributes an implemented answer to the authority problem,
+not a new browser agent. Its three contributions build on one another.
 
 \begin{enumerate}
-  \item \textbf{Executor-side enforcement for a dynamic browser-agent loop.}
-  Sentinel interposes on model input and every model-proposed privileged action
-  entering the governed executor. Live context, central policy evaluation,
-  fail-closed outcomes, and paired attempted/terminal audit separate a model's
-  proposal from authority to act without changing the underlying model.
+  \item \textbf{A practical enforcement boundary for an existing browser-agent
+  loop.} Sentinel governs the exact input seen by the model and every privileged
+  action proposed to the executor. It reads live browser context, applies one
+  central policy, fails closed when required context is missing, and records
+  paired attempted and terminal outcomes. Thus, the model can continue to plan
+  dynamically, but it cannot authorise its own actions.
 
-  \item \textbf{Post-verified observation governance with selective
-  authority.} Detection is connected to attributable sanitisation,
-  reconstruction, and clean re-detection. Origin-scoped taint and action policy
-  remain as backstops. Approval, direct takeover, and unresolved-observation
-  incidents provide distinct server-owned paths for decisions that cannot be
-  resolved as an automatic allow or block.
+  \item \textbf{An end-to-end workflow for untrusted observations and selective
+  authority.} Detection leads to attributable removal, reconstruction, and a
+  clean re-check before inference. If automatic enforcement cannot safely
+  resolve a situation, the server can request narrow approval, transfer a
+  protected step to the operator, or quarantine an unresolved observation.
+  These paths expose meaningful operator control without allowing the extension
+  to create authority.
 
-  \item \textbf{A two-environment security--utility evaluation.} Across 629
-  attacked AgentDojo tasks per condition and model, enforcement reduced native
-  attacker success from 206 to 0 cases for Qwen 3.5 4B, from 131 to 1 for 9B,
-  and from 203 to 0 for 27B while utility increased in each row. In the
-  three-seed 27B WASP comparison, full enforcement changed action-audited
-  terminal success from 17/252 to 0/252 and attacker-directed execution from
-  42/252 to 0/252. Utility changed from 154/252 to 149/252 and secure utility
-  from 138/252 to 149/252. The policy-only/full ablation isolates the configured
-  sanitisation increment from the remaining enforced boundary. Reporting
-  execution and utility together avoids treating inactivity or baseline model
-  failure as security.
+  \item \textbf{A provenance-aware evaluation of security and usefulness.}
+  AgentDojo provides controlled evidence across three model sizes, while the
+  three-seed WASP study tests the same architecture in a browser loop. In WASP,
+  full enforcement reduced audited terminal success from 17/252 to 0/252 and
+  attacker-directed execution from 42/252 to 0/252; utility changed from
+  154/252 to 149/252 and secure utility rose from 138/252 to 149/252. The
+  policy-only comparison further isolates the contribution of sanitisation.
+  Reporting execution and utility together prevents inactivity or baseline
+  model failure from being mistaken for security.
 \end{enumerate}
 
 Sentinel does not claim BrowserUse, AgentDojo, WASP, or Qwen as original work.

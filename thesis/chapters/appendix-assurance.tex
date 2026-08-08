@@ -91,8 +91,8 @@ prohibited scope. \\
 Malformed, stale, or duplicate response &
 The API cannot resolve a missing or completed request identifier. \\
 Authority channel unavailable &
-The governed path blocks or terminates according to policy rather than
-continuing autonomously. \\
+The governed path blocks or terminates according to policy; it does not
+continue autonomously. \\
 Unresolved current browser observation &
 The provider call is skipped, the observation is discarded, and only a fresh
 capture can resume progress. \\
@@ -102,7 +102,7 @@ The complete value is omitted and replaced with a fixed marker. \\
 \end{longtable}
 
 The default approval budget is four requests per run. It is a configurable
-lifecycle bound rather than a behavioural claim about operator attention.
+lifecycle bound and makes no behavioural claim about operator attention.
 Reusable grants remain run-local, expiring, use-capped, and bound to action,
 origin, capabilities, taint, protected-data classes, target fingerprint, and
 applicable parameter or content digests.
@@ -134,7 +134,7 @@ retrospectively.
 control-plane views from the deterministic local walkthrough. Panel (a) pairs
 attempted and terminal outcomes and reports enforcement timing as within-run
 accounting, not a no-enforcement counterfactual. Panel (b) shows that policy
-state is configured explicitly and enforced by the middleware, rather than by
+state is configured explicitly and enforced by the middleware, not by
 the page UI. Panel (c) offers only a bounded decision for the current redacted
 proposal. These are implementation walkthroughs, not participant or usability
 evidence.}
@@ -147,7 +147,7 @@ evidence.}
 
 These gates exercise the current approval, takeover, incident, extraction,
 secret-channel, cancellation, navigation, audit, trace, and client contracts.
-They verify source behaviour rather than altering the frozen benchmark rows.
+They verify source behaviour without altering the frozen benchmark rows.
 The machine-readable verification record preserves commands, outputs, tool
 versions, repository revision, and source hashes.
 

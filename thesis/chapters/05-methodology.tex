@@ -3,11 +3,11 @@
 
 \section{Evaluation strategy}
 
-Chapter~\ref{chap:design} turns the research question into an empirical burden.
-A block or detector alert is only an intermediate event; the relevant question
-is whether enforcement changes the complete trajectory while useful work
-remains possible. Evaluation must therefore connect the mechanism that
-intervened, the actions that followed, and the final user and attacker outcomes.
+Chapter~\ref{chap:design} defines how Sentinel is intended to intervene. The
+evaluation asks whether those interventions improve complete trajectories while
+useful work remains possible. A detector alert or blocked action is only an
+intermediate event; it matters only in relation to the actions that follow and
+the final user and attacker outcomes.
 
 No single setting exposes all three equally well. Component replay makes
 detector, sanitiser, and policy behaviour directly inspectable, but cannot show
@@ -17,24 +17,23 @@ explicit tool calls, paired conditions, and native state oracles
 navigation, and replanning over mutable applications~\cite{evtimov2025wasp},
 along with more ways for a trajectory to fail.
 
-The evaluation therefore forms a chain rather than a pooled score. Component
-replay checks the guards' contracts; AgentDojo tests controlled end-to-end
-effects; WASP examines transfer to browser interaction. Each stage addresses a
-limitation of the previous one while preserving the same joint criterion:
-attacker success, legitimate utility, and the trajectory producing both must
-be interpreted together.
+These settings form an evidence chain. Component replay checks the guards'
+contracts, AgentDojo tests controlled end-to-end effects, and WASP examines
+transfer to browser interaction. Each stage adds behaviour that the previous one
+cannot capture. Throughout, the same joint criterion applies: attacker success,
+legitimate utility, and the trajectory producing both are interpreted together.
 
 \subsection{Comparison logic}
 
 The primary comparison changes enforcement within a fixed model and scaffold;
 it does not rank models. AgentDojo runs the same attacked matrix with
-enforcement off and on. For each of three seeds, the final WASP experiment runs
+enforcement off and on. For each of three seeds, the replicated WASP experiment runs
 the same 84 cases and generated inputs under off, policy-only, and full
 conditions, restoring the corresponding website cell between conditions.
-Rates summarise the balance; paired transitions reveal whether attacks were
-prevented or introduced and whether legitimate outcomes were gained or lost.
-Security obtained by disabling the agent would therefore remain visible as a
-utility loss.
+Rates summarise the balance, while paired transitions reveal whether attacks
+were prevented or introduced and whether legitimate outcomes were gained or
+lost. Consequently, a system that appears secure only because the agent has
+stopped working remains visible as a utility loss.
 
 The policy-only condition makes the browser comparison more informative. Full
 minus policy-only isolates the configured sanitisation increment; policy-only
@@ -60,8 +59,8 @@ browser interaction, without disguising those differences in a pooled score.
 
 \section{Conditions and outcome definitions}
 
-The headline treatment is the change from \texttt{off} to \texttt{enforce}.
-Off bypasses observation rewriting and policy verdicts while preserving
+The main system comparison is the change from \texttt{off} to
+\texttt{enforce}. Off bypasses observation rewriting and policy verdicts while preserving
 redacted action telemetry needed for comparison. Enforce applies the configured
 sanitisation and action decisions. Shadow mode can record counterfactual
 decisions without changing execution, but no shadow row is used as a headline
@@ -151,9 +150,10 @@ decisions.
 Off bypasses the prompt-injection boundary and action-policy enforcement.
 Policy-only enables boundary neutralisation, the detector warning, and action
 policy while disabling browser sanitisation. Full enables sanitisation with an
-otherwise byte-identical policy. Full minus policy-only therefore isolates the
-configured sanitisation increment; policy-only minus off remains a combined
-system effect rather than a pure action-policy estimate.
+otherwise byte-identical policy. The full--policy-only contrast therefore
+isolates the configured sanitisation increment. By comparison, policy-only
+versus off measures the combined effect of all three mechanisms and cannot be
+read as an action-policy estimate alone.
 
 WASP's native final-state oracles determine user utility and raw attacker
 success. A deterministic replay independently joins recorded proposals and
@@ -166,17 +166,19 @@ using the optional LLM intermediate classifier.
 Execution is organised into four 21-task cells for each seed and condition, one
 for each application and injection-format combination. A pristine website reset
 precedes every cell, and aggregation requires identical input manifests across
-conditions. The cell order is fixed rather than randomised, which improves
-operational comparability but leaves order as a validity limitation. Earlier 9B
-rows answer only a developmental question: successive warning-only and
-sanitisation revisions explain why verified removal was adopted, but changed
-middleware prevents them from entering the final controlled denominators.
+conditions. The controller always processed these cells in the same sequence.
+Resetting the websites removes persistent application state; however, temporal
+runtime drift could still align with a condition. A randomised or
+counterbalanced sequence would provide a stronger control in future work.
 
-\section{Evidence admission and validity}
+\section{Quality controls and scope}
 
-Only complete cells matching native scores, task reports, and frozen provenance
-enter the results; operational failures are excluded. Verification is retained
-in \cref{sec:implementation-verification,sec:appendix-wasp-provenance}. These
-experiments contain no human participants. External validity is bounded by two
-benchmark families, three WASP seeds over one fixed matrix and order, finite
-step budgets, DOM-only observations, and development-set detector adaptation.
+Before a result entered the analysis, its task coverage, native scores, task
+reports, and frozen provenance had to agree. Failed or incomplete cells remain
+operational records, but they do not enter the denominators. The corresponding
+checks are documented in
+\cref{sec:implementation-verification,sec:appendix-wasp-provenance}.
+
+No human participated. The evidence is bounded by two benchmark families, three
+WASP seeds over one matrix, finite step budgets, DOM-only observations, and
+development-informed detector rules.
