@@ -1,60 +1,38 @@
 \chapter{Conclusion}
 \label{chap:conclusion}
 
-Browser agents must interpret web content in order to act, yet that same
-content can contain instructions designed to redirect them. This dissertation
-asked whether an independent runtime-enforcement layer can reduce the resulting
-violations while preserving useful task completion. \systemname\ answers the
-question by separating planning from authority: BrowserUse and the model
-continue to choose actions, but observation handling and privileged execution
-are governed outside the model.
+Browser agents must interpret web content to act, yet that content can also
+redirect them. This dissertation asked whether independent runtime enforcement
+can reduce such violations while preserving useful task completion.
+\systemname\ separates planning from authority: BrowserUse and the model choose
+actions, while observation handling and privileged execution are governed
+outside the model.
 
-The first contribution is an executor-side architecture for a dynamic browser
-loop. Sentinel mediates model-proposed actions immediately before execution,
-using live browser context, one policy engine, fail-closed outcomes, and paired
-attempted/terminal audit. The second contribution is a post-verified
-observation boundary connected to selective authority. Attributable suspicious
-regions are removed and the exact reconstructed model input is re-detected.
-Hard rules remain non-overridable; narrow approval is revalidated; protected
-input transfers to direct takeover; and unresolved current observations are
-withheld until a fresh capture. A Chrome extension presents these server-owned
-states and their redacted history. The third contribution is a two-environment
-evaluation that connects controlled AgentDojo evidence to a matched
-browser-native WASP comparison.
+Sentinel contributes an executor-side architecture that mediates live action
+context through one policy, fail-closed outcomes, and paired audit; a
+post-verified observation boundary coupled to narrow approval, direct takeover,
+and fresh-capture incidents; and a two-environment evaluation connecting
+controlled AgentDojo mechanism evidence to replicated browser-native WASP
+evidence. A Chrome extension presents the server-owned authority states and
+their redacted history.
 
-The empirical answer is positive within that evaluated boundary. Across 629
-attacked AgentDojo tasks per condition, attacker success changed from 206 to 0
-cases for Qwen 3.5 4B, from 131 to 1 for 9B, and from 203 to 0 for 27B. Utility
-and secure utility increased in every enforce row, while each model recorded
-only nine explicit blocks. In the matched 27B WASP comparison, terminal
-attacker success changed from 5/84 to 0/84 and attacker-directed execution from
-17/84 to 0/84. Utility changed from 47/84 to 46/84 and secure utility from
-44/84 to 46/84. The enforce run recorded 368 confirmed sanitisation removals,
-no hard block or takeover, and one denied approval on a task that still
-succeeded.
+The empirical answer is positive within that boundary. Across 629 attacked
+AgentDojo tasks per condition, attacker success changed from 206 to 0 cases for
+Qwen 3.5 4B, from 131 to 1 for 9B, and from 203 to 0 for 27B; utility and secure
+utility increased in every enforce row. In the three-seed 27B WASP experiment,
+full enforcement changed action-audited terminal success from 17/252 to 0/252
+and attacker-directed execution from 42/252 to 0/252. Legitimate completion
+changed from 154/252 to 149/252, while secure utility rose from 138/252 to
+149/252. The ablation explains the mechanism: enforcement without sanitisation
+still left attacker-directed execution in 15/252 episodes, whereas the full
+system removed those proposals at the same aggregate utility and confirmed all
+740 sanitisation attempts as removals.
 
-The 9B development sequence supplies the mechanism lesson behind these
-results. Warning the model left ASR at 7/84, slightly increased
-attacker-directed execution, and reduced utility. Sanitisation V1 reduced the
-attack outcomes but exposed incomplete multi-line removal. V2 addressed that
-observed failure class and recorded 0/84 terminal attacker successes with one
-attacker-directed execution. Detection became useful containment when it was
-coupled to independently enforced removal and a verified post-condition, not
-when it merely asked the exposed planner to behave differently.
+This is a bounded systems contribution: it does not establish visual-channel
+robustness, universal detection, deployment-scale isolation, or human
+effectiveness. These boundaries motivate held-out adaptive evaluation, visual
+mediation, a tested task-authority contract, and participant research.
 
-The result is a bounded systems contribution. The evaluated channel is
-DOM-derived accessibility text, the detector was developed against known
-corpora, and the experiments cover particular models, policies, benchmarks,
-and one seed.
-The authority interface establishes technical control semantics rather than
-measured human effectiveness. These boundaries define the next work: frozen
-adaptive evaluation, a separately tested task-authority contract, an
-independently mediated visual path, and participant research on approval and
-takeover decisions.
-
-The broader conclusion is architectural. Useful planning does not require
-unchecked authority. A probabilistic model can remain responsible for adapting
-to the web while an independent system controls what reaches it, mediates what
-leaves it, and transfers genuinely contextual decisions to the operator. Under
-the tested conditions, that separation reduced successful attacks and
-attacker-serving execution while preserving useful autonomy.
+The broader conclusion is architectural: under the tested conditions, useful
+planning did not require unchecked authority. Sentinel governed what reached
+the planner and what left it while preserving useful autonomy.

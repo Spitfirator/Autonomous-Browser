@@ -1,10 +1,7 @@
 \documentclass[12pt,a4paper]{report}
 
-% Standalone submission master derived from the official UCL project-report
-% template. Chapter sources remain shared with the evidence-reviewed draft so
-% that evidence corrections can be incorporated once without allowing the two
-% manuscript roots to drift. This submission freezes the verified matched WASP
-% result; excluded multi-seed checkpoints are not a release dependency.
+% Retain the project-report structure while applying the dissertation module's
+% explicit 12-point and A4 formatting requirements.
 \usepackage[margin=25mm,headheight=14pt]{geometry}
 \usepackage{setspace}
 \usepackage{amsmath,amssymb}
@@ -56,6 +53,7 @@
 \newcommand{\rqone}{To what extent can an independent runtime-enforcement layer reduce prompt-injection-driven browser-agent violations while preserving task utility?}
 
 \begin{document}
+% Use explicit one-and-a-half spacing as required by the dissertation module.
 \onehalfspacing
 
 \hypersetup{pageanchor=false}
@@ -95,38 +93,37 @@
 \addcontentsline{toc}{chapter}{Abstract}
 \begin{singlespace}
 
-Browser agents turn model outputs into consequential actions across web
-applications, but the pages they observe may also contain instructions supplied
-by an attacker.
-This creates an authority problem: the acting model must interpret untrusted
-content while deciding whether that content should influence privileged
-actions. This dissertation presents \systemname, an independent enforcement
-layer between a browser agent and its executor. \systemname\ governs the exact
-observation sent to the model, evaluates model-proposed actions immediately
-before execution, and transfers control to the operator when policy requires
-human authority. Its implementation combines attributable observation
-sanitisation and re-detection, origin-scoped taint, deterministic policy and
-data-flow rules, narrow approval, direct takeover for protected input, and a
-redacted audit trail presented through a Chrome extension.
+Browser agents turn model outputs into consequential actions, yet the pages
+they must interpret may also contain instructions supplied by an attacker.
+This creates an authority problem: the acting model sees untrusted content
+while deciding whether that content should influence privileged effects. This
+dissertation presents \systemname, an independent enforcement layer between a
+browser agent and its executor. \systemname\ governs the exact observation sent
+to the model, evaluates proposed actions immediately before execution, and
+transfers control when policy requires human authority. It combines
+attributable observation sanitisation and re-detection, origin-scoped taint,
+deterministic policy and data-flow rules, narrow approval, direct takeover for
+protected input, and privacy-preserving audit through a Chrome extension.
 
 The evaluation connects controlled mechanism evidence to browser-native
 execution. Across paired AgentDojo comparisons with 629 attacked tasks per
 condition, enforcement changed native attacker success from 206 to 0 cases for
-Qwen 3.5 4B, from 131 to 1 for 9B, and from 203 to 0 for 27B. Utility increased
-in all three enforce conditions. In the primary matched WASP comparison,
-post-verified sanitisation changed terminal attacker success from 5/84 to 0/84
-and attacker-directed execution from 17/84 to 0/84, while utility changed from
-47/84 to 46/84 and secure utility from 44/84 to 46/84. A separate 9B
-development sequence explains the mechanism choice: model-facing warnings left
-attacker success unchanged, sanitisation V1 exposed incomplete multi-line
-removal, and V2 addressed that observed failure class.
+Qwen 3.5 4B, from 131 to 1 for 9B, and from 203 to 0 for 27B, while utility
+increased in all three enforce conditions. The principal WASP study repeats 84
+browser tasks across three seeds under off, policy-only, and full conditions
+($n=252$ per condition). From off to full, action-audited terminal attacker
+success changed from 17/252 to 0/252 and attacker-directed execution from
+42/252 to 0/252. Legitimate-task completion changed from 154/252 to 149/252,
+while secure utility rose from 138/252 to 149/252. Without sanitisation,
+enforcement still left attacker-directed execution in 15/252 episodes; the full
+system removed these attempts at the same aggregate utility and recorded 740
+confirmed sanitisation removals.
 
-The results show that, under the evaluated conditions, an independently
-enforced observation and action boundary can reduce successful attacks and
-attacker-serving execution without eliminating useful task completion. The
-contribution is a bounded systems result rather than a universal defence:
-Sentinel demonstrates how a probabilistic planner can remain useful without
-being the sole authority for its own privileged effects.
+Under the evaluated conditions, an independently enforced observation and
+action boundary therefore reduced both successful attacks and attacker-serving
+execution without eliminating useful task completion. This is a bounded
+systems result, not a universal defence: a probabilistic planner can remain
+useful without being the sole authority for its privileged effects.
 \end{singlespace}
 
 \begingroup

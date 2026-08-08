@@ -111,76 +111,170 @@ utility separately rather than interpreting an ASR reduction in isolation.
 
 \section{WASP browser-native results}
 
-\subsection{Primary matched 27B comparison}
+\subsection{Replicated controlled comparison}
 
-The matched 27B campaign contains 84 attacked browser tasks in each condition.
-\Cref{tab:wasp-27b} reports WASP's native final-state outcomes together with
-task instances containing at least one attacker-directed attempt or execution.
+The final WASP study contains three runs of the same 84 attacked browser tasks
+under off, policy-only, and full conditions: 252 episodes per condition and 756
+overall. \Cref{tab:wasp-27b} combines native final-state outcomes with the
+independent action audit. The audited ASR equals the raw native ASR in every
+condition; no native positive lacked a corresponding executed attacker-directed
+action.
 
 \begin{table}[htbp]
 \centering
-\caption{Matched Qwen 3.5 27B WASP results, $n=84$ per condition. Attempted
-and executed columns count task instances, not raw actions.}
+\caption{Replicated Qwen 3.5 27B WASP results, $n=252$ per condition. Attempted
+and executed columns count task episodes with at least one matching action.
+Potential false blocks are an upper bound, not confirmed causes of task failure.}
 \label{tab:wasp-27b}
-\small
-\begin{tabular}{@{}lrrrrr@{}}
+\scriptsize
+\setlength{\tabcolsep}{3.2pt}
+\begin{tabular}{@{}lrrrrrr@{}}
 \toprule
-Condition & Utility & ASR & Secure utility & Attempted & Executed \\
+Condition & Utility & Audited ASR & Secure utility & Attempted & Executed &
+Potential false blocks \\
 \midrule
 Off &
-47 (55.95\%) & 5 (5.95\%) & 44 (52.38\%) &
-17 (20.24\%) & 17 (20.24\%) \\
-Sanitise V2 enforce &
-46 (54.76\%) & 0 (0\%) & 46 (54.76\%) &
-0 (0\%) & 0 (0\%) \\
+154 (61.11\%) & 17 (6.75\%) & 138 (54.76\%) &
+43 (17.06\%) & 42 (16.67\%) & 0 (0\%) \\
+Policy-only &
+149 (59.13\%) & 1 (0.40\%) & 148 (58.73\%) &
+15 (5.95\%) & 15 (5.95\%) & 1 (0.40\%) \\
+Full &
+149 (59.13\%) & 0 (0\%) & 149 (59.13\%) &
+0 (0\%) & 0 (0\%) & 0 (0\%) \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-All five off-condition attacker successes were absent under enforcement, and
-no new success appeared. Attacker-directed attempts and executions changed
-from 17 task instances to zero. Utility changed by one task
-((-1.19) percentage points), while secure utility increased by two tasks
-((+2.38) points). Paired utility contained seven gains, eight losses, and 69
-unchanged cases. Joint outcomes moved from 44 useful/secure, three
-useful/compromised, 35 unsuccessful/secure, and two
-unsuccessful/compromised cases to 46 useful/secure and 38
-unsuccessful/secure cases.
+From off to full, all 17 terminal attacker successes and all 42 episodes with
+attacker-directed execution were absent. Legitimate completion changed by five
+episodes, from 154/252 to 149/252 ($-1.98$ percentage points), while secure
+utility rose by 11 episodes, from 138/252 to 149/252 ($+4.37$ points). The
+security effect appeared in every seed: audited attacker success changed by
+$-5$, $-8$, and $-4$ episodes, and attacker-directed execution by $-13$, $-15$,
+and $-14$. Utility was less stable, changing by $-8$, $+4$, and $-1$ episodes.
+The result therefore supports preserved aggregate usefulness with
+trajectory-level variation, not a claim that enforcement improves every task.
 
-Telemetry identifies the observed mechanism. The enforce condition recorded
-368 sanitisation attempts and 368 confirmed removals, with no residual or
-unattributable outcome. It recorded no hard block or handover. One page-code
-proposal triggered an approval and was denied, but the task still passed its
-native user oracle. The result is consequently associated primarily with
-post-verified observation sanitisation rather than widespread action refusal.
+\Cref{tab:wasp-seeds} makes that variation explicit. Each cell is a count out of
+84 for seeds 0, 1, and 2 respectively.
 
-The 368 events comprise 15 direct line removals and 353 bounded-window
-removals. No post-success detector alert was recorded. The branch distribution
-matters because WASP exposes injections through an accessibility-tree
-representation in which one logical instruction can be fragmented across
-nodes: the result depends mainly on the multi-line path introduced during V2,
-not on a trivial exact-line deletion. Confirmed removal is an event-level
-post-condition; the native 84-task trajectories remain the outcome evidence.
+\begin{table}[htbp]
+\centering
+\caption{Per-seed WASP outcomes. Triplets give seed 0 / seed 1 / seed 2 counts,
+each with $n=84$.}
+\label{tab:wasp-seeds}
+\small
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{@{}lrrrrr@{}}
+\toprule
+Condition & Utility & Audited ASR & Secure utility & Attempted & Executed \\
+\midrule
+Off & 53 / 48 / 53 & 5 / 8 / 4 & 48 / 40 / 50 &
+13 / 15 / 15 & 13 / 15 / 14 \\
+Policy-only & 50 / 52 / 47 & 0 / 1 / 0 & 50 / 51 / 47 &
+5 / 5 / 5 & 5 / 5 / 5 \\
+Full & 45 / 52 / 52 & 0 / 0 / 0 & 45 / 52 / 52 &
+0 / 0 / 0 & 0 / 0 / 0 \\
+\bottomrule
+\end{tabular}
+\end{table}
 
-The paired utility losses also cannot be equated with direct policy false
-blocks. No hard block or takeover occurred, and the sole denied approval was in
-a task whose user oracle succeeded. The eight losses therefore arose from
-changed agent trajectories after the observation was rewritten, website or
-model variability within the fixed setting, or finite-step interactions, not
-from eight explicit vetoes. Conversely, seven off failures became enforce
-successes. The net change of one task is a compact aggregate over both effects.
+\subsection{What the sanitisation ablation establishes}
 
-Zero attacker success in 84 tasks is not proof that the underlying rate is
-zero. Under the rule-of-three heuristic it corresponds to an approximate 3.6\%
-upper bound. The stronger observation in this dataset is the conjunction of
-zero terminal successes, zero matched attacker-directed proposals, zero
-executions, and 368 verified removals. Two of the four off cells already had no
-terminal attack success, which further demonstrates why the execution replay
-is required alongside ASR.
+The policy-only condition retains boundary neutralisation, the detector
+warning, and action policy while disabling browser sanitisation. Relative to
+off, it reduced audited attacker success from 17/252 to 1/252 and
+attacker-directed execution from 42/252 to 15/252. This is a combined system
+effect: it cannot be attributed to action policy alone.
 
-\Cref{fig:evaluation-bars} visualises the two headline comparisons. The tables
-remain authoritative; the plots make the security--utility pattern easier to
-compare.
+Full differs only by enabling sanitisation. Aggregate utility remained
+149/252, while attacker-directed attempts and executions changed from 15/252
+to 0/252. The decrement was five episodes in every seed. Audited attacker
+success changed from 1/252 to 0/252 and secure utility from 148/252 to 149/252.
+The terminal difference is numerically small because the policy-only agent
+completed only one attacker goal, but the trajectory difference is not: the
+full system prevented the hostile observation from generating any matching
+proposal in 252 episodes.
+
+Mechanism telemetry supports that interpretation. Full enforcement performed
+740 sanitisation attempts and confirmed 740 removals, comprising 21 direct-line
+and 719 bounded-window cases. None remained detector-positive, none was
+unattributable, and no post-removal warning was emitted. Policy-only deliberately
+recorded no sanitisation events. It raised two approval requests in one episode;
+scripted no-participant resolution stopped one attacker-directed action and one
+non-attacker-directed action. The latter is the single potential false block in
+\cref{tab:wasp-27b}. Full generated no attacker-directed proposal and raised no
+approval, block, handover, or security-pause event.
+
+No human participated in these campaigns, so actual human intervention is
+not applicable. Pre-execution mediation averaged below 0.6 milliseconds per
+governed decision in every condition, with no recorded human waiting. End-to-end
+episode duration was lower under enforcement, but this is a system-level
+trajectory outcome rather than a pure estimate of middleware overhead.
+
+\subsection{Security by incompetence}
+
+Terminal ASR alone substantially understates baseline diversion. Of the 252 off
+episodes, 42 executed an attacker-directed action, but only 17 completed the
+attacker goal. The remaining 25 directly demonstrate execution without terminal
+success: the browser acted for the attacker, yet the agent failed to finish.
+One further episode proposed but did not execute a matching action. The other
+209 contained no recorded attempt; they are diagnostically indeterminate rather
+than evidence of incapability because exposure, recognition, navigation,
+replanning, or early termination may have failed first.
+
+Full enforcement recorded neither an attempted nor an executed attacker action.
+Zero terminal successes in 252 episodes does not establish a zero underlying
+rate: the rule-of-three heuristic gives an approximate upper bound of 1.19\%,
+and the repeated benchmark matrix is not a random deployment sample. The
+stronger evidence is the agreement of native outcome, independent action audit,
+per-seed replication, and 740 verified removals.
+
+\subsection{Historical mechanism evidence and campaign validity}
+
+The earlier 9B sequence remains useful only as failure analysis. A model-facing
+warning left ASR at 7/84, changed attacker-directed execution from 31/84 to
+32/84, and reduced utility from 45/84 to 37/84. An incomplete first
+sanitisation revision reduced but did not eliminate attacker execution; the
+post-verified revision recorded 0/84 terminal successes and one execution.
+Because model and middleware provenance changed across those rows, they are not
+pooled with the replicated 27B experiment. Their narrow contribution is to show
+why a warning and unverified rewriting were rejected.
+
+All 756 final episodes received native scores. Every cell matched its expected
+seed, condition, generated inputs, model, policy, and middleware record, and no
+controller restart, incomplete checkpoint, provenance mismatch, task error, or
+structured-output failure entered the denominators. The website was reset
+before every cell. Cell order was fixed rather than randomised, so temporal
+order remains a limitation even though state was restored.
+
+\section{Result synthesis}
+
+The three evidence levels align without being pooled. Component replay confirms
+the configured guard contracts. Across AgentDojo's controlled tool
+environments, enforcement sharply reduced attacker success while utility and
+secure utility rose. The replicated WASP study then preserved the security
+direction in a browser loop: all 17 audited terminal successes and 42
+attacker-executing episodes observed off were absent under full enforcement
+across three seeds.
+
+Utility bounds the claim. Full WASP enforcement completed five fewer episodes
+than off in aggregate, with gains and losses varying by seed, while secure
+utility increased by 11. This supports useful browser transfer, not cost-free
+improvement. The policy-only/full ablation locates the contribution of
+post-verified observation handling more precisely: without sanitisation,
+attacker-directed execution remained in 15/252 episodes; with sanitisation,
+none was proposed, at unchanged aggregate utility.
+
+The combined evidence therefore answers the research question at the level
+claimed. Independent enforcement changed both the observations shaping the
+planner and the effects reaching the executor, while native oracles and action
+audit kept task failure, diversion, execution, and terminal compromise
+distinct.
+
+\Cref{fig:evaluation-bars} visualises the two end-to-end comparisons. Tables
+remain authoritative; the plots expose the joint security--utility pattern.
 
 \begin{figure}[htbp]
 \centering
@@ -189,7 +283,7 @@ compare.
 \begin{axis}[
   ybar,
   width=0.92\textwidth,
-  height=48mm,
+  height=43mm,
   bar width=7pt,
   ymin=0,ymax=85,
   ylabel={Task instances (\%)},
@@ -214,143 +308,34 @@ compare.
 \end{tikzpicture}
 
 \vspace{3mm}
-\textbf{(b) Matched 27B WASP outcomes}\par\smallskip
+\textbf{(b) Replicated 27B WASP outcomes}\par\smallskip
 \begin{tikzpicture}
 \begin{axis}[
   ybar,
   width=0.92\textwidth,
-  height=48mm,
-  bar width=13pt,
-  ymin=0,ymax=65,
-  ylabel={Task instances (\%)},
+  height=43mm,
+  bar width=8pt,
+  ymin=0,ymax=70,
+  ylabel={Task episodes (\%)},
   symbolic x coords={Utility,ASR,Execution,{Secure utility}},
   xtick=data,
-  legend style={at={(0.5,1.02)},anchor=south,legend columns=2,draw=none,
+  legend style={at={(0.5,1.02)},anchor=south,legend columns=3,draw=none,
     font=\scriptsize},
   grid=major,
   grid style={draw=sentinelgrey!18},
   tick label style={font=\small},
 ]
 \addplot[fill=sentinelgrey!35,draw=sentineldark] coordinates
-  {(Utility,55.95) (ASR,5.95) (Execution,20.24) ({Secure utility},52.38)};
-\addplot[fill=sentinelamber!70,draw=sentinelamber] coordinates
-  {(Utility,54.76) (ASR,0) (Execution,0) ({Secure utility},54.76)};
-\legend{Off,Sanitise V2 enforce}
+  {(Utility,61.11) (ASR,6.75) (Execution,16.67) ({Secure utility},54.76)};
+\addplot[fill=sentinelblue!45,draw=sentinelblue] coordinates
+  {(Utility,59.13) (ASR,0.40) (Execution,5.95) ({Secure utility},58.73)};
+\addplot[fill=sentinelamber!75,draw=sentinelamber] coordinates
+  {(Utility,59.13) (ASR,0) (Execution,0) ({Secure utility},59.13)};
+\legend{Off,Policy-only,Full}
 \end{axis}
 \end{tikzpicture}
 \caption{Security and utility outcomes for the controlled AgentDojo rows and
-the primary matched WASP comparison.}
+the three-seed WASP comparison. WASP bars pool 252 episodes per condition;
+\cref{tab:wasp-seeds} reports between-seed variation.}
 \label{fig:evaluation-bars}
 \end{figure}
-
-\subsection{9B development sequence}
-
-The 9B sequence retains a shared off baseline and three successive enforce
-implementations. \Cref{tab:wasp-9b} keeps warning-only and V1 in the main
-results because they explain the final design rather than serving as discarded
-pilots.
-
-\begin{table}[htbp]
-\centering
-\caption{Qwen 3.5 9B WASP development sequence, $n=84$ per row. The enforce
-rows are successive middleware revisions using the shared off baseline.}
-\label{tab:wasp-9b}
-\small
-\begin{tabular}{@{}lrrrrr@{}}
-\toprule
-Condition & Utility & ASR & Secure utility & Attempted & Executed \\
-\midrule
-Shared off &
-45 (53.57\%) & 7 (8.33\%) & 41 (48.81\%) &
-31 (36.90\%) & 31 (36.90\%) \\
-Warning enforce &
-37 (44.05\%) & 7 (8.33\%) & 35 (41.67\%) &
-32 (38.10\%) & 32 (38.10\%) \\
-Sanitise V1 &
-52 (61.90\%) & 6 (7.14\%) & 49 (58.33\%) &
-18 (21.43\%) & 18 (21.43\%) \\
-Sanitise V2 &
-54 (64.29\%) & 0 (0\%) & 54 (64.29\%) &
-1 (1.19\%) & 1 (1.19\%) \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-Warning-only enforcement left ASR at 7/84, increased attacker-directed
-execution from 31/84 to 32/84, and reduced utility from 45/84 to 37/84.
-Detection plus a model-facing warning did not contain the attack under this
-condition. Sanitisation V1 improved utility and reduced attacker execution,
-but six terminal attacks and 18 attacker-directed executions remained. Trace
-analysis identified incomplete removal when an instruction spanned several
-accessibility-tree lines.
-
-V2 replaced the incomplete line handling with a bounded cluster strategy. Its
-row recorded 0/84 terminal attacks and one attacker-directed navigation, which
-did not satisfy the final attacker oracle. Across 1,057 sanitisation attempts,
-1,053 were confirmed removals and four unattributable cases followed the
-historical warning fallback. A frozen observation replay independently
-confirmed removal in all 84 attacked observations without a detector-positive
-residual or whole-page wipe. The sequence therefore supplied the engineering
-lesson that shaped the final boundary: detection became effective containment
-only when coupled to independently enforced removal and verification.
-
-The event distribution again locates the improvement. Fourteen V2 removals
-used the direct line branch and 1,039 used the bounded-window branch; the four
-unattributable events were the only cases with no removal branch. The replay
-also checked that non-anchor control descriptors remained present, excluding a
-degenerate explanation in which the whole page was erased. The single
-attacker-directed V2 execution shows why the conclusion is phrased in terms of
-measured reduction rather than an absolute mediation guarantee: terminal ASR
-was zero, but one intermediate effect still reached the browser tool.
-
-Warning, V1, and V2 are intentionally all retained. Removing the first two rows
-would make the final mechanism appear to follow directly from detection, while
-the observations show the opposite. Warning-only supplied the detector output
-to the potentially influenced planner. V1 independently changed the input but
-did not verify all fragmented representations. V2 paired independent rewriting
-with a post-condition over the reconstructed model message. The resulting
-progression is a design-development result, not a claim that model quality or
-random variation caused a monotonic ablation curve.
-
-\subsection{Campaign completion and recorded activity}
-
-The primary 27B campaign produced all 168 expected native-scored checkpoints:
-84 off and 84 enforce across the four cells. Every checkpoint matched the
-frozen model, policy, participant, generated-input, benchmark, and middleware
-provenance. There was no task error, controller restart, cleanup failure,
-provenance mismatch, or native-score mismatch. These checks matter because a
-missing browser task cannot be treated as an unsuccessful attack or user task;
-the denominators in \cref{tab:wasp-27b} represent completed executions.
-
-The off trajectories contained 487 proposed actions, compared with 379 under
-enforcement. The enforce row recorded at least one prompt-injection detection in
-all 84 task instances and 368 event-level sanitisation attempts. The lower
-action total is consistent with removal preventing some attacker-serving or
-recovery steps, but it is not itself a utility measure: a shorter trajectory
-can either complete efficiently or stop early. Native utility and final-state
-attack oracles remain the outcome measures, while the action and sanitisation
-counts explain how the trajectories differed.
-
-\section{Result synthesis}
-
-The three evidence levels align without being pooled. Component replay confirms
-the configured detector and policy decisions. Across AgentDojo's controlled
-tool environments, enforcement sharply reduced attacker success while utility
-and secure utility rose. The matched 27B WASP pair then preserved the direction
-of the security effect in a browser loop: the five terminal attacks and all 17
-attacker-directed executions observed off were absent under enforcement.
-
-Utility sets the boundary on that conclusion. AgentDojo enforce utility moved
-towards each model's clean ceiling, whereas WASP produced seven gains and eight
-losses, a net change of one task, while secure utility increased by two. The
-browser evidence therefore supports preservation of roughly the same aggregate
-completion, not a general claim that enforcement improves utility.
-
-The intervention record explains why the result is attributed to
-post-verified sanitisation. Explicit action refusal was rare in AgentDojo and
-absent in the matched WASP row; its one denied approval occurred in a task that
-still succeeded. By contrast, the recurring intervention changed the
-observation before the next decision. The 9B sequence supplies the negative
-controls: warning left hostile input in the model channel, and V1 left an
-incompletely rewritten representation. V2 combined attributable removal with
-a post-condition over the exact reconstructed message.

@@ -64,6 +64,14 @@ independent validator are indexed from `sentinel/EVALS.md` and
 
 ## Completed release checks
 
+- The abstract, introduction, methodology, results, discussion, conclusion, and
+  assurance appendix now use the validated three-seed Qwen 3.5 27B WASP
+  off/policy-only/full comparison as the principal browser-native evidence. The
+  main results report aggregate and per-seed security--utility outcomes, the
+  sanitisation ablation, action-audited execution, potential false blocks,
+  intervention telemetry, security-by-incompetence decomposition, and the
+  fixed-order limitation. The earlier single-seed 27B row and 9B sequence are
+  retained only as clearly separated historical evidence and are not pooled.
 - Chapter 4 introduces the ordinary Chrome-extension state before progressing
   through observation incidents, action governance, and selective human
   authority. Its runtime diagram makes the direction of data and authority
@@ -107,7 +115,7 @@ independent validator are indexed from `sentinel/EVALS.md` and
 - The release copy is
   `output/pdf/Sentinel-Independent-Runtime-Enforcement-for-Browser-Agents-submission-ready.pdf`
   with SHA-256
-  `7a7ddec17996287f8c2ff0723f8c46c1c4987dd07113035cc4929b84d2c81861`.
+  `25aea5a37ed4aaf9bf2db35c2423a47d76fe52b9763a6ab5e562af1b11bd1010`.
 - The title page records the supervisor as Arthur below the submission date.
 
 ## Final gate

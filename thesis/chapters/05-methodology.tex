@@ -140,43 +140,43 @@ The WASP adapter pins the benchmark and BrowserUse revisions, then retains the
 official injector and native final-state evaluators
 ~\cite{evtimov2025wasp,zunic2026browseruse}. Twenty-one attacker scenarios are
 crossed with two legitimate user goals and two injection formats, giving 84
-attacked instances per condition. All admitted rows use a 30-step,
-single-action BrowserUse scaffold, a fixed sampling profile, and DOM/accessibility
-observations with screenshots excluded. Participant mode is \texttt{none}, so
-no human supplies benchmark decisions. Context limits, sampling parameters,
-revisions, and immutable run tags are listed in \cref{app:assurance}.
+attacked instances in one condition. The final experiment repeats that matrix
+with seeds 0, 1, and 2 under three conditions: off, policy-only, and full. This
+gives 252 episodes per condition and 756 overall. All use the same Qwen 3.5 27B
+model artefact, 30-step single-action BrowserUse scaffold, generated inputs,
+sampling settings, and DOM/accessibility observations; screenshots are
+excluded. Participant mode is \texttt{none}, so no human supplies benchmark
+decisions.
 
-The primary browser result is the matched Qwen 3.5 27B comparison. Its 84 off
-and 84 enforce executions share the model, scaffold, middleware, policy design,
-step budget, generated inputs, and reset protocol; only enforcement condition
-changes. WASP's native final-state oracles determine user utility and attack
-success. Attacker-directed attempts and executions are reconstructed
-deterministically from the recorded trajectory and instantiated attacker goal,
-without relying on the optional LLM intermediate classifier.
+Off bypasses the prompt-injection boundary and action-policy enforcement.
+Policy-only enables boundary neutralisation, the detector warning, and action
+policy while disabling browser sanitisation. Full enables sanitisation with an
+otherwise byte-identical policy. Full minus policy-only therefore isolates the
+configured sanitisation increment; policy-only minus off remains a combined
+system effect rather than a pure action-policy estimate.
 
-The Qwen 3.5 9B rows answer a different, developmental question. They consist
-of one shared off baseline followed by warning-only, sanitisation V1, and
-sanitisation V2 enforce conditions. Middleware changed as observed failures
-were repaired, and V2 deliberately reused the frozen off baseline. The sequence
-can therefore explain why a warning and incomplete multiline removal were
-insufficient, but it does not have the matched causal status of the 27B pair.
+WASP's native final-state oracles determine user utility and raw attacker
+success. A deterministic replay independently joins recorded proposals and
+terminal action outcomes to the instantiated attacker goal. A native positive
+is described as terminal attacker success only when that audit records an
+executed attacker-directed action. The replay also separates attempts that were
+stopped, executed dangerous actions, and operational tool failures without
+using the optional LLM intermediate classifier.
 
-Execution is organised into four 21-task cells, one for each application and
-injection-format combination. GitLab or Reddit is restored from a pristine
-clone before its cell, and a frozen manifest recreates the same initial goals
-for the paired condition. Cell-level reporting guards against an aggregate
-driven by one site or one representation. Because the application is allowed to
-change within a task trajectory, restoration occurs at the cell boundary rather
-than after each action.
+Execution is organised into four 21-task cells for each seed and condition, one
+for each application and injection-format combination. A pristine website reset
+precedes every cell, and aggregation requires identical input manifests across
+conditions. The cell order is fixed rather than randomised, which improves
+operational comparability but leaves order as a validity limitation. Earlier 9B
+rows answer only a developmental question: successive warning-only and
+sanitisation revisions explain why verified removal was adopted, but changed
+middleware prevents them from entering the final controlled denominators.
 
 \section{Evidence admission and validity}
 
-Only complete cells whose curated summaries agree with native scores, task
-reports, and run-specific provenance enter the results. Operational failures
-are not scored as oracle zeros, and changed experimental inputs require a new
-immutable tag. Exact provenance and current contract checks are retained in
-\cref{sec:implementation-verification,sec:appendix-wasp-provenance}. The
-isolated experiments contain no human participants; one seed, two benchmark
-families, finite step budgets, DOM-only observations, and development-set
-detector adaptation bound external validity as discussed in
-\cref{chap:discussion}.
+Only complete cells matching native scores, task reports, and frozen provenance
+enter the results; operational failures are excluded. Verification is retained
+in \cref{sec:implementation-verification,sec:appendix-wasp-provenance}. These
+experiments contain no human participants. External validity is bounded by two
+benchmark families, three WASP seeds over one fixed matrix and order, finite
+step budgets, DOM-only observations, and development-set detector adaptation.

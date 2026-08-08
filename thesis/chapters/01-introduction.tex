@@ -78,11 +78,12 @@ Evaluation proceeds in two stages. AgentDojo supplies controlled tool-agent
 tasks with native user and attacker oracles across four application domains
 ~\cite{debenedetti2024agentdojo}. WASP then exercises a BrowserUse agent over
 mutable GitLab and Reddit environments, adding observation construction,
-navigation, and browser re-planning~\cite{evtimov2025wasp}. The primary browser
-result is a matched Qwen 3.5 27B off/enforce comparison. A provenance-separated
-9B development sequence is retained because it explains why warning-only
-enforcement and incomplete sanitisation were replaced by post-verified
-removal.
+navigation, and browser re-planning~\cite{evtimov2025wasp}. The principal
+browser study repeats the 84-case matrix across three seeds and compares
+enforcement off, enforcement without sanitisation, and the full system. This
+design tests browser transfer and isolates the configured sanitisation
+increment. Earlier 9B runs remain only as provenance-separated development
+evidence for the move from warning to verified removal.
 
 \section{Contributions}
 \label{sec:contributions}
@@ -106,11 +107,14 @@ The dissertation makes three contributions.
   \item \textbf{A two-environment security--utility evaluation.} Across 629
   attacked AgentDojo tasks per condition and model, enforcement reduced native
   attacker success from 206 to 0 cases for Qwen 3.5 4B, from 131 to 1 for 9B,
-  and from 203 to 0 for 27B while utility increased in each row. In the matched
-  27B WASP comparison, attacker success changed from 5/84 to 0/84 and
-  attacker-directed execution from 17/84 to 0/84, while utility changed from
-  47/84 to 46/84. Reporting intermediate execution together with utility avoids
-  treating either inactivity or baseline model failure as security.
+  and from 203 to 0 for 27B while utility increased in each row. In the
+  three-seed 27B WASP comparison, full enforcement changed action-audited
+  terminal success from 17/252 to 0/252 and attacker-directed execution from
+  42/252 to 0/252. Utility changed from 154/252 to 149/252 and secure utility
+  from 138/252 to 149/252. The policy-only/full ablation isolates the configured
+  sanitisation increment from the remaining enforced boundary. Reporting
+  execution and utility together avoids treating inactivity or baseline model
+  failure as security.
 \end{enumerate}
 
 Sentinel does not claim BrowserUse, AgentDojo, WASP, or Qwen as original work.

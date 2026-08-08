@@ -224,9 +224,11 @@ state is one of:
 
 Only \texttt{removed} satisfies the post-condition for silent continuation.
 The model receives the rewritten observation rather than the attack plus a
-warning. This design choice is grounded in the 9B WASP sequence reported in
-\cref{chap:results}: warnings did not contain the measured attacks, whereas
-successive sanitisation revisions reduced attacker-serving execution.
+warning. The controlled WASP ablation in \cref{chap:results} tests that choice
+directly: attacker-directed executions remained without sanitisation and were
+absent under the otherwise matched full condition. The earlier 9B development
+sequence provides supporting failure analysis, showing why warning-only and
+incomplete multi-line removal were not accepted as the final boundary.
 
 For a current browser observation, \texttt{residual} or
 \texttt{unattributable} content is replaced before any provider call and opens

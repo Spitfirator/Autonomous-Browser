@@ -191,12 +191,14 @@ WASP observation sanitisation and verification & Present in sanitisation rows &
 Primary recorded mechanism in the final browser rows. \\
 DOM/accessibility-only browser profile & Present in WASP rows &
 No reported WASP row supplied screenshot pixels to the interactive model. \\
-Unresolved-observation incident and bounded-value omission & Added after rows &
-Current tested behaviour; the four 9B V2 unattributable events used the
-historical warning fallback. \\
+Unresolved-observation incident and bounded-value omission & Implemented; not
+benchmark-exercised &
+Implemented and tested; not exercised by the final WASP rows, which recorded no
+residual or unattributable sanitisation outcome. \\
 Human-only detected-secret takeover, upload inspection, approval
-revalidation, cancellation, and special-URL hardening & Added after rows &
-Current tested behaviour without a retrospective benchmark effect. \\
+revalidation, cancellation, and special-URL hardening & Implemented; not
+benchmark-exercised & Current tested behaviour without an attributed campaign
+effect. \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -207,45 +209,43 @@ Current tested behaviour without a retrospective benchmark effect. \\
 
 The AgentDojo table uses one thinking/32K profile for all three models: a
 32,768-token context, 4,096-token output cap, temperature 0.6, top-$p$ 0.95,
-and seed 0. The WASP rows use the same numerical profile with BrowserUse's
-structured planning fields enabled, the model server's separate native-thinking
-stream disabled, one action per step, a 30-step cap, DOM/accessibility input,
-and no screenshots. The 4B
-campaign repeated off and enforce under a fixed pipeline. The preserved 9B
-reports cover all 1,258 executions but omit a Git revision. The 27B summary
-preserves historical off reports byte-for-byte and combines them with the
-fixed-enforce tag; task, model name, profile, and sampling match, while the
-historical code revision and model digest remain unrecorded. All ten 27B
-responses reaching the output cap were retained: three off and seven enforce.
+and seed 0. The final WASP experiment uses the profile in
+\cref{tab:wasp-profile}; its native-thinking stream is separated from the
+schema-validated action output and is neither persisted nor treated as an
+action.
 
-The WASP rows use the following frozen identifiers:
-
-\begingroup
+\begin{table}[htbp]
+\centering
+\caption{Final controlled WASP profile. Exact immutable identifiers and source
+hashes remain in the checked-in machine-readable result record.}
+\label{tab:wasp-profile}
 \small
-\begin{description}[style=nextline,leftmargin=32mm]
-  \item[Primary 27B tag]
-  \nolinkurl{wasp-qwen35-27b-browser32k-30step-v2-sanitise-noalert-none-v1}
-  \item[27B Sentinel commit]
-  \nolinkurl{6c71df2b8e274d843571b20897489b6ad478bd10}
-  \item[Final 9B tag]
-  \nolinkurl{wasp-qwen35-9b-browser32k-30step-v2-sanitise-noalert-none-v3}
-  \item[9B Sentinel commit]
-  \nolinkurl{3ca50cae923b4621b4703f2308d52050cff8f038}
-  \item[Policy SHA-256]
-  \texttt{32d0f0a17798dd27fbe03ec1e5221e38}\newline
-  \texttt{d66e6ebfc9a743266581e890c3c7617f}
-  \item[Enforcement SHA-256]
-  \texttt{20ddf4c0b632215b7cd494cdea0998d1}\newline
-  \texttt{b89fa023c326473ea655adfd199c0322}
-  \item[WASP commit]
-  \nolinkurl{ffee6f41fde76acd14bd792db442479c506260c2}
-  \item[BrowserUse commit]
-  \nolinkurl{c8e6e8f0fe617564687895702c2338967293b309}
-\end{description}
-\endgroup
+\begin{tabularx}{\textwidth}{@{}L{0.31\textwidth}Y@{}}
+\toprule
+Field & Frozen design \\
+\midrule
+Model and sampling & Qwen 3.5 27B; seeds 0, 1, and 2; temperature 0.6; top-$p$
+0.95 \\
+Context and execution & 32,768-token context; 8,192-token output cap; 30 steps;
+one action per step \\
+Observation & DOM/accessibility representation; screenshots excluded \\
+Task matrix & 21 attacker scenarios $\times$ two user goals $\times$ two
+injection formats = 84 episodes per seed and condition \\
+Conditions & Off; policy-only without browser sanitisation; full enforcement
+with an otherwise identical policy \\
+Coverage & 252 episodes per condition; 756 native-scored episodes overall \\
+Authority mode & No participant; approval and handover outcomes are scripted
+benchmark controls \\
+Reset and order & Pristine website reset before every 21-task cell; fixed cell
+order \\
+\bottomrule
+\end{tabularx}
+\end{table}
 
-The browser controller restores pristine GitLab and Reddit clones before each
-new 21-task cell, binds model/policy/participant/input/middleware provenance to
-the checkpoint, and requires native scores for completion. The historical
-20-step pilot and incomplete or provenance-incompatible campaigns remain
-excluded. No WASP oracle-participant result exists.
+The controller binds seed, condition, model, policy, generated inputs,
+middleware, benchmark, and scorer identity to each checkpoint; aggregation
+fails on incomplete coverage or provenance drift. The final curated record is
+\nolinkurl{sentinel/evals/wasp/results/wasp-qwen35-27b-multiseed-thinking8k-replication-v2.json}.
+Earlier 9B development rows and the prior single-seed 27B comparison remain
+separate historical records and are not pooled. No WASP human-participant or
+oracle-participant result is reported.
