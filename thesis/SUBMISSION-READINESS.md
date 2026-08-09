@@ -55,6 +55,11 @@ independent validator are indexed from `sentinel/EVALS.md` and
 - Keep per-seed results, between-seed variation, and exact denominators visible.
 - Do not call `policy_only` a pure action-policy condition: it also retains
   boundary neutralisation and the detector warning.
+- In `full`, the detector still triggers observation sanitisation and action
+  policy remains active. A confirmed removal reaches the model without a
+  warning; an unresolved observation is withheld. Accordingly, full versus
+  policy-only measures the configured sanitisation treatment, not warning
+  suppression independently of removal.
 - Keep the earlier single-seed 27B comparison and 9B development sequence
   provenance-separated; do not pool them with the final experiment.
 - Distinguish actual human intervention from scripted `participant=none`
@@ -98,11 +103,9 @@ independent validator are indexed from `sentinel/EVALS.md` and
   and observation directions explicit. The text-only boundary now states that
   screenshots are excluded from the evaluated model-input path, pixel-only
   instructions therefore do not enter that channel, and a multimodal extension
-  would need its own visual guard. Figure 4.5 now places independent approval
-  and Activity states beside the authority and audit discussion. It labels them
-  as illustrative rather than a sequential run; the policy screenshot is
-  omitted because the policy and authority tables explain enforcement more
-  directly.
+  would need its own visual guard. Figure 4.5 places Approval and Activity views
+  beside the authority and audit discussion; the policy screenshot is omitted
+  because the policy and authority tables explain enforcement more directly.
 - The active-run and password-handover captures came from the dedicated Chrome
   instance launched by `sentinel/start.sh`. The replacement handover capture is
   local run `8d78c714`: the model navigated to a distinct synthetic login page
@@ -114,18 +117,16 @@ independent validator are indexed from `sentinel/EVALS.md` and
   opened, and the provider-call count remained zero. The fixture contains no
   attack payload, live credential, account, private URL, or external service.
   None of the captures is benchmark, participant, or usability evidence.
-- The approval and Activity views come from a separate deterministic
-  walkthrough. The submitted panels use independently seeded runs and make no
-  claim that the Activity row records the approval card. The helper invoked no
-  model provider, browser agent, benchmark, or participant. Exact scope, run
-  identifiers, reproduction commands, and image hashes are in
-  `FIGURE-PROVENANCE.md`.
+- The approval and Activity views come from the deterministic local
+  walkthrough. Their concise source mapping, reproduction commands, and image
+  hashes are in `FIGURE-PROVENANCE.md`.
 - Tectonic produced a 63-page A4 PDF with the expected title, author, subject,
-  and keywords. Under the convention in `AGENTS.md`, the counted dissertation
-  is exactly 48 pages: the Lists of Figures and Tables plus Arabic pages 1--46.
-  Appendix A begins on Arabic page 47 and the bibliography on page 52, so both
-  are outside that count. Concise captions keep the List of Figures to one page
-  and leave detailed interpretation in the surrounding prose.
+  and keywords. Under the formal exclusions supplied for the dissertation, the
+  counted text is exactly 48 pages and remains below the 50-page ceiling: the
+  Lists of Figures and Tables plus Arabic pages 1--46. Appendix A begins on
+  Arabic page 47 and the bibliography on page 52, so both are outside that
+  count. Concise captions keep the List of Figures to one page and leave
+  detailed interpretation in the surrounding prose.
 - Both `sentinel-submission.tex` and the official `project_report - pg.tex`
   root compile to 63 A4 pages with identical extracted page text and page
   geometry. All pages were rendered for visual inspection, with front matter,
@@ -133,12 +134,15 @@ independent validator are indexed from `sentinel/EVALS.md` and
   subsection, and the assurance appendix checked again at higher
   resolution. No missing references, material box warnings, or other LaTeX
   warnings remain in either final log.
+- The root-level PDFs have been regenerated from those canonical sources, so
+  they now include Progent, SecAlign, Task Shield, MELON, and the final warning
+  semantics rather than the earlier 61-page text.
 - All 37 cited bibliography keys resolve one-to-one, the extracted PDF contains
   no unresolved `??` markers or em dashes, and `git diff --check` passes.
 - The release copy is
   `output/pdf/Sentinel-Independent-Runtime-Enforcement-for-Browser-Agents-submission-ready.pdf`
   with SHA-256
-  `c870338517cb8d133f9c6ac7906de7efa2d1eb9398976e0085f6e73c4936e078`.
+  `47a5df8fae9826d208224817e0210eee1fbebd9195d8fb63ac96f5b11fbdb789`.
 - The title page records the supervisor as Arthur below the submission date.
 
 ## Final gate

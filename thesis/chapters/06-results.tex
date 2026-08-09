@@ -189,14 +189,14 @@ off, it reduced audited attacker success from 17/252 to 1/252 and
 attacker-directed execution from 42/252 to 15/252. This is a combined system
 effect: it cannot be attributed to action policy alone.
 
-Full differs only by enabling sanitisation. Aggregate utility remained
+Full differs only by enabling the configured sanitisation treatment. Aggregate utility remained
 149/252, while attacker-directed attempts and executions changed from 15/252
 to 0/252. The decrement was five episodes in every seed. Audited attacker
 success changed from 1/252 to 0/252 and secure utility from 148/252 to 149/252.
 The terminal difference is numerically small because the policy-only agent
-completed only one attacker goal, but the trajectory difference is not: the
-full system prevented the hostile observation from generating any matching
-proposal in 252 episodes.
+completed only one attacker goal, but the trajectory difference is not: no
+matching attacker-directed proposal was recorded under full enforcement in 252
+episodes.
 
 Mechanism telemetry supports that interpretation. Full enforcement performed
 740 sanitisation attempts and confirmed 740 removals, comprising 21 direct-line

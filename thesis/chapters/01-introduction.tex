@@ -17,19 +17,18 @@ attacker. An indirect prompt injection places instructions in that data so the
 agent encounters them while pursuing a legitimate goal~\cite{greshake2023indirect}.
 The attack does not depend on a malformed API call. It exploits an authority
 ambiguity: the model is expected to understand novel page content, yet must
-also decide whether that content is entitled to redirect its behaviour. Once
-the model can invoke privileged tools, a successful redirection can change
-remote state or disclose information instead of producing incorrect prose
-alone.
-
-Throughout this dissertation, the \emph{operator} is the human task owner: the
-person who supplies the goal and whose browser authority the agent exercises.
+also decide
+whether that content is entitled to redirect its behaviour. Once the model can
+invoke privileged tools, a successful redirection can change remote state or
+disclose information instead of producing incorrect prose alone.
 Prompt reminders, delimiters, and detectors can reduce exposure, but they
-leave the acting model responsible for respecting the distinction between the
-operator's goal and hostile data. Classical protection principles suggest a
-different allocation of responsibility. Complete mediation places a check at
-each privileged use, while least privilege limits which component may perform
-the effect~\cite{saltzer1975protection}. For an agent, the model can remain a
+leave the acting model responsible for distinguishing hostile data from the
+human task owner's goal. Throughout this dissertation, the \emph{operator} is
+the human task owner who supplies the goal and whose browser authority the
+agent exercises. Classical protection principles suggest a different
+allocation of responsibility. Complete mediation places a check at each
+privileged use, while least privilege limits which component may perform the
+effect~\cite{saltzer1975protection}. For an agent, the model can remain a
 flexible planner without being the final authority for its proposed actions.
 An independent runtime can enforce deterministic constraints, control data
 flows, request narrowly scoped authority, and record the outcome.
@@ -64,9 +63,8 @@ untrusted browser, extraction, and tool-result regions; detects configured
 prompt-injection signals; removes attributable regions; and re-detects the
 exact reconstructed model input. Before execution, an action guard rebuilds
 live browser context, classifies capabilities and sensitive data, propagates
-run-local taint for the affected browser origin (its scheme, host, and port),
-and invokes one policy engine. The executor is reached only after that
-decision.
+origin-scoped taint, and invokes one policy engine. The executor is reached
+only after that decision.
 
 Automatic enforcement is combined with selective human authority. Hard policy
 and protected data flows remain non-overridable. A permissible but
@@ -80,9 +78,9 @@ is withheld and the operator may inspect the page before Sentinel captures a
 fresh observation. A Chrome extension presents these states and the redacted
 decision history; the server remains the source of authority.
 
-The end-to-end evaluation then uses two complementary benchmarks. AgentDojo
-supplies controlled tool-agent tasks with native user and attacker oracles
-across four application domains
+Evaluation proceeds in two complementary stages. AgentDojo supplies controlled
+tool-agent tasks with native user and attacker oracles across four application
+domains
 ~\cite{debenedetti2024agentdojo}. WASP then exercises a BrowserUse agent over
 mutable GitLab and Reddit environments, adding observation construction,
 navigation, and browser re-planning~\cite{evtimov2025wasp}. The principal
@@ -90,7 +88,8 @@ browser study repeats the 84-case matrix across three seeds and compares
 enforcement off, enforcement without sanitisation, and the full system. This
 design tests browser transfer and isolates the configured sanitisation
 increment. The earlier 9B experiments served a different purpose: they showed
-why warnings alone were insufficient and are kept separate from the final
+that retaining detected content alongside a warning was insufficient. They are
+therefore treated as development evidence and kept separate from the final
 comparison.
 
 \section{Contributions}

@@ -159,7 +159,7 @@ the service remains the reference monitor.
 Clients receive a service snapshot followed by sequenced events. After a gap,
 they discard the incomplete projection and reload. Closing the extension cannot
 resolve a waiting proposal, and a vanished card is never consent. Responses
-return through bounded service endpoints and are checked against the still-pending
+return through bounded REST endpoints and are checked against the still-pending
 request. The design now turns from this projection to the observation that the
 planner may see.
 
@@ -215,12 +215,13 @@ one of three post-check states:
 
 Only \texttt{removed} permits the step to continue without operator
 intervention. The planner receives the rewritten observation, and Sentinel does
-not reproduce the removed instruction inside a warning. The controlled WASP
-ablation in \cref{chap:results} later tests the contribution of this rewrite:
+not add a detector warning to the model input. The controlled WASP
+ablation in \cref{chap:results} later tests this configured sanitisation
+treatment:
 attacker-directed executions remained when sanitisation was disabled and were
 absent in the matched full condition. Earlier 9B development runs provide
-supporting failure analysis because warning the model did not establish the
-same boundary.
+supporting failure analysis because retaining the detected content alongside a
+warning did not establish the same boundary.
 
 If a current browser observation is \texttt{residual} or
 \texttt{unattributable}, Sentinel replaces it before any provider call and
@@ -488,38 +489,31 @@ and model summaries are handled as exposed outputs, not private
 chain-of-thought.
 
 \Cref{fig:authority-audit-evidence} makes the prospective and retrospective
-views concrete through two independently seeded states from the deterministic
-local walkthrough. The approval card exposes only a redacted proposal and the
-bounded responses that the service will accept. Activity, by contrast,
-reconstructs a completed run from its recorded decisions and outcomes. The
-panels are illustrative states, not a before-and-after sequence. The walkthrough
-invoked no model provider, browser agent, benchmark, or participant.
+views of authority concrete. The approval card exposes a redacted proposal and
+the bounded responses that the service will accept. Activity, by contrast,
+reconstructs completed work from recorded decisions and outcomes.
 
 \begin{figure}[!htbp]
 \centering
 \begin{minipage}[t]{0.44\textwidth}
-  \centering\scriptsize\textbf{(a) Bounded approval request}\par\smallskip
+  \centering\scriptsize\textbf{(a) Approval view}\par\smallskip
   \includegraphics[width=\linewidth]{figures/interface-approval-walkthrough.png}
 \end{minipage}
 
 \vspace{2mm}
 \begin{minipage}[t]{0.86\textwidth}
-  \centering\scriptsize\textbf{(b) Completed-run Activity record}\par\smallskip
+  \centering\scriptsize\textbf{(b) Activity view}\par\smallskip
   \includegraphics[width=\linewidth,trim=0 120 0 0,clip]{figures/interface-activity-detail-walkthrough.png}
 \end{minipage}
-\caption{Independent approval and Activity states from the deterministic
-walkthrough. They are illustrative, not one sequential run.}
+\caption{Approval and Activity views in Sentinel's control plane.}
 \label{fig:authority-audit-evidence}
 \end{figure}
 
 Sequenced events then make this record inspectable without shifting authority
 to the client. Closing the panel cannot resolve a pending request, and a
 reconnecting client rebuilds its view from the service. Activity's pause counts
-and timing are runtime telemetry. Its local \texttt{understood} markers prepare
-for a possible future human-in-the-loop study, but the present walkthroughs do
-not include a participant comprehension protocol and are not analysed as human
-outcomes. This boundary lets the current evaluation use audit evidence to
-reconstruct trajectories without making an unsupported usability claim.
+and timing are runtime telemetry used to reconstruct the sequence of decisions
+and outcomes.
 
 \section{From mechanism to evidence}
 

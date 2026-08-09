@@ -44,8 +44,10 @@ policy-only enables boundary neutralisation, a detector warning, and action
 policy while browser sanitisation remains disabled. That contrast therefore
 measures the mechanisms as a bundle and is not a pure estimate of action
 policy. Moving from policy-only to full changes only the configured
-sanitisation treatment, so the latter contrast isolates its incremental effect
-within this scaffold.
+sanitisation treatment. A confirmed removal both rewrites the observation and
+suppresses the warning that accompanies retained detected content. The latter
+contrast therefore isolates this configured treatment within the scaffold; it
+does not separate removal from warning suppression.
 
 Here, \emph{boundary neutralisation} means escaping page-supplied text that
 imitates Sentinel's reserved protocol or authority tags while retaining the
@@ -165,8 +167,10 @@ controller records this unattended configuration as participant mode
   this condition measures their combined effect.
 
   \item[Full] Browser sanitisation is added to an otherwise byte-identical
-  policy-only configuration. This final contrast isolates the configured
-  sanitisation increment.
+  policy-only configuration. After a confirmed removal, the reconstructed
+  observation proceeds without a model-facing warning; if the clean post-check
+  fails, the observation is withheld. This final contrast isolates the
+  configured sanitisation increment.
 \end{description}
 
 Native final-state oracles determine utility and raw attacker success.

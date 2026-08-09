@@ -77,15 +77,19 @@ zero, which is why the action audit matters: it reveals that 15
 attacker-directed executions disappeared before they could become terminal
 successes.
 
-The historical 9B warning result explains the clean post-condition behind this
-design. Exposing an attack and a warning to the same planner did not improve
-terminal or intermediate attack outcomes, although the changed development
-provenance prevents a pooled causal estimate. Sentinel now requires the exact
-reconstructed input to change and pass re-detection. If attribution or the
-post-check fails, the current observation is withheld and continuation begins
-only from a fresh capture after review. The final WASP rows contained no such
-unresolved case, so tests and the implementation walkthrough establish that
-mechanism while the benchmark does not measure its effect.
+The historical 9B development sequence explains why the final study does not
+rely on a warning alone. Its warning-era condition retained the hostile
+observation while also enabling boundary neutralisation and action policy; it
+did not improve terminal or intermediate attack outcomes over off. Successive
+middleware revisions mean that this sequence cannot estimate the warning's
+independent effect. The final experiment therefore retains the warning only in
+the policy-only comparator. Full enforcement instead requires the exact
+reconstructed input to change and pass re-detection, after which it proceeds
+without a model-facing warning. If attribution or the post-check fails, the
+current observation is withheld and continuation begins only from a fresh
+capture after review. The final WASP rows contained no such unresolved case,
+so tests and the implementation walkthrough establish that mechanism while the
+benchmark does not measure its effect.
 
 The action guard addresses a different residual problem. No detector is
 complete, sanitisation may be unavailable for an effect proposed from earlier
@@ -212,15 +216,20 @@ coverage without enough false intervention to erase the utility retained here.
 \section{Limitations and validity}
 \label{sec:discussion-limitations}
 
-The detector scorecards measure development regression coverage because several
-evaluated attack families also informed rule revisions. For example, a WASP
-development failure exposed URL attacks whose hidden link target was absent
-from BrowserUse's accessibility text. The resulting correction is part of the
-current regression result, so that score cannot estimate performance on unseen
-attacks or other benchmarks. Clean re-detection establishes a
-configuration-specific post-condition; it cannot show that the remaining text
-is free of attacker intent. Adaptive optimisation against a frozen whole system
-is therefore the appropriate next test
+Iterative fixes are a strength of the engineering process: observed failures
+revealed gaps and led to a better enforcement boundary. The validity limitation
+comes from evaluating detector coverage on attack families that also informed
+those fixes. For example, Sentinel's signatures were revised after AgentDojo
+and WASP development failures, including a correction for URL attacks whose
+hidden link target was absent from BrowserUse's accessibility text. The
+scorecard should therefore be read as regression coverage for known families,
+not as an estimate of performance on unseen attacks or other benchmarks. The
+revised middleware and condition-specific policies were frozen before the final
+three-seed comparison and then applied consistently within its matched
+conditions. Clean re-detection establishes a configuration-specific
+post-condition; it cannot show that the remaining text is free of attacker
+intent. Adaptive optimisation against a frozen whole system is the appropriate
+next test
 ~\cite{zhan2025adaptive}.
 
 The results do not extend to visual observations or tasks that require visual
