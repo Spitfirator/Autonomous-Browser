@@ -102,8 +102,8 @@ browser agent and its executor. \systemname\ governs the exact observation sent
 to the model, evaluates proposed actions immediately before execution, and
 transfers control when policy requires human authority. It combines
 attributable observation sanitisation and re-detection, origin-scoped taint,
-deterministic policy and data-flow rules, narrow approval, direct takeover for
-protected input, and privacy-preserving audit through a Chrome extension.
+deterministic policy and data-flow rules, narrow approval, direct human steps
+for protected input, and privacy-preserving audit through a Chrome extension.
 
 The evaluation connects controlled mechanism evidence to browser-native
 execution. Across paired AgentDojo comparisons with 629 attacked tasks per
@@ -116,8 +116,8 @@ success changed from 17/252 to 0/252 and attacker-directed execution from
 42/252 to 0/252. Legitimate-task completion changed from 154/252 to 149/252,
 while secure utility rose from 138/252 to 149/252. Without sanitisation,
 enforcement still left attacker-directed execution in 15/252 episodes; the full
-system removed these attempts at the same aggregate utility and recorded 740
-confirmed sanitisation removals.
+condition produced no attacker-directed proposal at the same aggregate utility
+and recorded 740 confirmed sanitisation removals.
 
 In these experiments, independently governing observations and actions sharply
 reduced successful attacks and attacker-serving execution while retaining most

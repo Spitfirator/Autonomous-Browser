@@ -45,9 +45,10 @@ The current page is not the only channel. Extracted page text and tool results
 can cross secondary model calls, while stored history can reintroduce hostile
 content later. Multimodal agents add pixels: image-hijack work shows that
 instructions embedded in images can redirect vision-language systems
-~\cite{bailey2024imagehijacks}. A DOM filter cannot remove text rendered only
-in pixels. Visual observations therefore form a distinct threat surface with
-their own controls; text sanitisation does not automatically cover them.
+~\cite{bailey2024imagehijacks}. A filter over the Document Object Model (DOM),
+the browser's structured representation of a page, cannot remove text rendered
+only in pixels. Visual observations therefore form a distinct threat surface
+with their own controls; text sanitisation does not automatically cover them.
 
 \subsection{What an agent-security evaluation must measure}
 
@@ -89,7 +90,7 @@ Model-facing defences try to help the planner recognise which content deserves
 instructional authority. BIPIA evaluates reminders, boundary awareness,
 in-context examples, and training across indirect-injection tasks
 ~\cite{yi2025bipia}. Spotlighting instead transforms untrusted tokens through
-delimiting, datamarking, or encoding so their origin remains salient to the
+delimiting, datamarking, or encoding so their provenance remains salient to the
 model~\cite{hines2024spotlighting}.
 
 Training can make this separation part of model behaviour. StruQ uses
@@ -102,13 +103,13 @@ careful interpretation. Li et al. find that several fine-tuned defences learn
 surface correlations that can reject benign inputs and generalise poorly when
 position, trigger words, or topic changes~\cite{li2026surfaceheuristics}.
 
-Runtime systems intervene at a different point. For example, AgentSpec defines
-customisable constraints over agent events and enforces them during execution
-~\cite{wang2026agentspec}. Model training and runtime enforcement can therefore
-be understood as potentially complementary layers: one changes how the planner
-responds to hostile text, while the other governs selected effects around the
-planner. This is an architectural synthesis, not evidence that their combined
-use has been evaluated here or that one is cheaper or easier to maintain.
+Other defences act during inference. Task Shield checks whether each instruction
+and proposed tool call contributes to the user's stated goal
+~\cite{jia2025taskshield}. MELON instead reruns the agent trajectory with the
+user prompt masked and treats similarity between the original and
+counterfactual actions as evidence of hijacking~\cite{zhu2025melon}. These
+methods ask whether planned behaviour remains dependent on the authorised task,
+complementing techniques that separate trusted and untrusted text.
 
 Detection supplies an inspectable decision before exposure. Removal systems
 separate attack identification from segmentation or task-conditioned filtering
@@ -121,17 +122,26 @@ optimisation has bypassed defences that performed well against fixed attacks
 observations while retaining policy and pre-execution checks as separate
 layers.
 
+These defences intervene at different points from an independent runtime
+monitor. Model-level separation may reduce hostile planning, while runtime
+policy can constrain selected effects around the planner. They may therefore
+serve as complementary layers, although this dissertation neither implements
+nor evaluates their combination.
+
 \subsection{System-level authority}
 
 System-level work relocates the final decision outside unconstrained model
 reasoning. CaMeL extracts control and data flow from a trusted query, confines
 untrusted data to constrained processing, and enforces capabilities at tool
-calls~\cite{debenedetti2025camel}. Fides applies information-flow control:
-confidentiality and integrity labels propagate through planning, deterministic
-policies govern tool effects, and information can be selectively hidden from
-the planner~\cite{costa2025fides}. PRUDENTIA builds on Fides by making planning
-policy-aware and evaluating autonomy through task completion at intervention
-budgets and scripted oversight load~\cite{kolluri2026prudentia}.
+calls~\cite{debenedetti2025camel}. The Fides preprint applies information-flow
+control: confidentiality and integrity labels propagate through planning,
+deterministic policies govern tool effects, and information can be selectively
+hidden from the planner~\cite{costa2025fides}. The Progent preprint represents
+privilege as symbolic rules over tool names and arguments, checks every tool
+call deterministically, and requires approval before a policy update can expand
+the available privileges~\cite{shi2025progent}. PRUDENTIA builds on Fides by
+making planning policy-aware and evaluating autonomy through task completion at
+intervention budgets and scripted oversight load~\cite{kolluri2026prudentia}.
 
 Other systems choose different trusted abstractions.
 AgentSpec provides a lightweight language of triggers, predicates, and runtime
@@ -163,10 +173,16 @@ Structured control/data flow and tool calls &
 Provable security for representable flows; AgentDojo evaluation. \\
 \addlinespace[3pt]
 
-Fides~\cite{costa2025fides} &
+Fides (preprint)\newline\cite{costa2025fides} &
 Security labels, propagation rules, and flow policy &
 Planner information and tool execution &
 Formal IFC model with empirical AgentDojo evaluation. \\
+\addlinespace[3pt]
+
+Progent (preprint)\newline\cite{shi2025progent} &
+Generated symbolic privilege rules over tool names and arguments &
+Every tool call and proposed privilege expansion &
+Deterministic checking and monotonic confinement; AgentDojo and ASB evaluation. \\
 \addlinespace[3pt]
 
 PRUDENTIA\newline\cite{kolluri2026prudentia} &
@@ -195,15 +211,22 @@ Deterministic channel invariants with AgentDojo and matched WASP evidence. \\
 \end{tabularx}
 \end{table}
 
-Sentinel takes a deliberately pragmatic position. It keeps the browser agent's
-free-form planning loop, allowing the agent to adapt when a page changes or an
-action fails. That flexibility leaves a semantic limit: Sentinel can reject
-actions that violate explicit policy, but it cannot formally prove that every
-action left within policy---for example, a permitted same-origin click---still
-advances the operator's goal. Its contribution is an implemented set of
-enforceable boundaries: exact pre-model observation governance, live
-executor-side policy, selective human authority, and evaluation inside the
-browser loop those mechanisms are intended to protect.
+At the action boundary, Sentinel is closest to Progent: both mediate a proposed
+effect immediately before privileged tool execution. Progent centres that
+boundary on symbolic privilege rules over tool names and arguments. Sentinel
+also governs the exact browser observation supplied to the planner and includes
+live browser context in its action decision. This is a difference in
+enforcement scope, not evidence that either system is more effective.
+
+Sentinel retains the browser agent's free-form planning loop so it can adapt
+when a page changes or an action fails. That flexibility leaves a semantic
+limit. Sentinel can reject actions that violate explicit policy, but it cannot
+formally prove that every permitted action advances the operator's goal. For
+example, a same-origin click stays within the current page's scheme, host, and
+port, yet may still contradict the requested task. The contribution is an
+implemented set of enforceable boundaries: exact pre-model observation
+governance, live executor-side policy, selective human authority, and
+evaluation inside the browser loop those mechanisms are intended to protect.
 
 \section{Protection principles for agent runtimes}
 

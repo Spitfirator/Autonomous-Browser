@@ -18,7 +18,7 @@ claims and numbers.
   overwrite it solely to update the submission filename.
 - The argument is organised around one research question and three
   contributions: executor-side mediation; post-verified observation governance
-  with selective authority; and a two-environment security--utility evaluation.
+  with selective authority; and a two-benchmark security--utility evaluation.
 
 ## Mark-scheme alignment
 
@@ -77,7 +77,10 @@ independent validator are indexed from `sentinel/EVALS.md` and
   as complementary but non-poolable evidence and adds balanced primary
   literature on SecAlign and learned surface heuristics. It treats model
   training and runtime enforcement as potentially complementary intervention
-  points without making an unverified operational comparison. Table 6.1 now
+  points, explicitly as an architectural synthesis that was not evaluated,
+  without making an unverified operational comparison. Progent, Task Shield,
+  MELON, and the preprint status of Fides and Progent are now stated accurately.
+  Table 6.1 now
   uses the conventional five-column model/condition/outcome layout, and the
   limitations section contains a named ethics and responsible-research
   subsection.
@@ -95,9 +98,11 @@ independent validator are indexed from `sentinel/EVALS.md` and
   and observation directions explicit. The text-only boundary now states that
   screenshots are excluded from the evaluated model-input path, pixel-only
   instructions therefore do not enter that channel, and a multimodal extension
-  would need its own visual guard. Browser evidence remains distributed by
-  argumentative role, with supporting Activity, policy, and approval views in
-  Appendix A.
+  would need its own visual guard. Figure 4.5 now places independent approval
+  and Activity states beside the authority and audit discussion. It labels them
+  as illustrative rather than a sequential run; the policy screenshot is
+  omitted because the policy and authority tables explain enforcement more
+  directly.
 - The active-run and password-handover captures came from the dedicated Chrome
   instance launched by `sentinel/start.sh`. The replacement handover capture is
   local run `8d78c714`: the model navigated to a distinct synthetic login page
@@ -109,31 +114,31 @@ independent validator are indexed from `sentinel/EVALS.md` and
   opened, and the provider-call count remained zero. The fixture contains no
   attack payload, live credential, account, private URL, or external service.
   None of the captures is benchmark, participant, or usability evidence.
-- The completed Activity, policy, and approval views remain a separate
-  deterministic walkthrough. Its helper passed a fresh syntax check and
-  isolated API smoke test; it made no model call, started no browser agent or
-  benchmark, and resolved approval, direct-takeover, and incident states to the
-  expected pending authority objects. The live and deterministic servers were
-  stopped after capture. Exact scope, run identifiers, reproduction commands,
-  and image hashes are in `FIGURE-PROVENANCE.md`.
-- Tectonic produced a 61-page A4 PDF with the expected title, author, subject,
+- The approval and Activity views come from a separate deterministic
+  walkthrough. The submitted panels use independently seeded runs and make no
+  claim that the Activity row records the approval card. The helper invoked no
+  model provider, browser agent, benchmark, or participant. Exact scope, run
+  identifiers, reproduction commands, and image hashes are in
+  `FIGURE-PROVENANCE.md`.
+- Tectonic produced a 63-page A4 PDF with the expected title, author, subject,
   and keywords. Under the convention in `AGENTS.md`, the counted dissertation
-  is exactly 45 pages: the Lists of Figures and Tables plus Arabic pages 1--43.
-  Appendix A begins on Arabic page 44 and the bibliography on page 50, so both
-  are outside that count. Concise list captions keep the List of Figures to one
-  page while the full analytical captions remain beneath the figures.
+  is exactly 48 pages: the Lists of Figures and Tables plus Arabic pages 1--46.
+  Appendix A begins on Arabic page 47 and the bibliography on page 52, so both
+  are outside that count. Concise captions keep the List of Figures to one page
+  and leave detailed interpretation in the surrounding prose.
 - Both `sentinel-submission.tex` and the official `project_report - pg.tex`
-  root compile to 61 A4 pages with identical extracted page text and page
+  root compile to 63 A4 pages with identical extracted page text and page
   geometry. All pages were rendered for visual inspection, with front matter,
-  affected design pages, and the appendix figure checked again at higher
+  Figure 4.1, the control-plane views, the result tables and graph, the ethics
+  subsection, and the assurance appendix checked again at higher
   resolution. No missing references, material box warnings, or other LaTeX
   warnings remain in either final log.
-- All 36 cited bibliography keys resolve one-to-one, the extracted PDF contains
-  no unresolved `??` markers, and `git diff --check` passes.
+- All 37 cited bibliography keys resolve one-to-one, the extracted PDF contains
+  no unresolved `??` markers or em dashes, and `git diff --check` passes.
 - The release copy is
   `output/pdf/Sentinel-Independent-Runtime-Enforcement-for-Browser-Agents-submission-ready.pdf`
   with SHA-256
-  `f6450f04d8d81e9af05c25470fb22bb42625083a4e0febb2858db8f9da5a1f75`.
+  `c870338517cb8d133f9c6ac7906de7efa2d1eb9398976e0085f6e73c4936e078`.
 - The title page records the supervisor as Arthur below the submission date.
 
 ## Final gate

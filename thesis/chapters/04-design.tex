@@ -40,14 +40,10 @@ each decision.
 \begin{figure}[!t]
 \centering
 \includegraphics[width=\textwidth]{figures/sentinel-runtime-architecture-v2.png}
-\caption[Sentinel runtime composition and enforcement boundaries.]{Runtime
-composition and direction of authority. Untrusted page data is sanitised and
-verified before it returns to the planner; the resulting proposal is governed
-again immediately before the privileged executor. Policy, authority, and audit
-remain server-owned. The operator and extension can review state and return a
-bounded response, but they do not bypass either guard.}
+\caption{Sentinel's two runtime guards and server-owned authority flow.}
 \label{fig:architecture}
 \end{figure}
+\FloatBarrier
 
 Read from left to right, the figure follows intention to effect: a trusted task
 reaches the planner, the planner produces a proposal, the action guard rebuilds
@@ -63,8 +59,9 @@ and returns bounded responses, but offers no route around either guard.
 
 The Python service inserts the guards without forking BrowserUse. Each task has
 a run-local context for budgets, origin-scoped findings, grants, interventions,
-latency, cancellation, and a fresh HMAC key. \texttt{GovernedLLM} replaces the
-raw model client, while \texttt{GovernedTools} wraps the tool registry
+latency, cancellation, and a fresh hash-based message authentication code
+(HMAC) key. \texttt{GovernedLLM} replaces the raw model client, while
+\texttt{GovernedTools} wraps the tool registry
 ~\cite{zunic2026browseruse}. BrowserUse retains its usual interfaces, but
 observations cross the first wrapper and proposals cross the second.
 
@@ -127,9 +124,12 @@ The Chrome extension lets the operator understand and respond to the runtime
 without becoming an authority source. The service owns the run, policy, pending
 requests, timers, audit sequence, and executor; the extension presents a
 redacted projection through the side panel, in-page ownership layer, Activity,
-and configuration views. Additional views appear in
-\cref{fig:appendix-interface-evidence}; \cref{fig:governed-run} begins with
-ordinary autonomous work.
+and configuration views. The Chrome integration uses a Manifest V3 service
+worker and content script for the in-page ownership layer, while the side-panel
+and dashboard clients consume the service's HTTP and WebSocket interfaces.
+These clients reconstruct server state and return bounded commands; policy
+decisions and authority waits remain server-owned. \Cref{fig:governed-run}
+begins with ordinary autonomous work.
 
 The in-page strip identifies who controls the browser, while the side panel
 shows the active model and policy mode, remaining budget, current step, and
@@ -139,10 +139,8 @@ changes within one control protocol.
 \begin{figure}[tbp]
 \centering
 \includegraphics[width=0.94\textwidth]{figures/interface-browser-and-panel-running-live.png}
-\caption[Autonomous operation across page and side panel.]{Live implementation
-state during ordinary autonomous operation. The browser page retains the
-task's working context and a minimal ownership control; the side panel preserves
-run state, budget, and agent interaction without becoming an authority source.}
+\caption{Ordinary autonomous operation across the page and extension side
+panel.}
 \label{fig:governed-run}
 \end{figure}
 
@@ -161,7 +159,7 @@ the service remains the reference monitor.
 Clients receive a service snapshot followed by sequenced events. After a gap,
 they discard the incomplete projection and reload. Closing the extension cannot
 resolve a waiting proposal, and a vanished card is never consent. Responses
-return through bounded REST endpoints and are checked against the still-pending
+return through bounded service endpoints and are checked against the still-pending
 request. The design now turns from this projection to the observation that the
 planner may see.
 
@@ -174,8 +172,10 @@ planner may see.
 BrowserUse assembles model messages from browser state, page extractions, and
 tool outcomes. Sentinel marks these browser-derived regions and encloses later
 tool-result strings in a dedicated untrusted region, escaping page content that
-imitates its wrapper. Trusted system instructions and the operator goal are not
-scanned as page content.
+imitates its wrapper. This escaping step is \emph{boundary neutralisation}: it
+prevents page text from forging Sentinel's reserved region or authority tags
+while preserving the genuine outer untrusted boundary. Trusted system
+instructions and the operator goal are not scanned as page content.
 
 It also minimises navigation metadata. HTTP(S) query strings and fragments are
 omitted; for \texttt{data:}, \texttt{javascript:}, \texttt{blob:}, and
@@ -243,11 +243,8 @@ still needs a separate decision at the action boundary.
 \begin{figure}[tbp]
 \centering
 \includegraphics[width=0.94\textwidth]{figures/interface-browser-and-panel-unresolved-live.png}
-\caption[Fail-closed handling of an unattributable browser observation.]{Live
-implementation state when a detector-positive observation cannot be attributed
-to a removable region. Sentinel pauses before inference, leaves the model-call
-budget at 0/60, and projects the same server-owned incident into the page and
-side panel.}
+\caption{An unattributable observation withheld before inference; the
+model-call budget remains at 0/60.}
 \label{fig:unresolved-observation}
 \end{figure}
 
@@ -261,7 +258,7 @@ The action guard solves a problem that observation filtering cannot: the world
 may change after the model has formed its proposal. A redirect can change the
 origin, a re-render can replace the target element, a local file can change,
 and an operator can edit policy. Sentinel therefore makes its execution
-decision at the last responsible moment---after the intended effect is concrete,
+decision at the last responsible moment: after the intended effect is concrete,
 but before the privileged tool is called.
 
 Each proposal opens a short, auditable transaction. Sentinel assigns a random
@@ -294,9 +291,9 @@ must be judged anew.
 \subsection{Risk, taint, and amplified effects}
 
 The policy decision combines what an action can do with the circumstances in
-which it would occur. Capability labels describe the possible effect---for
-example navigation, typing, upload, code execution, state change, or data
-disclosure. Live factors describe this proposal: its destination, target
+which it would occur. Capability labels describe the possible effect, such as
+navigation, typing, upload, code execution, state change, or data disclosure.
+Live factors describe this proposal: its destination, target
 element, protected-data classes, current policy, and any earlier influence from
 untrusted content. The distinction allows policy to prohibit a capability such
 as code execution in every context while offering narrow review for an effect
@@ -452,12 +449,8 @@ route; it did not create the state shown.
 \begin{figure}[tbp]
 \centering
 \includegraphics[width=0.94\textwidth]{figures/interface-browser-and-panel-password-handover-live.png}
-\caption[Agent-requested control at a password step.]{Live agent-requested
-control at a password step. The page presents an empty human-held credential,
-and the model invokes \texttt{request\_human\_control} instead of guessing or
-typing it. This is distinct from the operator clicking \emph{Take over}: the
-agent's remaining action sequence terminates, and return begins from a newly
-governed observation.}
+\caption{Agent-requested control at an empty password field; the protected
+value remains human-held.}
 \label{fig:handover-projection}
 \end{figure}
 
@@ -493,6 +486,31 @@ observation. History and trace data are redacted again before they reach the
 extension. Screenshots and free-form rationale persistence are off by default,
 and model summaries are handled as exposed outputs, not private
 chain-of-thought.
+
+\Cref{fig:authority-audit-evidence} makes the prospective and retrospective
+views concrete through two independently seeded states from the deterministic
+local walkthrough. The approval card exposes only a redacted proposal and the
+bounded responses that the service will accept. Activity, by contrast,
+reconstructs a completed run from its recorded decisions and outcomes. The
+panels are illustrative states, not a before-and-after sequence. The walkthrough
+invoked no model provider, browser agent, benchmark, or participant.
+
+\begin{figure}[!htbp]
+\centering
+\begin{minipage}[t]{0.44\textwidth}
+  \centering\scriptsize\textbf{(a) Bounded approval request}\par\smallskip
+  \includegraphics[width=\linewidth]{figures/interface-approval-walkthrough.png}
+\end{minipage}
+
+\vspace{2mm}
+\begin{minipage}[t]{0.86\textwidth}
+  \centering\scriptsize\textbf{(b) Completed-run Activity record}\par\smallskip
+  \includegraphics[width=\linewidth,trim=0 120 0 0,clip]{figures/interface-activity-detail-walkthrough.png}
+\end{minipage}
+\caption{Independent approval and Activity states from the deterministic
+walkthrough. They are illustrative, not one sequential run.}
+\label{fig:authority-audit-evidence}
+\end{figure}
 
 Sequenced events then make this record inspectable without shifting authority
 to the client. Closing the panel cannot resolve a pending request, and a

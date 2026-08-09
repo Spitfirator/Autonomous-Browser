@@ -22,8 +22,8 @@ An ungoverned loop passes the model proposal directly to the executor.
 \]
 
 where $P$ is live policy and $C_t$ is run-local governance state. The
-executor is called only when $d_t$ returns \emph{allow}, including an action
-whose narrow approval remains valid after fresh preflight. Block, timeout,
+executor is called only when $d_t$ returns \emph{allow}. A narrowly approved
+action must first pass a fresh check of the live state. Block, timeout,
 cancellation, unavailable required context, and unresolved authority do not
 execute $a_t$. The model therefore generates proposals but does not hold the
 authority for privileged effects.
@@ -57,7 +57,7 @@ outside its role.
 \toprule
 Component and role & Permitted influence & Authority withheld \\
 \midrule
-Operator: task principal & Defines the goal and may act directly during a
+Operator: human task owner & Defines the goal and may act directly during a
 human step. & Cannot convert a configured hard prohibition into an agent
 permission. \\
 \addlinespace[3pt]
@@ -110,13 +110,10 @@ persist influence into later turns. The action may be conspicuous, such as
 cross-origin navigation, or use the same-origin form controls required by
 the legitimate task.
 
-The adversary does not compromise the operating system, browser binary,
-Sentinel process, model provider, or local policy file. Direct human page
-interaction and browser effects outside the governed BrowserUse tool path are
-also outside complete mediation. The evaluated attacks are those instantiated
-by AgentDojo and WASP. Adaptive and pixel-only attacks are outside the measured
-task matrices; they remain relevant limitations and motivate the future
-evaluations identified in \cref{chap:discussion}.
+The adversary controls content, not the components that enforce the boundary.
+It does not compromise the operating system, browser binary, Sentinel process,
+model provider, local policy file, or privileged executor. Their integrity is
+an assumption of the claim.
 
 \section{Security requirements}
 \label{sec:security-objectives}
@@ -185,14 +182,16 @@ authority does not depend on the model obeying a warning. The empirical question
 is correspondingly narrow: under the evaluated conditions, does that independent
 boundary reduce policy-violating effects without preventing legitimate work?
 
-That claim has a visible edge. The interactive model receives a
-DOM/accessibility representation, so pixel-only instructions and tasks that
-require visual grounding are not measured. The service is a local research
-prototype: origin checks protect its loopback interface, but another compromised
-process running as the same operating-system user is outside the isolation
-assumption. Direct human interaction, actions taken outside the wrapped tool
-path, and compromise of Sentinel, the browser, or the operating system are also
-outside complete mediation.
+Complete mediation ends at the governed BrowserUse path. Direct human page
+interaction and browser effects invoked outside the wrapped tool path do not
+cross Sentinel's guards. The service is also a local research prototype: origin
+checks protect its loopback interface, but they do not isolate it from another
+compromised process running as the same operating-system user. Finally, the
+interactive model receives a DOM/accessibility representation. Pixel-only
+instructions and tasks that require visual grounding are therefore outside the
+measured channel. The attacks measured are those instantiated by AgentDojo and
+WASP; adaptive attacks remain a limitation and a priority for the future
+evaluation in \cref{chap:discussion}.
 
 The evaluation must therefore establish security and usefulness together.
 Detector recall is mechanism evidence; terminal attack failure can reflect an

@@ -17,10 +17,13 @@ attacker. An indirect prompt injection places instructions in that data so the
 agent encounters them while pursuing a legitimate goal~\cite{greshake2023indirect}.
 The attack does not depend on a malformed API call. It exploits an authority
 ambiguity: the model is expected to understand novel page content, yet must
-also decide
-whether that content is entitled to redirect its behaviour. Once the model can
-invoke privileged tools, a successful redirection can change remote state or
-disclose information instead of producing incorrect prose alone.
+also decide whether that content is entitled to redirect its behaviour. Once
+the model can invoke privileged tools, a successful redirection can change
+remote state or disclose information instead of producing incorrect prose
+alone.
+
+Throughout this dissertation, the \emph{operator} is the human task owner: the
+person who supplies the goal and whose browser authority the agent exercises.
 Prompt reminders, delimiters, and detectors can reduce exposure, but they
 leave the acting model responsible for respecting the distinction between the
 operator's goal and hostile data. Classical protection principles suggest a
@@ -61,22 +64,25 @@ untrusted browser, extraction, and tool-result regions; detects configured
 prompt-injection signals; removes attributable regions; and re-detects the
 exact reconstructed model input. Before execution, an action guard rebuilds
 live browser context, classifies capabilities and sensitive data, propagates
-origin-scoped taint, and invokes one policy engine. The executor is reached
-only after that decision.
+run-local taint for the affected browser origin (its scheme, host, and port),
+and invokes one policy engine. The executor is reached only after that
+decision.
 
 Automatic enforcement is combined with selective human authority. Hard policy
 and protected data flows remain non-overridable. A permissible but
 consequential action can receive narrow, expiring approval and is evaluated
 again against live state before execution. Recognised credentials, one-time
-codes, payment data, and other protected values trigger direct takeover so the
-operator performs the step instead of authorising the agent to type the value.
+codes, payment data, and other protected values trigger a direct human step, so
+the operator acts in the page instead of authorising the agent to type the
+value.
 If a suspicious current-page observation cannot be sanitised and verified, it
 is withheld and the operator may inspect the page before Sentinel captures a
 fresh observation. A Chrome extension presents these states and the redacted
 decision history; the server remains the source of authority.
 
-Evaluation proceeds in two stages. AgentDojo supplies controlled tool-agent
-tasks with native user and attacker oracles across four application domains
+The end-to-end evaluation then uses two complementary benchmarks. AgentDojo
+supplies controlled tool-agent tasks with native user and attacker oracles
+across four application domains
 ~\cite{debenedetti2024agentdojo}. WASP then exercises a BrowserUse agent over
 mutable GitLab and Reddit environments, adding observation construction,
 navigation, and browser re-planning~\cite{evtimov2025wasp}. The principal
@@ -117,7 +123,8 @@ not a new browser agent. Its three contributions build on one another.
   three seeds, full enforcement reduced audited terminal success from 17/252 to
   0/252 and attacker-directed execution from 42/252 to 0/252; utility changed
   from 154/252 to 149/252 and secure utility rose from 138/252 to 149/252. The
-  policy-only comparison further isolates the contribution of sanitisation.
+  full-versus-policy-only comparison further isolates the contribution of
+  sanitisation.
   Taken together, the two studies report what happened to the user's task as
   well as what happened to the attack, so inactivity or baseline model failure
   is not mistaken for security.

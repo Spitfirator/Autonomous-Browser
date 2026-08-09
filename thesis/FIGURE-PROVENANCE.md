@@ -1,7 +1,7 @@
 # Interface figure provenance
 
-This file records how the browser-integrated figures in Chapter 4 and the
-supporting control-plane figure in Appendix A were produced. It is a
+This file records how the browser-integrated and control-plane figures in
+Chapter 4 were produced. It is a
 reproducibility handoff, not a source of benchmark evidence.
 
 ## Evidence status
@@ -55,6 +55,13 @@ is rewritten in memory from production port 8765 to isolated port 18765.
 Together these captures document implemented interface behaviour. They are
 not benchmark observations, usability evidence, or participant data.
 
+The approval and Activity panels used together in Chapter 4 are independent
+illustrations, not consecutive states of one run. The approval card belongs to
+the walkthrough's live run `b1c2d3e4`; the completed Activity record belongs to
+the separately seeded run `c0ffee12`. Their juxtaposition explains prospective
+authority and retrospective accountability without claiming that one panel is
+the recorded outcome of the other.
+
 ## Figure mapping
 
 - Figure `fig:architecture` uses
@@ -73,8 +80,8 @@ not benchmark observations, usability evidence, or participant data.
 - Figure `fig:governed-run` uses the whole dedicated-Chrome active-run capture.
   Its page, page-level ownership control, and side panel are one simultaneous
   live view.
-- Figure `fig:appendix-interface-evidence` uses the deterministic completed
-  Activity record, live policy configuration, and bounded approval card.
+- Figure `fig:authority-audit-evidence` uses the deterministic bounded approval
+  card and completed Activity record as two independent illustrative states.
 - No capture contains a credential, private URL, raw injection payload,
   personal browser state, screenshot supplied to a model, or model rationale.
 
@@ -82,9 +89,8 @@ The whole-browser panels are exact application-window screenshots whose JPEG
 capture output was format-converted to PNG without retouching. The Activity
 and approval panels are rectangular crops produced with `ffmpeg`; the policy
 view is a direct viewport capture of the same deterministic dashboard. Their
-pixels were not generated or semantically altered. The figure directory keeps
-only images included in the manuscript; the appendix uses a compact
-configuration/decision/history sequence rather than a screenshot gallery.
+pixels were not generated or semantically altered. The policy capture remains
+as supporting source material but is not included in the submitted manuscript.
 
 ## Reproduction
 

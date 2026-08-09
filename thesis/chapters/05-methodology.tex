@@ -47,6 +47,14 @@ policy. Moving from policy-only to full changes only the configured
 sanitisation treatment, so the latter contrast isolates its incremental effect
 within this scaffold.
 
+Here, \emph{boundary neutralisation} means escaping page-supplied text that
+imitates Sentinel's reserved protocol or authority tags while retaining the
+genuine outer marker that identifies the region as untrusted. As
+\cref{sec:observation-governance} explains, this protects the representation
+boundary but does not remove the hostile instruction itself. Policy-only is
+therefore a deliberately composite condition, whereas full adds the targeted
+rewrite and clean post-check.
+
 The Qwen 3.5 4B, 9B, and 27B campaigns share an inference profile but remain
 distinct model artefacts. Parameter count was not isolated from planning, tool
 selection, recovery, or error behaviour, so cross-model variation cannot
@@ -144,7 +152,9 @@ overall.
 
 All conditions share the Qwen 3.5 27B artefact, 30-step single-action scaffold,
 inputs, sampling settings, and DOM/accessibility observations; screenshots are
-excluded. Participant mode is \texttt{none}. The progression is:
+excluded. No person reviewed or resolved requests during the campaign; the
+controller records this unattended configuration as participant mode
+\texttt{none}. The progression is:
 
 \begin{description}[style=nextline,leftmargin=24mm]
   \item[Off] The prompt-injection boundary and action-policy enforcement are

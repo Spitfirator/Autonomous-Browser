@@ -55,9 +55,11 @@ The difference between observation sanitisation and blanket action refusal is
 also important. A hard error on every tainted interaction can force repeated
 replanning and exhaust the action or approval budget. Removing the hostile
 source lets the planner continue through ordinary same-origin controls. The
-AgentDojo gains and small aggregate WASP utility difference suggest that
-earlier, attributable intervention can be less disruptive than repeatedly
-vetoing effects after a trajectory has already diverged.
+AgentDojo gains and the small aggregate WASP utility difference are consistent
+with that account: intervention before the next plan can preserve work that a
+diverted trajectory would abandon. However, the experiments did not isolate
+intervention timing as an independent factor, so they do not establish a
+general advantage over later vetoes.
 
 \section{Why the two enforcement points are complementary}
 
@@ -69,9 +71,21 @@ policy-only episodes was proposed. This is more than a presentation filter: it
 changes the information on which the model's next plan is conditioned. The
 policy-only condition preserves the remaining enforcement boundary while
 withholding that rewrite, so the contrast directly isolates the configured
-sanitisation increment. The earlier 9B warning result supplies consistent
-failure analysis: exposing both the attack and a warning to the same planner
-did not improve either terminal or intermediate attack outcomes.
+sanitisation increment. Aggregate utility remained 149/252 across that
+contrast. Native terminal success changed by only one episode, from 1/252 to
+zero, which is why the action audit matters: it reveals that 15
+attacker-directed executions disappeared before they could become terminal
+successes.
+
+The historical 9B warning result explains the clean post-condition behind this
+design. Exposing an attack and a warning to the same planner did not improve
+terminal or intermediate attack outcomes, although the changed development
+provenance prevents a pooled causal estimate. Sentinel now requires the exact
+reconstructed input to change and pass re-detection. If attribution or the
+post-check fails, the current observation is withheld and continuation begins
+only from a fresh capture after review. The final WASP rows contained no such
+unresolved case, so tests and the implementation walkthrough establish that
+mechanism while the benchmark does not measure its effect.
 
 The action guard addresses a different residual problem. No detector is
 complete, sanitisation may be unavailable for an effect proposed from earlier
@@ -102,36 +116,6 @@ would be awkward or unsafe to place in the prompt, such as protected-value
 classes and local file inspection. Model independence here means interface
 compatibility, not equal performance: each model still determines how well the
 remaining task is planned.
-
-\section{What the sanitisation ablation establishes}
-
-The final ablation sharpens the mechanism claim. Policy-only combines boundary
-neutralisation, a detector warning, and action policy; relative to off it
-reduced terminal attack success from 17/252 to 1/252 and attacker-directed
-execution from 42/252 to 15/252. That contrast is useful but composite. It
-cannot identify which of its three active mechanisms caused the change.
-
-Full differs only by enabling browser sanitisation. The remaining 15
-attacker-executing episodes fell to zero, with a five-episode decrement in every
-seed; aggregate utility remained 149/252. Terminal success changed by only one
-episode because most policy-only diversions already failed to complete the
-attacker goal. The action audit is therefore essential: it shows that verified
-removal changed what the model attempted, not only the last step of a mostly
-incapable baseline.
-
-The historical 9B runs also explain why the final ablation was necessary.
-Warning-only enforcement left ASR unchanged and increased attacker-directed
-execution. Because provenance changed during development, these runs are not
-pooled causal estimates. They nevertheless motivated a clear post-condition:
-the exact reconstructed model input must change and then pass re-detection.
-
-That post-condition also motivates current unresolved-content behaviour. If
-attribution or clean re-detection fails, sending the suspicious content with a
-warning recreates the ineffective authority structure. Sentinel instead
-withholds the current observation and permits continuation only from a fresh
-capture after operator review. The final WASP rows recorded no such unresolved
-case; tests and an implementation walkthrough establish the incident mechanism,
-but the benchmark does not measure its effect.
 
 \section{Intermediate execution and security by incompetence}
 
@@ -180,8 +164,8 @@ consistent with a trusted task representation.
 
 Selective authority supports the same division. Hard refusal is used where
 policy already resolves the question. Narrow approval is reserved for a
-permissible but consequential proposal. Direct takeover changes who performs a
-protected step, and an observation incident prevents hostile input from
+permissible but consequential proposal. A human step changes who performs a
+protected operation, and an observation incident prevents hostile input from
 reaching the planner. Treating these as different protocol states avoids the
 common failure in which one generic confirmation is asked to serve as both
 policy exception and secret-entry mechanism.
@@ -228,17 +212,15 @@ coverage without enough false intervention to erase the utility retained here.
 \section{Limitations and validity}
 \label{sec:discussion-limitations}
 
-Iterative fixes are a strength of the engineering process: observed failures
-revealed gaps and led to a better enforcement boundary. The validity limitation
-comes from evaluating detector coverage on attack families that also informed
-those fixes. For example, Sentinel's signatures were revised after AgentDojo
-and WASP development failures, including a correction for URL attacks whose
-hidden link target was absent from BrowserUse's accessibility text. The
-scorecard should therefore be read as regression coverage for known families,
-not as an estimate of performance on unseen attacks or other benchmarks. Clean
-re-detection establishes a configuration-specific post-condition; it cannot
-show that the remaining text is free of attacker intent. Adaptive optimisation
-against a frozen whole system is the appropriate next test
+The detector scorecards measure development regression coverage because several
+evaluated attack families also informed rule revisions. For example, a WASP
+development failure exposed URL attacks whose hidden link target was absent
+from BrowserUse's accessibility text. The resulting correction is part of the
+current regression result, so that score cannot estimate performance on unseen
+attacks or other benchmarks. Clean re-detection establishes a
+configuration-specific post-condition; it cannot show that the remaining text
+is free of attacker intent. Adaptive optimisation against a frozen whole system
+is therefore the appropriate next test
 ~\cite{zhan2025adaptive}.
 
 The results do not extend to visual observations or tasks that require visual
@@ -253,8 +235,8 @@ However, the controller always ran the cells in the same sequence, so a change
 in runtime conditions over time could align with a particular condition.
 Randomising or counterbalancing the sequence would reduce that risk. The 9B
 WASP rows are development revisions and are not part of the final controlled
-experiment. Some
-historical AgentDojo artefacts also predate the final provenance schema, which
+experiment. Some historical AgentDojo artefacts also predate the final
+provenance schema, which
 limits exact environment reconstruction even though task identities and native
 counts are preserved. These constraints preclude deployment-population and
 model-scaling claims.
@@ -292,8 +274,8 @@ data minimisation, and secure handling of interaction records.
 The immediate research priority is a frozen adaptive evaluation: fix detector,
 policy, and middleware, then test unseen prompt families and optimisation
 targeted at the combined observation/action boundary on held-out tasks and a
-larger randomised seed design.
-The next architectural step is a short, operator-visible task contract that
+larger randomised seed design. The next architectural step is a short,
+operator-visible task contract that
 states expected origins, data classes, permitted effects, human steps, and stop
 conditions before exposure to untrusted content. It should be evaluated as a
 separate mechanism in future work; the present rows cannot supply that evidence
