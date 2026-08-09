@@ -64,11 +64,15 @@ in executable banking, messaging, travel, and workspace environments
 ~\cite{debenedetti2024agentdojo}. Its native oracles score both goals against
 the resulting state. WASP applies a similar distinction to browser agents and
 records whether a trajectory begins serving the attacker before the terminal
-goal is achieved~\cite{evtimov2025wasp}. ST-WebAgentBench studies the broader
-problem of policy compliance through Completion Under Policy and Risk Ratio
-~\cite{levy2026stwebagentbench}. These metrics must be read together because
-detection accuracy, risky execution, policy compliance, and final-state success
-describe different parts of system behaviour.
+goal is achieved~\cite{evtimov2025wasp}. The two benchmarks therefore
+complement one another: AgentDojo isolates controlled tool-agent effects,
+whereas WASP adds browser-native observations, navigation, and re-planning.
+Their absolute rates cannot be pooled because their tasks, action spaces, and
+oracles differ. ST-WebAgentBench broadens the picture further by studying
+policy compliance through Completion Under Policy and Risk Ratio
+~\cite{levy2026stwebagentbench}. These measures must be read together because
+detection, risky execution, policy compliance, and final-state success reveal
+different parts of system behaviour.
 
 This dissertation therefore treats security and utility as a joint outcome.
 It reports native user completion, native attacker success, useful-and-secure
@@ -81,16 +85,30 @@ compromised agent useful.
 
 \subsection{Model-facing defences}
 
-Prompt instructions and provenance markers are inexpensive because they
-require no new execution architecture. BIPIA evaluates reminders, boundary
-awareness, in-context examples, and training across indirect-injection tasks
-~\cite{yi2025bipia}. Spotlighting transforms untrusted tokens through
+Model-facing defences try to help the planner recognise which content deserves
+instructional authority. BIPIA evaluates reminders, boundary awareness,
+in-context examples, and training across indirect-injection tasks
+~\cite{yi2025bipia}. Spotlighting instead transforms untrusted tokens through
 delimiting, datamarking, or encoding so their origin remains salient to the
-model~\cite{hines2024spotlighting}. StruQ instead trains a model to distinguish
-structured instruction and data channels~\cite{chen2025struq}. These methods
-can reduce compliance with tested injections, but the exposed model remains responsible
-for interpreting the boundary and they do not independently constrain a tool
-effect.
+model~\cite{hines2024spotlighting}.
+
+Training can make this separation part of model behaviour. StruQ uses
+structured instruction tuning to distinguish prompt and data channels
+~\cite{chen2025struq}, while SecAlign uses preference optimisation to favour
+responses that follow the legitimate instruction over the injection
+~\cite{chen2025secalign}. Both report improved robustness with limited utility
+loss in their evaluated settings. However, training results also require
+careful interpretation. Li et al. find that several fine-tuned defences learn
+surface correlations that can reject benign inputs and generalise poorly when
+position, trigger words, or topic changes~\cite{li2026surfaceheuristics}.
+
+Runtime systems intervene at a different point. For example, AgentSpec defines
+customisable constraints over agent events and enforces them during execution
+~\cite{wang2026agentspec}. Model training and runtime enforcement can therefore
+be understood as potentially complementary layers: one changes how the planner
+responds to hostile text, while the other governs selected effects around the
+planner. This is an architectural synthesis, not evidence that their combined
+use has been evaluated here or that one is cheaper or easier to maintain.
 
 Detection supplies an inspectable decision before exposure. Removal systems
 separate attack identification from segmentation or task-conditioned filtering
@@ -179,11 +197,13 @@ Deterministic channel invariants with AgentDojo and matched WASP evidence. \\
 
 Sentinel takes a deliberately pragmatic position. It keeps the browser agent's
 free-form planning loop, allowing the agent to adapt when a page changes or an
-action fails. In exchange, Sentinel cannot formally guarantee that every
-permitted same-origin action advances the user's intent. Its contribution is an
-implemented set of enforceable boundaries: exact pre-model observation
-governance, live executor-side policy, selective human authority, and evaluation
-inside the browser loop those mechanisms are intended to protect.
+action fails. That flexibility leaves a semantic limit: Sentinel can reject
+actions that violate explicit policy, but it cannot formally prove that every
+action left within policy---for example, a permitted same-origin click---still
+advances the operator's goal. Its contribution is an implemented set of
+enforceable boundaries: exact pre-model observation governance, live
+executor-side policy, selective human authority, and evaluation inside the
+browser loop those mechanisms are intended to protect.
 
 \section{Protection principles for agent runtimes}
 
@@ -209,41 +229,24 @@ These labels give the policy engine concrete source--sink facts to enforce at
 execution time. However, they are operational controls and do not prove that
 every information flow is isolated.
 
-Runtime enforcement also needs an authority protocol. A warning is not
-automatically meaningful consent: effective human-in-the-loop security
-requires that information is communicated, processed, applied, and fed back
-to the system~\cite{cranor2008humanloop}. Sentinel distinguishes hard refusal,
-narrow approval, direct takeover, and unresolved-observation review so that a
-generic confirmation cannot weaken a non-negotiable rule. This dissertation
-evaluates those states as implemented technical mechanisms, not as measured
-human behaviour.
-
-Automation research further separates what the machine decides from who
-implements the action. Parasuraman et al. describe automation as a sequence of
-information acquisition, analysis, decision selection, and action
-implementation, each of which can be allocated differently
-~\cite{parasuraman2000automation}. Sentinel applies that distinction directly:
-the runtime may select a hard refusal, an operator may decide a narrow approval,
-or the operator may perform a protected action while the agent remains paused.
-Browser-warning studies also show that interruption design affects whether a
-warning is noticed and followed~\cite{sunshine2009cryingwolf,akhawe2013warningland}.
-For Sentinel, the immediate requirement is structural: each interface choice
-must map to one precise server-side outcome. Whether operators choose correctly
-is a separate question for human-subject evaluation.
+Runtime enforcement also needs a precise authority protocol. Effective
+human-in-the-loop security requires information to be communicated, processed,
+applied, and returned to the system~\cite{cranor2008humanloop}; automation
+research likewise separates information acquisition, analysis, decision, and
+action~\cite{parasuraman2000automation}. Sentinel therefore maps hard refusal,
+narrow approval, takeover, and observation review to distinct server outcomes.
+This structure prevents a generic confirmation from weakening a hard rule.
+Whether the interface helps people make sound choices remains a separate
+human-subject question, especially because warning design affects attention and
+response~\cite{sunshine2009cryingwolf,akhawe2013warningland}.
 
 \section{Research gap}
 
-Prior work establishes strong approaches to learned separation, detection,
-structured control flow, information-flow control, and runtime rule systems.
-What remains is an integrational and empirical question: can an independent
-layer govern a dynamic browser agent at both the observation and execution
-boundaries, retain useful re-planning, and reduce both terminal attacks and
-attacker-serving execution?
-
-The dissertation answers that question through complementary forms of evidence.
-AgentDojo isolates the enforcement mechanism, and WASP tests it amid browser
-observations and mutable web state. The server-owned authority workflow and
-Chrome extension address the remaining design question: how to expose selective
-operator control without making the browser client a source of permission.
-Their tests and walkthroughs establish technical behaviour, although they do
-not constitute a participant evaluation.
+Prior work establishes learned separation, detection, structured control flow,
+information-flow controls, and runtime rules. The remaining empirical question
+is whether an independent layer can govern both boundaries of a dynamic browser
+agent, retain useful re-planning, and reduce terminal attacks and
+attacker-serving execution. AgentDojo isolates the mechanism; WASP tests it amid
+mutable browser state. The server-owned workflow and extension address selective
+operator control without making the client an authority source. Their tests
+establish technical behaviour, not participant outcomes.

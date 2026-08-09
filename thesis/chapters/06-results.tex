@@ -30,30 +30,34 @@ pattern is consistent across models: enforcement reduced attacker success while
 increasing both utility and secure utility. \Cref{tab:agentdojo-e2e} reports the
 native outcomes.
 
-\begin{table}[htbp]
+\begin{table}[!htbp]
 \centering
-\caption{AgentDojo v1 end-to-end results. Counts are followed by rates. Each
-attacked condition has $n=629$; clean utility has $n=97$.}
+\caption{AgentDojo v1 end-to-end results. Clean capability uses $n=97$;
+each attacked condition uses $n=629$. Counts and denominators are followed by
+rates; dashes mark outcomes that are not defined for the clean runs.}
 \label{tab:agentdojo-e2e}
 \footnotesize
-\renewcommand{\arraystretch}{1.18}
-\setlength{\tabcolsep}{4pt}
-\begin{tabularx}{\textwidth}{@{}L{0.21\textwidth}L{0.16\textwidth}*{3}{>{\centering\arraybackslash}X}@{}}
+\renewcommand{\arraystretch}{1.16}
+\setlength{\tabcolsep}{3.5pt}
+\begin{tabularx}{\textwidth}{@{}L{0.15\textwidth}L{0.18\textwidth}*{3}{>{\centering\arraybackslash}X}@{}}
 \toprule
-Outcome & Condition & Qwen 3.5 4B & Qwen 3.5 9B & Qwen 3.5 27B \\
+Model & Condition & Utility & Native attacker success & Secure utility \\
 \midrule
-Native utility & Clean & 76 (78.4\%) & 80 (82.5\%) & 81 (83.5\%) \\
- & Off & 362 (57.6\%) & 422 (67.1\%) & 428 (68.0\%) \\
- & Enforce & 446 (70.9\%) & 467 (74.2\%) & 483 (76.8\%) \\
-\addlinespace[3pt]
-Native attacker success & Off & 206 (32.8\%) & 131 (20.8\%) & 203 (32.3\%) \\
- & Enforce & 0 (0\%) & 1 (0.2\%) & 0 (0\%) \\
-\addlinespace[3pt]
-Useful and secure & Off & 297 (47.2\%) & 367 (58.3\%) & 345 (54.8\%) \\
- & Enforce & 446 (70.9\%) & 467 (74.2\%) & 483 (76.8\%) \\
+Qwen 3.5 4B & Clean & 76/97 (78.4\%) & -- & -- \\
+Qwen 3.5 4B & Attacked, off & 362/629 (57.6\%) & 206/629 (32.8\%) & 297/629 (47.2\%) \\
+Qwen 3.5 4B & Attacked, enforce & 446/629 (70.9\%) & 0/629 (0\%) & 446/629 (70.9\%) \\
+\addlinespace[2pt]
+Qwen 3.5 9B & Clean & 80/97 (82.5\%) & -- & -- \\
+Qwen 3.5 9B & Attacked, off & 422/629 (67.1\%) & 131/629 (20.8\%) & 367/629 (58.3\%) \\
+Qwen 3.5 9B & Attacked, enforce & 467/629 (74.2\%) & 1/629 (0.2\%) & 467/629 (74.2\%) \\
+\addlinespace[2pt]
+Qwen 3.5 27B & Clean & 81/97 (83.5\%) & -- & -- \\
+Qwen 3.5 27B & Attacked, off & 428/629 (68.0\%) & 203/629 (32.3\%) & 345/629 (54.8\%) \\
+Qwen 3.5 27B & Attacked, enforce & 483/629 (76.8\%) & 0/629 (0\%) & 483/629 (76.8\%) \\
 \bottomrule
 \end{tabularx}
 \end{table}
+\FloatBarrier
 
 For 4B, enforcement produced 84 additional useful outcomes, 206 fewer
 attacker successes, and 149 additional useful-and-secure outcomes. The 9B row

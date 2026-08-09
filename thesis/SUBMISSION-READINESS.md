@@ -64,14 +64,23 @@ independent validator are indexed from `sentinel/EVALS.md` and
 
 ## Completed release checks
 
-- The final editorial pass makes the argument more direct and readable without
-  weakening its scope. The abstract and research question now state the
-  security--utility objective plainly; the contributions and design chapter
-  explain the enforcement and authority boundaries in more natural academic
-  prose; and repetitive contrasts and implementation-detail digressions have
-  been removed. Tables 2.1 and 6.1--6.3 were also revised for clearer spacing,
-  cross-model comparison, and a non-duplicative presentation of per-seed WASP
-  effects.
+- The final narrative pass rewrites Design and Implementation and Evaluation
+  Methodology as continuous arguments. Chapter 4 now walks Figure 4.1 from task
+  to browser effect and back to the planner, follows one governed step in
+  runtime order, and connects the control plane, observation guard, action
+  guard, selective authority, audit, and later evaluation. Chapter 5 now moves
+  explicitly from component replay to controlled AgentDojo effects and then to
+  browser-native WASP transfer. Repetitive protocol detail was removed rather
+  than compressed through typography or spacing.
+- The introduction gives AgentDojo appropriate quantitative weight before the
+  principal three-seed WASP result. The background presents AgentDojo and WASP
+  as complementary but non-poolable evidence and adds balanced primary
+  literature on SecAlign and learned surface heuristics. It treats model
+  training and runtime enforcement as potentially complementary intervention
+  points without making an unverified operational comparison. Table 6.1 now
+  uses the conventional five-column model/condition/outcome layout, and the
+  limitations section contains a named ethics and responsible-research
+  subsection.
 - The abstract, introduction, methodology, results, discussion, conclusion, and
   assurance appendix now use the validated three-seed Qwen 3.5 27B WASP
   off/policy-only/full comparison as the principal browser-native evidence. The
@@ -82,12 +91,13 @@ independent validator are indexed from `sentinel/EVALS.md` and
   retained only as clearly separated historical evidence and are not pooled.
 - Chapter 4 introduces the ordinary Chrome-extension state before progressing
   through observation incidents, action governance, and selective human
-  authority. Its runtime diagram makes the direction of data and authority
-  explicit. Browser evidence is distributed by argumentative role: the
-  active-run view establishes the ordinary control plane, the unresolved
-  observation view sits beside the sanitisation post-condition, and the
-  password handover sits in the selective-authority section. Activity, policy,
-  and a bounded approval card remain supporting assurance views in Appendix A.
+  authority. Its runtime diagram and surrounding narrative make both the action
+  and observation directions explicit. The text-only boundary now states that
+  screenshots are excluded from the evaluated model-input path, pixel-only
+  instructions therefore do not enter that channel, and a multimodal extension
+  would need its own visual guard. Browser evidence remains distributed by
+  argumentative role, with supporting Activity, policy, and approval views in
+  Appendix A.
 - The active-run and password-handover captures came from the dedicated Chrome
   instance launched by `sentinel/start.sh`. The replacement handover capture is
   local run `8d78c714`: the model navigated to a distinct synthetic login page
@@ -118,12 +128,12 @@ independent validator are indexed from `sentinel/EVALS.md` and
   affected design pages, and the appendix figure checked again at higher
   resolution. No missing references, material box warnings, or other LaTeX
   warnings remain in either final log.
-- All 34 cited bibliography keys resolve one-to-one, the extracted PDF contains
+- All 36 cited bibliography keys resolve one-to-one, the extracted PDF contains
   no unresolved `??` markers, and `git diff --check` passes.
 - The release copy is
   `output/pdf/Sentinel-Independent-Runtime-Enforcement-for-Browser-Agents-submission-ready.pdf`
   with SHA-256
-  `b6d80e59145adabb4be3ced58cd97a952787a433398b99bb5e8daf7233bd64b4`.
+  `f6450f04d8d81e9af05c25470fb22bb42625083a4e0febb2858db8f9da5a1f75`.
 - The title page records the supervisor as Arthur below the submission date.
 
 ## Final gate

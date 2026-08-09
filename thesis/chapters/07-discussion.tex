@@ -161,7 +161,7 @@ security axis.
 
 \section{Policy as a backstop}
 
-Most WASP attacker goals culminate in the same same-origin forms and controls
+Most WASP attacker goals culminate in the same-origin forms and controls
 used by legitimate tasks. Treating every side effect after a detector finding
 as approval-requiring would convert untrusted provenance into broad denial of
 service. Sentinel applies strong deterministic rules to
@@ -268,12 +268,24 @@ incidents, secret takeover, revalidation, extraction/history handling, and
 special URLs is supported by tests; the frozen benchmark rows did not exercise
 those mechanisms.
 
-Finally, the authority interface has no participant evaluation. Approval
-counts, security-pause duration, and Activity annotations are technical
-telemetry. The implementation establishes server-owned request semantics and
-renders the relevant states; it does not measure comprehension, trust,
-workload, habituation, or recovery quality. Those questions require an ethics-
-approved study designed around real operator decisions.
+\subsection{Ethics and responsible research}
+
+No human participated in the reported studies, and no participant data was
+collected. Scripted benchmark modes supplied reproducible control behaviour;
+approval counts, pause duration, and Activity annotations are therefore
+technical telemetry. Likewise, the interface walkthroughs establish
+server-owned request semantics and rendered states, but they do not measure
+comprehension, trust, workload, habituation, or recovery quality.
+
+The browser evidence was produced in controlled benchmark environments and
+with local synthetic interface fixtures. The submitted figures contain no live
+credential, private account, private URL, or raw attack payload, and the
+dissertation does not reproduce the benchmark's operational injection text.
+These choices reduce unnecessary disclosure, although the work remains dual
+use because the same analysis can inform attacks as well as defences. Any
+future study of real operator decisions would therefore require ethics approval
+before recruitment or data collection, together with a protocol for consent,
+data minimisation, and secure handling of interaction records.
 
 \section{Implications and future work}
 
