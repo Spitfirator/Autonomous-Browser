@@ -3,15 +3,14 @@
 
 This appendix retains component evidence, protocol checks, and exact
 provenance needed to audit the main argument. It introduces no additional
-headline campaign.
+headline campaign. In the aggregate component replay, benign tasks recur across
+attack families; its benign outcome therefore uses the 97 distinct tasks.
 
 \section{Component and policy replays}
 
 \begin{table}[htbp]
 \centering
-\caption{AgentDojo v1 model-free component replay. Benign tasks recur across
-attack families in the aggregate detector count; the benign outcome uses the
-97 distinct tasks.}
+\caption{AgentDojo v1 model-free component replay.}
 \label{tab:component-replay}
 \small
 \begin{tabular}{@{}lr@{}}
@@ -33,10 +32,12 @@ The replay verifies the configured component contract on a development corpus.
 It contains no acting model and therefore cannot measure re-planning or native
 task success.
 
+The detector-v2 scorecard includes WASP development inputs collected after the
+live accessibility representation was inspected.
+
 \begin{table}[htbp]
 \centering
-\caption{Detector-v2 regression scorecard. WASP supplied development inputs
-after the live accessibility representation was inspected.}
+\caption{Detector-v2 regression scorecard.}
 \label{tab:detector-scorecard}
 \small
 \begin{tabular}{@{}lrrrrr@{}}
@@ -69,7 +70,7 @@ cross-origin coverage. The replay did not change AgentDojo classifications.
 \section{Current authority and failure semantics}
 
 \begin{longtable}{@{}L{0.28\textwidth}L{0.66\textwidth}@{}}
-\caption{Fail-closed outcomes at the extension and authority boundary.}
+\caption{Fail-closed authority outcomes.}
 \label{tab:interface-failures}\\
 \toprule
 Condition & Runtime outcome \\
@@ -119,7 +120,7 @@ versions, repository revision, and source hashes.
 
 \begin{table}[htbp]
 \centering
-\caption{Submission-time checks for the current implementation.}
+\caption{Submission-time implementation checks.}
 \label{tab:implementation-verification}
 \small
 \begin{tabularx}{\textwidth}{@{}L{0.38\textwidth}Y@{}}
@@ -142,7 +143,7 @@ Chrome extension production build & TypeScript check and Vite build passed \\
 
 \begin{table}[htbp]
 \centering
-\caption{Relationship between the current implementation and frozen evidence.}
+\caption{Implementation-to-evidence chronology.}
 \label{tab:chronology}
 \small
 \begin{tabularx}{\textwidth}{@{}L{0.35\textwidth}L{0.24\textwidth}Y@{}}
@@ -178,12 +179,12 @@ The AgentDojo table uses one thinking/32K profile for all three models: a
 and seed 0. The final WASP experiment uses the profile in
 \cref{tab:wasp-profile}; its native-thinking stream is separated from the
 schema-validated action output and is neither persisted nor treated as an
-action.
+action. Exact immutable identifiers and source hashes remain in the checked-in
+machine-readable result record.
 
 \begin{table}[htbp]
 \centering
-\caption{Final controlled WASP profile. Exact immutable identifiers and source
-hashes remain in the checked-in machine-readable result record.}
+\caption{Final controlled WASP profile.}
 \label{tab:wasp-profile}
 \small
 \begin{tabularx}{\textwidth}{@{}L{0.31\textwidth}Y@{}}

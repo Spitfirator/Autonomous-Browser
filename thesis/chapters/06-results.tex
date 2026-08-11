@@ -28,13 +28,13 @@ being disabled or the policy fixture failing to load.
 All three model campaigns completed 629 off/enforce task pairs. The central
 pattern is consistent across models: enforcement reduced attacker success while
 increasing both utility and secure utility. \Cref{tab:agentdojo-e2e} reports the
-native outcomes.
+native outcomes. Clean capability uses $n=97$, whereas each attacked condition
+uses $n=629$. Counts are followed by rates; dashes denote outcomes that are not
+defined for clean runs.
 
 \begin{table}[!htbp]
 \centering
-\caption{AgentDojo v1 end-to-end results. Clean capability uses $n=97$;
-each attacked condition uses $n=629$. Counts and denominators are followed by
-rates; dashes mark outcomes that are not defined for the clean runs.}
+\caption{AgentDojo v1 end-to-end outcomes.}
 \label{tab:agentdojo-e2e}
 \footnotesize
 \renewcommand{\arraystretch}{1.16}
@@ -117,13 +117,13 @@ The browser-native evaluation repeated the same 84 attacked tasks for seeds 0,
 per condition and 756 overall. \Cref{tab:wasp-27b} combines native final-state
 outcomes with the independent action audit. The audited ASR equals the raw
 native ASR in every condition; every native positive also had a corresponding
-executed attacker-directed action.
+executed attacker-directed action. Attempted and executed columns count episodes
+with at least one matching action. Potential false blocks are an upper bound,
+not confirmed causes of task failure.
 
 \begin{table}[htbp]
 \centering
-\caption{Replicated Qwen 3.5 27B WASP results, $n=252$ per condition. Attempted
-and executed columns count task episodes with at least one matching action.
-Potential false blocks are an upper bound, not confirmed causes of task failure.}
+\caption{Replicated three-seed WASP outcomes.}
 \label{tab:wasp-27b}
 \scriptsize
 \setlength{\tabcolsep}{3.2pt}
@@ -157,13 +157,13 @@ trajectory-level variation, not a claim that enforcement improves every task.
 
 \Cref{tab:wasp-seeds} shows the paired effect within each seed. This avoids
 repeating the aggregate counts in \cref{tab:wasp-27b} and makes the variation in
-utility visible alongside the consistent security direction.
+utility visible alongside the consistent security direction. Each value is the
+right-hand condition minus the left-hand condition; negative attacker values
+favour enforcement.
 
 \begin{table}[htbp]
 \centering
-\caption{Per-seed paired WASP effects, in task counts over the same 84 cases.
-Each value is the right-hand condition minus the left-hand condition; negative
-attacker values favour enforcement.}
+\caption{Per-seed paired WASP effects.}
 \label{tab:wasp-seeds}
 \small
 \renewcommand{\arraystretch}{1.2}
@@ -181,7 +181,7 @@ Seed & Utility & Audited ASR & Secure utility & Executed & Utility & Executed \\
 \end{tabular}
 \end{table}
 
-\subsection{What the sanitisation ablation establishes}
+\subsection{What the policy-only/full contrast establishes}
 
 The policy-only condition retains boundary neutralisation, the detector
 warning, and action policy while disabling browser sanitisation. Relative to
@@ -189,14 +189,14 @@ off, it reduced audited attacker success from 17/252 to 1/252 and
 attacker-directed execution from 42/252 to 15/252. This is a combined system
 effect: it cannot be attributed to action policy alone.
 
-Full differs only by enabling the configured sanitisation treatment. Aggregate utility remained
-149/252, while attacker-directed attempts and executions changed from 15/252
-to 0/252. The decrement was five episodes in every seed. Audited attacker
-success changed from 1/252 to 0/252 and secure utility from 148/252 to 149/252.
-The terminal difference is numerically small because the policy-only agent
-completed only one attacker goal, but the trajectory difference is not: no
-matching attacker-directed proposal was recorded under full enforcement in 252
-episodes.
+Full differs only by enabling the configured sanitisation treatment. Aggregate
+utility remained 149/252, while attacker-directed attempts and executions
+changed from 15/252 to 0/252. The decrement was five episodes in every seed.
+Audited attacker success changed from 1/252 to 0/252 and secure utility from
+148/252 to 149/252. The terminal difference is numerically small because the
+policy-only agent completed only one attacker goal, but the trajectory
+difference is not: no matching attacker-directed proposal was recorded under
+full enforcement in 252 episodes.
 
 Mechanism telemetry supports that interpretation. Full enforcement performed
 740 sanitisation attempts and confirmed 740 removals, comprising 21 direct-line
@@ -256,10 +256,10 @@ across three seeds.
 Utility bounds the claim. Full WASP enforcement completed five fewer episodes
 than off in aggregate, with gains and losses varying by seed, while secure
 utility increased by 11. This supports useful browser transfer, not cost-free
-improvement. The policy-only/full ablation locates the contribution of
-post-verified observation handling more precisely: without sanitisation,
-attacker-directed execution remained in 15/252 episodes; with sanitisation,
-none was proposed, at unchanged aggregate utility.
+improvement. The policy-only/full ablation locates the contribution of the
+configured treatment more precisely: attacker-directed execution remained in
+15/252 policy-only episodes, whereas none was proposed under full, at unchanged
+aggregate utility.
 
 The combined evidence therefore answers the research question at the level
 claimed. Independent enforcement changed both the observations shaping the
@@ -328,7 +328,6 @@ remain authoritative; the plots expose the joint security--utility pattern.
 \legend{Off,Policy-only,Full}
 \end{axis}
 \end{tikzpicture}
-\caption{Security and utility outcomes for the controlled AgentDojo and
-three-seed WASP comparisons.}
+\caption{End-to-end security and utility outcomes.}
 \label{fig:evaluation-bars}
 \end{figure}

@@ -86,8 +86,10 @@ independent validator are indexed from `sentinel/EVALS.md` and
   different agent stacks as a leaderboard. It treats model
   training and runtime enforcement as potentially complementary intervention
   points, explicitly as an architectural synthesis that was not evaluated,
-  without making an unverified operational comparison. Progent, Task Shield,
-  MELON, and the preprint status of Fides and Progent are now stated accurately.
+  without making an unverified operational comparison. IPIGuard and VIGIL add
+  peer-reviewed examples of planned tool-dependency and verify-before-commit
+  enforcement. Progent, Task Shield, MELON, and the preprint status of Fides and
+  Progent are now stated accurately.
   Table 6.1 now
   uses the conventional five-column model/condition/outcome layout, and the
   limitations section contains a named ethics and responsible-research
@@ -110,9 +112,10 @@ independent validator are indexed from `sentinel/EVALS.md` and
   beside the authority and audit discussion; the policy screenshot is omitted
   because the policy and authority tables explain enforcement more directly.
   Activity's timing, pause counts, and per-decision `understood` markers now
-  establish an instrumentable baseline for a future human-in-the-loop study.
-  Discussion identifies that study as the next step after the dissertation
-  while keeping human effectiveness outside the evidence reported here.
+  provide initial instrumentation for a future human-in-the-loop study.
+  Discussion identifies that study as the next step after the dissertation,
+  while also stating the preparation required before participant research and
+  keeping human effectiveness outside the evidence reported here.
 - The active-run and password-handover captures came from the dedicated Chrome
   instance launched by `sentinel/start.sh`. The replacement handover capture is
   local run `8d78c714`: the model navigated to a distinct synthetic login page
@@ -127,29 +130,29 @@ independent validator are indexed from `sentinel/EVALS.md` and
 - The approval and Activity views come from the deterministic local
   walkthrough. Their concise source mapping, reproduction commands, and image
   hashes are in `FIGURE-PROVENANCE.md`.
-- Tectonic produced a 63-page A4 PDF with the expected title, author, subject,
+- Tectonic produced a 64-page A4 PDF with the expected title, author, subject,
   and keywords. Under the formal exclusions supplied for the dissertation, the
   counted text is exactly 48 pages and remains below the 50-page ceiling: the
   Lists of Figures and Tables plus Arabic pages 1--46. Appendix A begins on
   Arabic page 47 and the bibliography on page 52, so both are outside that
-  count. Concise captions keep the List of Figures to one page and leave
+  count. Concise captions keep the Lists of Figures and Tables compact and leave
   detailed interpretation in the surrounding prose.
 - Both `sentinel-submission.tex` and the official `project_report - pg.tex`
-  root compile to 63 A4 pages with identical extracted page text and page
+  root compile to 64 A4 pages with identical extracted page text and page
   geometry. All pages were rendered for visual inspection, with front matter,
   Figure 4.1, the control-plane views, the result tables and graph, the ethics
   subsection, and the assurance appendix checked again at higher
   resolution. No missing references, material box warnings, or other LaTeX
   warnings remain in either final log.
 - The root-level PDFs have been regenerated from those canonical sources, so
-  they now include Progent, SecAlign, Task Shield, MELON, and the final warning
-  semantics rather than the earlier 61-page text.
-- All 37 cited bibliography keys resolve one-to-one, the extracted PDF contains
+  they now include Progent, SecAlign, Task Shield, MELON, IPIGuard, VIGIL, and
+  the final warning semantics rather than the earlier 61-page text.
+- All 39 cited bibliography keys resolve one-to-one, the extracted PDF contains
   no unresolved `??` markers or em dashes, and `git diff --check` passes.
 - The release copy is
   `output/pdf/Sentinel-Independent-Runtime-Enforcement-for-Browser-Agents-submission-ready.pdf`
   with SHA-256
-  `ddb59f36716a18f1f77726696ac3421705c4527e7385ef71b4a4be1cb9375a42`.
+  `00babdf9d127d7d69ec2c8d9430c7624ad69f1aee724cc258dfe21da5badc781`.
 - The title page records the supervisor as Arthur below the submission date.
 
 ## Final gate

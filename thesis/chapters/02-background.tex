@@ -157,17 +157,21 @@ AgentSpec provides a lightweight language of triggers, predicates, and runtime
 enforcement actions~\cite{wang2026agentspec}. DRIFT derives a minimal function
 trajectory and parameter checklist from the trusted query, validates
 deviations, and masks conflicting instructions before they persist in memory
-~\cite{li2025drift}. Their attack-success rates are not directly comparable:
-each system changes a different part of the agent stack and is evaluated under
-different policies, models, and tasks. \Cref{tab:system-comparison} therefore
-compares the more durable architectural question: what each system trusts and
-where that trust is enforced.
+~\cite{li2025drift}. IPIGuard plans a tool-dependency graph before exposure to
+external data and constrains later execution to traversal of that graph
+~\cite{an2025ipiguard}. VIGIL takes a different route: it permits speculative
+reasoning over the tool stream, then verifies a proposed effect against the
+trusted intent before commitment~\cite{lin2026vigil}. Reported attack-success
+rates across these systems are not directly comparable because each changes a
+different part of the agent stack and is evaluated under different policies,
+models, and tasks. Any assurance is also conditional on the system's trusted
+abstraction and expressible policy. \Cref{tab:system-comparison} therefore
+compares a representative set through the more durable architectural question:
+what each system trusts and where that trust is enforced.
 
 \begin{table}[htbp]
 \centering
-\caption{Closest system-level approaches. Assurance is conditional on each
-system's trusted abstraction and expressible policy; evaluation results are
-not compared across benchmarks.}
+\caption{Representative system-level approaches.}
 \label{tab:system-comparison}
 \footnotesize
 \renewcommand{\arraystretch}{1.12}
@@ -235,7 +239,7 @@ example, a same-origin click stays within the current page's scheme, host, and
 port, yet may still contradict the requested task. The contribution is an
 implemented set of enforceable boundaries: exact pre-model observation
 governance, live executor-side policy, selective human authority, and
-evaluation inside the browser loop those mechanisms are intended to protect.
+evaluation within the browser loop that those mechanisms govern.
 
 \section{Protection principles for agent runtimes}
 

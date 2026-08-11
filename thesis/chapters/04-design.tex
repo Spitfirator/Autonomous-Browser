@@ -120,11 +120,11 @@ develop the same loop through its control plane, guards, authority, and audit.
 \section{Chrome extension control plane}
 \label{sec:control-plane}
 
-The Chrome extension lets the operator understand and respond to the runtime
-without becoming an authority source. The service owns the run, policy, pending
-requests, timers, audit sequence, and executor; the extension presents a
-redacted projection through the side panel, in-page ownership layer, Activity,
-and configuration views. The Chrome integration uses a Manifest V3 service
+The Chrome extension lets the operator inspect runtime state and submit bounded
+responses without becoming an authority source. The service owns the run,
+policy, pending requests, timers, audit sequence, and executor; the extension
+presents a redacted projection through the side panel, in-page ownership layer,
+Activity, and configuration views. The Chrome integration uses a Manifest V3 service
 worker and content script for the in-page ownership layer, while the side-panel
 and dashboard clients consume the service's HTTP and WebSocket interfaces.
 These clients reconstruct server state and return bounded commands; policy
@@ -139,8 +139,7 @@ changes within one control protocol.
 \begin{figure}[tbp]
 \centering
 \includegraphics[width=0.94\textwidth]{figures/interface-browser-and-panel-running-live.png}
-\caption{Ordinary autonomous operation across the page and extension side
-panel.}
+\caption{Ordinary autonomous operation.}
 \label{fig:governed-run}
 \end{figure}
 
@@ -237,15 +236,15 @@ Figure~\ref{fig:unresolved-observation} shows the fail-closed branch. The
 controlled page produces an accessibility structure that becomes
 detector-positive only when its fragments are read together. Because Sentinel
 cannot identify a bounded region whose removal would satisfy the post-condition,
-it withholds the observation and pauses before the provider is called. Once a
+it withholds the observation and pauses before the provider is called. The
+unchanged 0/60 model-call budget makes that pre-inference stop visible. Once a
 governed observation does reach the planner, however, the resulting proposal
 still needs a separate decision at the action boundary.
 
 \begin{figure}[tbp]
 \centering
 \includegraphics[width=0.94\textwidth]{figures/interface-browser-and-panel-unresolved-live.png}
-\caption{An unattributable observation withheld before inference; the
-model-call budget remains at 0/60.}
+\caption{An unattributable observation withheld before inference.}
 \label{fig:unresolved-observation}
 \end{figure}
 
@@ -450,8 +449,7 @@ route; it did not create the state shown.
 \begin{figure}[tbp]
 \centering
 \includegraphics[width=0.94\textwidth]{figures/interface-browser-and-panel-password-handover-live.png}
-\caption{Agent-requested control at an empty password field; the protected
-value remains human-held.}
+\caption{Agent-requested control at a protected field.}
 \label{fig:handover-projection}
 \end{figure}
 
@@ -515,9 +513,9 @@ reconnecting client rebuilds its view from the service. Activity's pause counts
 and timing are runtime telemetry used to reconstruct the sequence of decisions
 and outcomes. It also provides a per-decision \texttt{understood} marker through
 which the operator can record whether the reason for an intervention was clear.
-Although that marker is not evaluated in this dissertation, it establishes an
-instrumentable foundation for a future human-in-the-loop study of comprehension,
-decision quality, and intervention burden.
+Although that marker is not evaluated in this dissertation, it provides one
+initial instrument that a future human-in-the-loop study could refine alongside
+validated measures of comprehension, decision quality, and intervention burden.
 
 \section{From mechanism to evidence}
 

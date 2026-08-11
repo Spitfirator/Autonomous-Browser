@@ -154,9 +154,8 @@ overall.
 
 All conditions share the Qwen 3.5 27B artefact, 30-step single-action scaffold,
 inputs, sampling settings, and DOM/accessibility observations; screenshots are
-excluded. No person reviewed or resolved requests during the campaign; the
-controller records this unattended configuration as participant mode
-\texttt{none}. The progression is:
+excluded. No person reviewed or resolved requests during the campaign, which
+was conducted unattended. The progression is:
 
 \begin{description}[style=nextline,leftmargin=24mm]
   \item[Off] The prompt-injection boundary and action-policy enforcement are
@@ -166,7 +165,7 @@ controller records this unattended configuration as participant mode
   policy are enabled, but browser sanitisation is disabled. Compared with off,
   this condition measures their combined effect.
 
-  \item[Full] Browser sanitisation is added to an otherwise byte-identical
+  \item[Full] Browser sanitisation is added to an otherwise identical
   policy-only configuration. After a confirmed removal, the reconstructed
   observation proceeds without a model-facing warning; if the clean post-check
   fails, the observation is withheld. This final contrast isolates the

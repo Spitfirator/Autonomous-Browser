@@ -114,10 +114,11 @@ browser tasks across three seeds under off, policy-only, and full conditions
 ($n=252$ per condition). From off to full, action-audited terminal attacker
 success changed from 17/252 to 0/252 and attacker-directed execution from
 42/252 to 0/252. Legitimate-task completion changed from 154/252 to 149/252,
-while secure utility rose from 138/252 to 149/252. Without sanitisation,
-enforcement still left attacker-directed execution in 15/252 episodes; the full
-condition produced no attacker-directed proposal at the same aggregate utility
-and recorded 740 confirmed sanitisation removals.
+while secure utility rose from 138/252 to 149/252. Policy-only retained boundary
+neutralisation, a detector warning, and action policy but disabled browser
+sanitisation; attacker-directed execution remained in 15/252 episodes. Under
+the full configured treatment, no attacker-directed proposal was recorded at
+the same aggregate utility, and 740 sanitisation removals were confirmed.
 
 In these experiments, independently governing observations and actions sharply
 reduced successful attacks and attacker-serving execution while retaining most

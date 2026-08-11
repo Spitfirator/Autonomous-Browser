@@ -20,12 +20,12 @@ changed from 154/252 to 149/252, while secure utility rose from 138/252 to
 149/252. The security gain therefore coexisted with a small aggregate utility
 cost and substantial between-seed variation, both of which remain visible.
 
-Third, the sanitisation ablation and telemetry provide a consistent mechanism
-account. Enforcement without sanitisation still left attacker-directed
-execution in 15/252 episodes. The full condition recorded 740 confirmed
-removals, no residual or unattributable observation, and no attacker-directed
-proposal. AgentDojo likewise recorded sanitised tool output in most attacked
-enforce cases and few explicit blocks. Across both environments, the recurring
+Third, the configured sanitisation treatment and telemetry provide a consistent
+mechanism account. Policy-only still left attacker-directed execution in
+15/252 episodes. The full condition recorded 740 confirmed removals, no
+residual or unattributable observation, and no attacker-directed proposal.
+AgentDojo likewise recorded sanitised tool output in most attacked enforce
+cases and few explicit blocks. Across both environments, the recurring
 intervention was removal of hostile observation content before the next model
 decision, backed by policy at execution time.
 
@@ -183,14 +183,15 @@ safe to send to the model, so there is no action to approve at all. These states
 have different completion conditions even if the interface renders each as an
 interruption.
 
-The contribution here is a completed systems mechanism; no second behavioural
-study is claimed. The implementation supplies expiring scopes,
-one-terminal-outcome audit, timeout and cancellation, fresh-observation
-semantics, and browser-integrated presentation. These properties make the
-authority path reproducible and testable. Furthermore, an unavailable interface
-cannot silently become permission. Whether people interpret the cards correctly
-remains a separate empirical question; it is not needed to establish that the
-acting model does not own the decision.
+The implemented workflow establishes the system-side authority boundary through
+expiring scopes, paired attempted and terminal audit, timeout and cancellation,
+fresh-observation semantics, and browser-integrated presentation. These
+properties support deterministic tests of how requests are created, resolved,
+and recorded. They do not show that the interface communicates those states
+effectively to people, or that the present instrumentation is sufficient for a
+participant study. Nevertheless, an unavailable interface cannot silently
+become permission, so the technical boundary remains fail-closed while the
+interaction design requires separate preparation and evaluation.
 
 \section{Implications for system-level defences}
 
@@ -284,14 +285,15 @@ evidence through a human-in-the-loop study of the authority workflow. It should
 examine whether operators understand why Sentinel intervened, choose
 appropriately among bounded approval, direct action, and incident review, and
 resume the task without excessive workload or warning fatigue. The Chrome
-extension provides a technical baseline for that study:
+extension provides a starting technical baseline for that study:
 its approval, handover, incident, and Activity views already expose the
 server-owned workflow, while intervention timing, pause counts, and
 per-decision \texttt{understood} markers provide initial instrumentation. These
-mechanisms make the study possible; they do not themselves establish usability
-or comprehension. Recruitment and interaction-data collection would therefore
-require the approved protocol and safeguards described in
-\cref{subsec:ethics}.
+features indicate how the workflow could be instrumented, but they do not make
+the current prototype ready for participant research or establish usability or
+comprehension. Before recruitment, the study would require stable scenarios,
+validated measures, pilot testing, and the approved protocol and safeguards
+described in \cref{subsec:ethics}.
 
 Security evaluation should progress alongside that study. A frozen adaptive
 evaluation would fix the detector, policy, and middleware before testing unseen
