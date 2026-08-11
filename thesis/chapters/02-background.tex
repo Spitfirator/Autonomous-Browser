@@ -98,18 +98,27 @@ structured instruction tuning to distinguish prompt and data channels
 ~\cite{chen2025struq}, while SecAlign uses preference optimisation to favour
 responses that follow the legitimate instruction over the injection
 ~\cite{chen2025secalign}. Both report improved robustness with limited utility
-loss in their evaluated settings. However, training results also require
-careful interpretation. Li et al. find that several fine-tuned defences learn
-surface correlations that can reject benign inputs and generalise poorly when
-position, trigger words, or topic changes~\cite{li2026surfaceheuristics}.
+loss in their evaluated settings. In particular, SecAlign reports attack
+success rates around 0\% across its tested injections while retaining utility
+similar to the undefended model. However, results within one paper do not
+establish robustness under a different task and attack distribution. In a
+later diagnostic study of benign paired tasks, suffix-task refusal rates often
+exceeded 50\% and reached 90\% for some defence and model combinations. This
+suggests that fine-tuned defences can learn positional or lexical correlations
+that reject benign inputs and generalise poorly when position, trigger words,
+or topic changes~\cite{li2026surfaceheuristics}.
 
 Other defences act during inference. Task Shield checks whether each instruction
 and proposed tool call contributes to the user's stated goal
-~\cite{jia2025taskshield}. MELON instead reruns the agent trajectory with the
-user prompt masked and treats similarity between the original and
-counterfactual actions as evidence of hijacking~\cite{zhu2025melon}. These
-methods ask whether planned behaviour remains dependent on the authorised task,
-complementing techniques that separate trusted and untrusted text.
+~\cite{jia2025taskshield}. On AgentDojo with GPT-4o, its authors report 2.07\%
+attack success and 69.79\% task utility. MELON instead reruns the agent
+trajectory with the user prompt masked and treats similarity between the
+original and counterfactual actions as evidence of hijacking
+~\cite{zhu2025melon}. These methods ask whether planned behaviour remains
+dependent on the authorised task, complementing techniques that separate
+trusted and untrusted text. Their figures describe trade-offs within their own
+agent stacks; differences in models, tasks, policies, attacks, and scoring
+prevent a direct numerical comparison with Sentinel.
 
 Detection supplies an inspectable decision before exposure. Removal systems
 separate attack identification from segmentation or task-conditioned filtering

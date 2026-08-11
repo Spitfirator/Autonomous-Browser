@@ -80,7 +80,10 @@ independent validator are indexed from `sentinel/EVALS.md` and
 - The introduction gives AgentDojo appropriate quantitative weight before the
   principal three-seed WASP result. The background presents AgentDojo and WASP
   as complementary but non-poolable evidence and adds balanced primary
-  literature on SecAlign and learned surface heuristics. It treats model
+  literature on SecAlign and learned surface heuristics. Selected within-paper
+  results now quantify the SecAlign and Task Shield security--utility claims,
+  alongside the later benign-refusal evidence, without treating values from
+  different agent stacks as a leaderboard. It treats model
   training and runtime enforcement as potentially complementary intervention
   points, explicitly as an architectural synthesis that was not evaluated,
   without making an unverified operational comparison. Progent, Task Shield,
@@ -106,6 +109,10 @@ independent validator are indexed from `sentinel/EVALS.md` and
   would need its own visual guard. Figure 4.5 places Approval and Activity views
   beside the authority and audit discussion; the policy screenshot is omitted
   because the policy and authority tables explain enforcement more directly.
+  Activity's timing, pause counts, and per-decision `understood` markers now
+  establish an instrumentable baseline for a future human-in-the-loop study.
+  Discussion identifies that study as the next step after the dissertation
+  while keeping human effectiveness outside the evidence reported here.
 - The active-run and password-handover captures came from the dedicated Chrome
   instance launched by `sentinel/start.sh`. The replacement handover capture is
   local run `8d78c714`: the model navigated to a distinct synthetic login page
@@ -142,7 +149,7 @@ independent validator are indexed from `sentinel/EVALS.md` and
 - The release copy is
   `output/pdf/Sentinel-Independent-Runtime-Enforcement-for-Browser-Agents-submission-ready.pdf`
   with SHA-256
-  `47a5df8fae9826d208224817e0210eee1fbebd9195d8fb63ac96f5b11fbdb789`.
+  `ddb59f36716a18f1f77726696ac3421705c4527e7385ef71b4a4be1cb9375a42`.
 - The title page records the supervisor as Arthur below the submission date.
 
 ## Final gate

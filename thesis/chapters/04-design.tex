@@ -513,7 +513,11 @@ Sequenced events then make this record inspectable without shifting authority
 to the client. Closing the panel cannot resolve a pending request, and a
 reconnecting client rebuilds its view from the service. Activity's pause counts
 and timing are runtime telemetry used to reconstruct the sequence of decisions
-and outcomes.
+and outcomes. It also provides a per-decision \texttt{understood} marker through
+which the operator can record whether the reason for an intervention was clear.
+Although that marker is not evaluated in this dissertation, it establishes an
+instrumentable foundation for a future human-in-the-loop study of comprehension,
+decision quality, and intervention burden.
 
 \section{From mechanism to evidence}
 

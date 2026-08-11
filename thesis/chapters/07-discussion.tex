@@ -216,20 +216,18 @@ coverage without enough false intervention to erase the utility retained here.
 \section{Limitations and validity}
 \label{sec:discussion-limitations}
 
-Iterative fixes are a strength of the engineering process: observed failures
-revealed gaps and led to a better enforcement boundary. The validity limitation
-comes from evaluating detector coverage on attack families that also informed
-those fixes. For example, Sentinel's signatures were revised after AgentDojo
-and WASP development failures, including a correction for URL attacks whose
-hidden link target was absent from BrowserUse's accessibility text. The
-scorecard should therefore be read as regression coverage for known families,
-not as an estimate of performance on unseen attacks or other benchmarks. The
-revised middleware and condition-specific policies were frozen before the final
-three-seed comparison and then applied consistently within its matched
-conditions. Clean re-detection establishes a configuration-specific
+The detector scorecards measure development regression coverage because several
+evaluated attack families also informed rule revisions. For example, a WASP
+development failure exposed URL attacks whose hidden link target was absent
+from BrowserUse's accessibility text. The resulting correction is part of the
+current regression result, so the scorecard cannot estimate performance on
+unseen attacks or other benchmarks. The final three-seed comparison has a
+clearer evidence boundary: the revised middleware and condition-specific
+policies were frozen before the experiment and applied consistently across all
+three seeds. Clean re-detection establishes a configuration-specific
 post-condition; it cannot show that the remaining text is free of attacker
-intent. Adaptive optimisation against a frozen whole system is the appropriate
-next test
+intent. Adaptive optimisation against a frozen whole system is therefore the
+appropriate next test
 ~\cite{zhan2025adaptive}.
 
 The results do not extend to visual observations or tasks that require visual
@@ -260,6 +258,7 @@ special URLs is supported by tests; the frozen benchmark rows did not exercise
 those mechanisms.
 
 \subsection{Ethics and responsible research}
+\label{subsec:ethics}
 
 No human participated in the reported studies, and no participant data was
 collected. Scripted benchmark modes supplied reproducible control behaviour;
@@ -280,22 +279,30 @@ data minimisation, and secure handling of interaction records.
 
 \section{Implications and future work}
 
-The immediate research priority is a frozen adaptive evaluation: fix detector,
-policy, and middleware, then test unseen prompt families and optimisation
-targeted at the combined observation/action boundary on held-out tasks and a
-larger randomised seed design. The next architectural step is a short,
-operator-visible task contract that
-states expected origins, data classes, permitted effects, human steps, and stop
-conditions before exposure to untrusted content. It should be evaluated as a
-separate mechanism in future work; the present rows cannot supply that evidence
-retrospectively.
+The next step after this dissertation is to address the absence of participant
+evidence through a human-in-the-loop study of the authority workflow. It should
+examine whether operators understand why Sentinel intervened, choose
+appropriately among bounded approval, direct action, and incident review, and
+resume the task without excessive workload or warning fatigue. The Chrome
+extension provides a technical baseline for that study:
+its approval, handover, incident, and Activity views already expose the
+server-owned workflow, while intervention timing, pause counts, and
+per-decision \texttt{understood} markers provide initial instrumentation. These
+mechanisms make the study possible; they do not themselves establish usability
+or comprehension. Recruitment and interaction-data collection would therefore
+require the approved protocol and safeguards described in
+\cref{subsec:ethics}.
 
-Visual mediation and human evaluation form distinct work packages. A visual
-guard should emit bounded, provenance-aware representations and connect
-uncertain pixel-derived actions to stricter authority. Human evaluation should
-begin with expert cognitive walkthroughs, then measure whether approval,
-takeover, and incident review lead to correct decisions at an acceptable
-attention cost. In parallel, deployment hardening should authenticate local
+Security evaluation should progress alongside that study. A frozen adaptive
+evaluation would fix the detector, policy, and middleware before testing unseen
+prompt families and optimisation targeted at the combined observation/action
+boundary on held-out tasks and a larger randomised seed design. A visual guard
+would need bounded, provenance-aware representations and stricter authority for
+uncertain pixel-derived actions. Finally, an operator-visible task contract
+could state expected origins, data classes, permitted effects, human steps, and
+stop conditions before exposure to untrusted content. Each mechanism requires
+its own evaluation because the present results cannot supply that evidence
+retrospectively. Deployment hardening would also need to authenticate local
 control, separate process privileges, protect policy and trace keys, and
 consider transactional browser environments.
 
