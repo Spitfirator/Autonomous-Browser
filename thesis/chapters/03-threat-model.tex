@@ -3,30 +3,29 @@
 
 \section{System model}
 
-The operator supplies a trusted goal $G$. At step $t$, the browser produces
-an observation $O_t$, the model proposes an action $a_t$, and the executor
-may update environment state $S_t$:
+The operator supplies a trusted goal $G$. At step $t$, the environment has
+state $S_t$, the browser produces a raw observation $O_t$, the model proposes
+an action $a_t$, and the action guard returns outcome $d_t$. Sequence subscripts
+$\leq t$ and $<t$ denote histories through and before that step, respectively:
 
 \[
-  O_t=\mathsf{observe}(S_t), \qquad
-  a_t=\mathsf{agent}(G,O_{\leq t},A_{<t}), \qquad
-  S_{t+1}=\mathsf{execute}(S_t,a_t).
+\begin{aligned}
+  O_t &= \mathsf{observe}(S_t), &
+  \widehat{O}_t &= \mathsf{guard}_{O}(O_t,P,C_t), \\
+  a_t &= \mathsf{agent}(G,\widehat{O}_{\leq t},a_{<t}), &
+  d_t &= \mathsf{guard}_{A}(a_t,S_t,P,C_t).
+\end{aligned}
 \]
 
-An ungoverned loop passes the model proposal directly to the executor.
-\systemname\ inserts two transformations:
-
-\[
-  \widehat{O}_t=\mathsf{guard}_{O}(O_t,P,C_t), \qquad
-  d_t=\mathsf{guard}_{A}(a_t,S_t,P,C_t),
-\]
-
-where $P$ is live policy and $C_t$ is run-local governance state. The
-executor is called only when $d_t$ returns \emph{allow}. A narrowly approved
-action must first pass a fresh check of the live state. Block, timeout,
+Here, $\widehat{O}_{\leq t}$ is the governed observation history, $P$ is live
+policy, and $C_t$ is run-local governance state. Without Sentinel,
+$\widehat{O}_t=O_t$ and each proposal passes directly to
+$\mathsf{execute}(S_t,a_t)$. With Sentinel, execution requires either an
+immediate \emph{allow} or, for an approval-eligible proposal, matching approval
+and successful revalidation of its live scope. Block, handoff, timeout,
 cancellation, unavailable required context, and unresolved authority do not
-execute $a_t$. The model therefore generates proposals but does not hold the
-authority for privileged effects.
+execute $a_t$. Thus, the model proposes actions but does not authorise their
+privileged effects.
 
 \section{Assets and trust boundary}
 
@@ -123,7 +122,7 @@ control limits what can shape the proposal. Next, action control decides what
 that proposal may do in the current browser state. If operator input is needed,
 authority control keeps the response narrow and non-transferable. Finally,
 audit control records the outcome without reproducing the content that caused
-the concern. Because these stages depend on one another, a weakness early in
+the concern. Since these stages depend on one another, a weakness early in
 the chain also weakens the assurances that follow.
 
 \begin{enumerate}[label=\textbf{R\arabic*:},leftmargin=16mm]
@@ -159,9 +158,9 @@ the chain also weakens the assurances that follow.
   \item \textbf{Privacy-preserving accountability.} The audit record must
   explain why an effect did or did not occur without becoming another route for
   disclosure. Decisions remain inspectable through redacted rules, risk
-  factors, outcomes, and run-keyed digests. Meanwhile, raw protected values,
-  attacker payloads, visual captures, and unrestricted model rationale are
-  excluded from persistent and extension telemetry by default.
+  factors, outcomes, and run-keyed digests. Persistent traces and extension
+  telemetry therefore omit raw protected values, attacker payloads,
+  screenshots, and unrestricted model reasoning by default.
 \end{enumerate}
 
 Taken together, R1--R5 describe one governed path. R2 controls the observation
@@ -177,10 +176,11 @@ outcomes.
 The claim is about an enforceable boundary, not an immune model. Sentinel does
 not make every model judgement correct and does not claim to eliminate prompt
 injection. It claims that, where observations and actions traverse the governed
-BrowserUse path, the model's proposal can be subjected to a decision whose
-authority does not depend on the model obeying a warning. The empirical question
-is correspondingly narrow: under the evaluated conditions, does that independent
-boundary reduce policy-violating effects without preventing legitimate work?
+BrowserUse path, \systemname\ independently evaluates the model's proposal.
+Enforcement therefore does not depend on the model interpreting or obeying a
+security warning. The empirical question is correspondingly narrow: under the
+evaluated conditions, does that independent boundary reduce policy-violating
+effects without preventing legitimate work?
 
 Complete mediation ends at the governed BrowserUse path. Direct human page
 interaction and browser effects invoked outside the wrapped tool path do not
@@ -198,4 +198,5 @@ Detector recall is mechanism evidence; terminal attack failure can reflect an
 incapable agent, just as blanket refusal can destroy utility. The thesis relies
 on paired native security and task outcomes with trajectory records. Its
 conclusions apply to the evaluated models, suites, representations, and frozen
-implementations, not human comprehension or deployment-scale robustness.
+implementations, not human comprehension or security effectiveness at
+deployment scale.

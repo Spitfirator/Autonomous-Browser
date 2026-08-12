@@ -87,10 +87,12 @@ navigation, and browser re-planning~\cite{evtimov2025wasp}. The principal
 browser study repeats the 84-case matrix across three seeds and compares
 enforcement off, enforcement without sanitisation, and the full system. This
 design tests browser transfer and isolates the configured sanitisation
-increment. The earlier 9B experiments served a different purpose: they showed
-that retaining detected content alongside a warning was insufficient. They are
-therefore treated as development evidence and kept separate from the final
-comparison.
+increment. The earlier 9B experiments showed that warning the model was
+insufficient when detected content remained in its input. The final study keeps
+this behaviour only in the policy-only condition, providing a comparator for
+post-verified removal. Full enforcement removes attributable content and
+continues only after the reconstructed observation passes re-detection. The 9B
+development runs remain separate from the final comparison.
 
 \section{Contributions}
 \label{sec:contributions}

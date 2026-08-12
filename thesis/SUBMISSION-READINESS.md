@@ -91,8 +91,7 @@ independent validator are indexed from `sentinel/EVALS.md` and
   enforcement. AttriGuard adds the close contemporary comparison of
   counterfactual causal attribution at the action boundary, while MUZZLE gives
   the proposed browser-specific adaptive evaluation a concrete trajectory-guided
-  method. Progent, Task Shield, MELON, and the preprint status of Fides and
-  Progent are stated accurately.
+  method. Progent, Task Shield, MELON, and Fides are stated accurately.
   Table 6.1 now
   uses the conventional five-column model/condition/outcome layout, and the
   limitations section contains a named ethics and responsible-research
@@ -133,15 +132,15 @@ independent validator are indexed from `sentinel/EVALS.md` and
 - The approval and Activity views come from the deterministic local
   walkthrough. Their concise source mapping, reproduction commands, and image
   hashes are in `FIGURE-PROVENANCE.md`.
-- Tectonic produced a 64-page A4 PDF with the expected title, author, subject,
+- Tectonic produced a 65-page A4 PDF with the expected title, author, subject,
   and keywords. Under the formal exclusions supplied for the dissertation, the
-  counted text is exactly 48 pages and remains below the 50-page ceiling: the
-  Lists of Figures and Tables plus Arabic pages 1--46. Appendix A begins on
-  Arabic page 47 and the bibliography on page 52, so both are outside that
+  counted text is exactly 49 pages and remains below the 50-page ceiling: the
+  Lists of Figures and Tables plus Arabic pages 1--47. Appendix A begins on
+  Arabic page 48 and the bibliography on page 53, so both are outside that
   count. Concise captions keep the Lists of Figures and Tables compact and leave
   detailed interpretation in the surrounding prose.
 - Both `sentinel-submission.tex` and the official `project_report - pg.tex`
-  root compile to 64 A4 pages with identical extracted page text and page
+  root compile to 65 A4 pages with identical extracted page text and page
   geometry. All pages were rendered for visual inspection, with front matter,
   Figure 4.1, the control-plane views, the result tables and graph, the ethics
   subsection, and the assurance appendix checked again at higher
@@ -156,7 +155,7 @@ independent validator are indexed from `sentinel/EVALS.md` and
 - The release copy is
   `output/pdf/Sentinel-Independent-Runtime-Enforcement-for-Browser-Agents-submission-ready.pdf`
   with SHA-256
-  `2bb3b074456adcdfa7a943805672530602bacf61f99b74adeadbb600788d9efc`.
+  `05136ca444581f1f8504036b35ec14cfed0bd5a45f850f15a29202b2033df3d7`.
 - The title page records the supervisor as Arthur below the submission date.
 
 ## Final gate

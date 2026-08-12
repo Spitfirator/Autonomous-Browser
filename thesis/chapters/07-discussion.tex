@@ -159,8 +159,10 @@ post-verified sanitisation handles the observation that shaped the plan.
 
 This division is pragmatic, but it is not a complete semantic judge. A
 natural-looking same-origin instruction can evade the detector and resemble a
-legitimate task step. Task Shield, MELON, and DRIFT introduce task-derived or
-counterfactual abstractions that can address semantic alignment
+legitimate task step. Consequently, policy establishes compliance with encoded
+constraints, not proof that every permitted effect advances an open-ended
+goal. Task Shield, MELON, and DRIFT introduce task-derived or counterfactual
+abstractions that can address semantic alignment
 ~\cite{jia2025taskshield,zhu2025melon,li2025drift}. A promising composition is
 to retain deterministic executor policy for non-negotiable invariants while a
 separately isolated component checks whether ambiguous effects remain
@@ -213,6 +215,8 @@ local rules and bind human authority to live browser state. Such a design would
 reduce reliance on surface signatures without returning the final decision to
 the acting model. Its value would depend on whether the semantic monitor adds
 coverage without enough false intervention to erase the utility retained here.
+This composition remains future work and is not evaluated by the present
+experiments.
 
 \section{Limitations and validity}
 \label{sec:discussion-limitations}

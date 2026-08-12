@@ -41,9 +41,9 @@ success~\cite{debenedetti2024agentdojo,evtimov2025wasp}. This distinction is
 important because an incapable agent may achieve neither goal and therefore
 appear secure under terminal attack success alone.
 
-The current page is not the only channel. Extracted page text and tool results
-can cross secondary model calls, while stored history can reintroduce hostile
-content later. Multimodal agents add pixels: image-hijack work shows that
+The threat also extends beyond the current page: extracted page text and tool
+results can cross secondary model calls, while stored history can reintroduce
+hostile content later. Multimodal agents add pixels: image-hijack work shows that
 instructions embedded in images can redirect vision-language systems
 ~\cite{bailey2024imagehijacks}. A filter over the Document Object Model (DOM),
 the browser's structured representation of a page, cannot remove text rendered
@@ -97,8 +97,9 @@ Training can make this separation part of model behaviour. StruQ uses
 structured instruction tuning to distinguish prompt and data channels
 ~\cite{chen2025struq}, while SecAlign uses preference optimisation to favour
 responses that follow the legitimate instruction over the injection
-~\cite{chen2025secalign}. Both report improved robustness with limited utility
-loss in their settings. SecAlign reports 0\% attack success for the tested
+~\cite{chen2025secalign}. Both report greater resistance to the evaluated
+attacks with limited utility loss in their settings. SecAlign reports 0\%
+attack success for the tested
 optimisation-free attacks and rates mainly below 10\% for stronger
 optimisation-based attacks, with utility similar to its
 non-preference-optimised counterparts. These findings remain bound to the
@@ -116,11 +117,12 @@ and proposed tool call contributes to the user's stated goal
 attack success and 69.79\% task utility. MELON instead reruns the agent
 trajectory with the user prompt masked and treats similarity between the
 original and counterfactual actions as evidence of hijacking
-~\cite{zhu2025melon}. These methods ask whether planned behaviour remains
-dependent on the authorised task, complementing techniques that separate
-trusted and untrusted text. Their figures describe trade-offs within their own
-agent stacks; differences in models, tasks, policies, attacks, and scoring
-prevent a direct numerical comparison with Sentinel.
+~\cite{zhu2025melon}. Both ask whether planned behaviour remains dependent on
+the authorised task and report AgentDojo trade-offs within their own
+configurations; Sentinel also tests transfer through WASP's browser-native
+loop. Even within AgentDojo, differences in models, attack construction,
+scaffolds, defence mechanisms, and metric definitions make the headline rates
+contextual rather than a controlled ranking against Sentinel.
 
 Detection supplies an inspectable decision before exposure. Removal systems
 separate attack identification from segmentation or task-conditioned filtering
@@ -133,21 +135,20 @@ optimisation has bypassed defences that performed well against fixed attacks
 observations while retaining policy and pre-execution checks as separate
 layers.
 
-These defences intervene at different points from an independent runtime
-monitor. Model-level separation may reduce hostile planning, while runtime
-policy can constrain selected effects around the planner. They may therefore
-serve as complementary layers, although this dissertation neither implements
-nor evaluates their combination.
+Model-facing and runtime defences intervene at different points: the former may
+reduce hostile planning, while the latter constrains selected effects around
+the planner. They can therefore complement one another architecturally;
+evaluating their composition remains future work.
 
 \subsection{System-level authority}
 
 System-level work relocates the final decision outside unconstrained model
 reasoning. CaMeL extracts control and data flow from a trusted query, confines
 untrusted data to constrained processing, and enforces capabilities at tool
-calls~\cite{debenedetti2025camel}. The Fides preprint applies information-flow
+calls~\cite{debenedetti2025camel}. Fides applies information-flow
 control: confidentiality and integrity labels propagate through planning,
 deterministic policies govern tool effects, and information can be selectively
-hidden from the planner~\cite{costa2025fides}. The Progent preprint represents
+hidden from the planner~\cite{costa2025fides}. Progent represents
 privilege as symbolic rules over tool names and arguments, checks every tool
 call deterministically, and requires approval before a policy update can expand
 the available privileges~\cite{shi2025progent}. PRUDENTIA builds on Fides by
@@ -191,13 +192,13 @@ Structured control/data flow and tool calls &
 Provable security for representable flows; AgentDojo evaluation. \\
 \addlinespace[3pt]
 
-Fides (preprint)\newline\cite{costa2025fides} &
+Fides\newline\cite{costa2025fides} &
 Security labels, propagation rules, and flow policy &
 Planner information and tool execution &
 Formal IFC model with empirical AgentDojo evaluation. \\
 \addlinespace[3pt]
 
-Progent (preprint)\newline\cite{shi2025progent} &
+Progent\newline\cite{shi2025progent} &
 Generated symbolic privilege rules over tool names and arguments &
 Every tool call and proposed privilege expansion &
 Deterministic checking and monotonic confinement; AgentDojo and ASB evaluation. \\
