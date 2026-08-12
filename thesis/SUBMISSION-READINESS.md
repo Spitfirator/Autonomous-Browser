@@ -88,8 +88,11 @@ independent validator are indexed from `sentinel/EVALS.md` and
   points, explicitly as an architectural synthesis that was not evaluated,
   without making an unverified operational comparison. IPIGuard and VIGIL add
   peer-reviewed examples of planned tool-dependency and verify-before-commit
-  enforcement. Progent, Task Shield, MELON, and the preprint status of Fides and
-  Progent are now stated accurately.
+  enforcement. AttriGuard adds the close contemporary comparison of
+  counterfactual causal attribution at the action boundary, while MUZZLE gives
+  the proposed browser-specific adaptive evaluation a concrete trajectory-guided
+  method. Progent, Task Shield, MELON, and the preprint status of Fides and
+  Progent are stated accurately.
   Table 6.1 now
   uses the conventional five-column model/condition/outcome layout, and the
   limitations section contains a named ethics and responsible-research
@@ -145,14 +148,15 @@ independent validator are indexed from `sentinel/EVALS.md` and
   resolution. No missing references, material box warnings, or other LaTeX
   warnings remain in either final log.
 - The root-level PDFs have been regenerated from those canonical sources, so
-  they now include Progent, SecAlign, Task Shield, MELON, IPIGuard, VIGIL, and
-  the final warning semantics rather than the earlier 61-page text.
-- All 39 cited bibliography keys resolve one-to-one, the extracted PDF contains
+  they now include Progent, SecAlign, Task Shield, MELON, IPIGuard, VIGIL,
+  AttriGuard, MUZZLE, and the final warning semantics rather than the earlier
+  61-page text.
+- All 41 cited bibliography keys resolve one-to-one, the extracted PDF contains
   no unresolved `??` markers or em dashes, and `git diff --check` passes.
 - The release copy is
   `output/pdf/Sentinel-Independent-Runtime-Enforcement-for-Browser-Agents-submission-ready.pdf`
   with SHA-256
-  `00babdf9d127d7d69ec2c8d9430c7624ad69f1aee724cc258dfe21da5badc781`.
+  `2bb3b074456adcdfa7a943805672530602bacf61f99b74adeadbb600788d9efc`.
 - The title page records the supervisor as Arthur below the submission date.
 
 ## Final gate

@@ -98,15 +98,17 @@ structured instruction tuning to distinguish prompt and data channels
 ~\cite{chen2025struq}, while SecAlign uses preference optimisation to favour
 responses that follow the legitimate instruction over the injection
 ~\cite{chen2025secalign}. Both report improved robustness with limited utility
-loss in their evaluated settings. In particular, SecAlign reports attack
-success rates around 0\% across its tested injections while retaining utility
-similar to the undefended model. However, results within one paper do not
-establish robustness under a different task and attack distribution. In a
-later diagnostic study of benign paired tasks, suffix-task refusal rates often
-exceeded 50\% and reached 90\% for some defence and model combinations. This
-suggests that fine-tuned defences can learn positional or lexical correlations
-that reject benign inputs and generalise poorly when position, trigger words,
-or topic changes~\cite{li2026surfaceheuristics}.
+loss in their settings. SecAlign reports 0\% attack success for the tested
+optimisation-free attacks and rates mainly below 10\% for stronger
+optimisation-based attacks, with utility similar to its
+non-preference-optimised counterparts. These findings remain bound to the
+paper's models, tasks, and attacks. A later diagnostic shows why attack
+rejection and benign utility must be read together: across its reasoning
+benchmarks and defended pipelines, benign suffix-task rejection rose from below
+10\% to as high as 90\%. The authors link these failures to position,
+trigger-token, and topic correlations, suggesting that trained defences can
+rely on narrow surface cues without reliably identifying malicious intent
+~\cite{li2026surfaceheuristics}.
 
 Other defences act during inference. Task Shield checks whether each instruction
 and proposed tool call contributes to the user's stated goal
@@ -161,13 +163,16 @@ deviations, and masks conflicting instructions before they persist in memory
 external data and constrains later execution to traversal of that graph
 ~\cite{an2025ipiguard}. VIGIL takes a different route: it permits speculative
 reasoning over the tool stream, then verifies a proposed effect against the
-trusted intent before commitment~\cite{lin2026vigil}. Reported attack-success
-rates across these systems are not directly comparable because each changes a
-different part of the agent stack and is evaluated under different policies,
-models, and tasks. Any assurance is also conditional on the system's trusted
-abstraction and expressible policy. \Cref{tab:system-comparison} therefore
-compares a representative set through the more durable architectural question:
-what each system trusts and where that trust is enforced.
+trusted intent before commitment~\cite{lin2026vigil}. AttriGuard instead tests
+whether a proposed tool call survives teacher-forced shadow replay under
+control-attenuated external observations~\cite{he2026attriguard}. Reported
+attack-success rates across these systems are not directly comparable because
+each changes a different part of the agent stack and is evaluated under
+different policies, models, and tasks. Any assurance is also conditional on the
+system's trusted abstraction and expressible policy.
+\Cref{tab:system-comparison} therefore compares a representative set through
+the more durable architectural question: what each system trusts and where that
+trust is enforced.
 
 \begin{table}[htbp]
 \centering
@@ -210,10 +215,10 @@ Configured runtime events around agent actions &
 Rule-based conformance evaluated in code, embodied, and driving domains. \\
 \addlinespace[3pt]
 
-DRIFT~\cite{li2025drift} &
-Function trajectory and parameter checklist from the user query &
-Memory input and plan deviations &
-Empirical isolation and validation on AgentDojo and ASB. \\
+AttriGuard~\cite{he2026attriguard} &
+Survival of a proposed tool call under control-attenuated observations &
+Counterfactual shadow replay before tool execution &
+Static and adaptive evaluation across four LLMs and two agent benchmarks. \\
 \addlinespace[3pt]
 
 \systemname &
@@ -224,12 +229,12 @@ Deterministic channel invariants with AgentDojo and matched WASP evidence. \\
 \end{tabularx}
 \end{table}
 
-At the action boundary, Sentinel is closest to Progent: both mediate a proposed
-effect immediately before privileged tool execution. Progent centres that
-boundary on symbolic privilege rules over tool names and arguments. Sentinel
-also governs the exact browser observation supplied to the planner and includes
-live browser context in its action decision. This is a difference in
-enforcement scope, not evidence that either system is more effective.
+Progent and AttriGuard offer two close action-boundary comparisons. Progent
+enforces symbolic tool privileges; AttriGuard tests whether a proposal survives
+attenuation of external control. Sentinel instead combines deterministic policy
+over each proposed effect and live browser context with governance of the
+planner's exact observation. These differences concern trusted mechanism and
+scope, not universal superiority.
 
 Sentinel retains the browser agent's free-form planning loop so it can adapt
 when a page changes or an action fails. That flexibility leaves a semantic
@@ -278,11 +283,9 @@ response~\cite{sunshine2009cryingwolf,akhawe2013warningland}.
 
 \section{Research gap}
 
-Prior work establishes learned separation, detection, structured control flow,
-information-flow controls, and runtime rules. The remaining empirical question
-is whether an independent layer can govern both boundaries of a dynamic browser
-agent, retain useful re-planning, and reduce terminal attacks and
-attacker-serving execution. AgentDojo isolates the mechanism; WASP tests it amid
-mutable browser state. The server-owned workflow and extension address selective
-operator control without making the client an authority source. Their tests
-establish technical behaviour, not participant outcomes.
+Prior work spans learned separation, detection, structured control, information
+flow, and runtime rules. Can an independent layer govern both boundaries of a
+dynamic browser agent while retaining useful replanning and reducing terminal
+attacks and attacker-serving execution? AgentDojo isolates the mechanism, WASP
+tests browser transfer, and the server-owned workflow supplies technical
+evidence for selective operator control.

@@ -3,11 +3,12 @@
 
 \section{Evaluation strategy}
 
-Chapter~\ref{chap:design} leads to three empirical questions. Do the guards meet
-their individual contracts? Around a complete agent, do they reduce attacker
-success without suppressing the user's task? Does the same pattern persist when
-the agent navigates, observes changing pages, and replans? The evaluation
-answers them in that order.
+Chapter~\ref{chap:design} leads to a three-part empirical test of the research
+question. First, do the guards meet their individual contracts? Second, around
+a complete agent, do they reduce attacker success without suppressing the
+user's task? Finally, does the same pattern persist when the agent navigates,
+observes changing pages, and replans? The evaluation answers these evidential
+questions in sequence.
 
 Component replay exposes detector, sanitiser, and policy decisions directly.
 AgentDojo then places the guards around complete tool-agent tasks with native
@@ -35,9 +36,10 @@ legitimate outcomes prevented, introduced, gained, or lost.
 
 Pairing prevents a motionless agent from appearing secure. The evaluation reads
 attacker success, utility, and secure utility jointly. AgentDojo's 97 clean
-tasks provide a capability reference, not the counterfactual for an attacked
-episode; the matched off condition supplies that comparison by retaining the
-hostile result within the same setup.
+tasks establish whether each model can perform the benign tasks without an
+attack. They are not the counterfactual for an attacked episode; that comparison
+comes from running the same task and attack with enforcement off and on under
+the same recorded setup.
 
 The three WASP conditions distinguish two increments. Moving from off to
 policy-only enables boundary neutralisation, a detector warning, and action
@@ -138,7 +140,8 @@ The adapter governs tool-result observations and executor calls while leaving
 task initialisation and native evaluators unchanged, so gains must appear in
 benchmark state. A summary is admitted only when task identifiers, totals,
 scores, model, inference profile, and sampling settings match the campaign
-record. \Cref{app:assurance} lists exact run identities and provenance depth.
+record. \Cref{app:assurance} summarises the shared inference profile and
+provenance controls.
 
 \section{WASP}
 \label{sec:wasp-method}

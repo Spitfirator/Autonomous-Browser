@@ -13,9 +13,9 @@ First, native AgentDojo attacker success fell from 206, 131, and 203 cases to
 so the result was not produced by preventing the agent from acting.
 
 Second, the replicated WASP comparison transferred the mechanism to a different
-agent scaffold and an actual browser. Across three seeds, full enforcement
-changed attacker-directed execution from 42/252 episodes to zero and
-action-audited terminal success from 17/252 to zero. Legitimate completion
+agent scaffold and a browser-native benchmark loop. Across three seeds, full
+enforcement changed attacker-directed execution from 42/252 episodes to zero
+and action-audited terminal success from 17/252 to zero. Legitimate completion
 changed from 154/252 to 149/252, while secure utility rose from 138/252 to
 149/252. The security gain therefore coexisted with a small aggregate utility
 cost and substantial between-seed variation, both of which remain visible.
@@ -70,15 +70,15 @@ and none of the attacker-directed executions seen in 42 off episodes or 15
 policy-only episodes was proposed. This is more than a presentation filter: it
 changes the information on which the model's next plan is conditioned. The
 policy-only condition preserves the remaining enforcement boundary while
-withholding that rewrite, so the contrast directly isolates the configured
-sanitisation increment. Aggregate utility remained 149/252 across that
-contrast. Native terminal success changed by only one episode, from 1/252 to
-zero, which is why the action audit matters: it reveals that 15
+withholding that rewrite, so within this fixed scaffold the contrast identifies
+the configured sanitisation treatment. Aggregate utility remained 149/252
+across that contrast. Native terminal success changed by only one episode, from
+1/252 to zero, which is why the action audit matters: it reveals that 15
 attacker-directed executions disappeared before they could become terminal
 successes.
 
 The historical 9B development sequence explains why the final study does not
-rely on a warning alone. Its warning-era condition retained the hostile
+rely on a warning alone. Its historical warning condition retained the hostile
 observation while also enabling boundary neutralisation and action policy; it
 did not improve terminal or intermediate attack outcomes over off. Successive
 middleware revisions mean that this sequence cannot estimate the warning's
@@ -228,8 +228,9 @@ policies were frozen before the experiment and applied consistently across all
 three seeds. Clean re-detection establishes a configuration-specific
 post-condition; it cannot show that the remaining text is free of attacker
 intent. Adaptive optimisation against a frozen whole system is therefore the
-appropriate next test
-~\cite{zhan2025adaptive}.
+appropriate next security test. Browser-specific work could follow MUZZLE by
+selecting injection surfaces from agent behaviour and refining attacks through
+feedback from failed executions~\cite{zhan2025adaptive,syros2026muzzle}.
 
 The results do not extend to visual observations or tasks that require visual
 grounding. A future visual path needs its own provenance, isolation, and
@@ -280,8 +281,8 @@ data minimisation, and secure handling of interaction records.
 
 \section{Implications and future work}
 
-The next step after this dissertation is to address the absence of participant
-evidence through a human-in-the-loop study of the authority workflow. It should
+The next step for the authority workflow is a human-in-the-loop study addressing
+the absence of participant evidence. It should
 examine whether operators understand why Sentinel intervened, choose
 appropriately among bounded approval, direct action, and incident review, and
 resume the task without excessive workload or warning fatigue. The Chrome
@@ -308,8 +309,7 @@ retrospectively. Deployment hardening would also need to authenticate local
 control, separate process privileges, protect policy and trace keys, and
 consider transactional browser environments.
 
-The broader implication is that useful agent autonomy and independent
-authority are compatible design goals. Sentinel's results do not require the
-planner to become a perfect security classifier; they show that the system can
-change what reaches the planner, constrain what leaves it, and preserve enough
-freedom for useful work.
+The broader implication is that useful autonomy and independent authority are
+compatible: under the tested conditions, Sentinel constrained what reached and
+left the planner without requiring a perfect security classifier or preventing
+useful work.
