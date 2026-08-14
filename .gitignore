@@ -4,6 +4,9 @@ browser-use/
 # OS
 .DS_Store
 
+# Local render and inspection artefacts
+/tmp/
+
 # Python
 __pycache__/
 *.pyc
