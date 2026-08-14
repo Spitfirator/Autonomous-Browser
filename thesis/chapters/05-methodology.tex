@@ -7,8 +7,9 @@ Chapter~\ref{chap:design} leads to a three-part empirical test of the research
 question. First, do the guards meet their individual contracts? Second, around
 a complete agent, do they reduce attacker success without suppressing the
 user's task? Finally, does the same pattern persist when the agent navigates,
-observes changing pages, and replans? The evaluation answers these evidential
-questions in sequence.
+observes changing pages, and replans? The empirical study addresses these
+evidential questions in sequence, with the corresponding findings reported in
+Chapter~\ref{chap:results}.
 
 Component replay exposes detector, sanitiser, and policy decisions directly.
 AgentDojo then places the guards around complete tool-agent tasks with native
@@ -31,8 +32,8 @@ The central comparison changes enforcement while holding model, task, and
 scaffold fixed. AgentDojo runs every attacked instance off and on for the same
 model. For each of three seeds, WASP runs the same 84 cases and inputs off,
 policy-only, and full, restoring the corresponding website cell between
-conditions. Rates show the balance; paired transitions identify attacks and
-legitimate outcomes prevented, introduced, gained, or lost.
+conditions. Rates summarise the aggregate trade-off; paired transitions identify
+attacks prevented or introduced and legitimate outcomes gained or lost.
 
 Pairing prevents a motionless agent from appearing secure. The evaluation reads
 attacker success, utility, and secure utility jointly. AgentDojo's 97 clean
