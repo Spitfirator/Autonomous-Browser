@@ -37,10 +37,9 @@ attacks prevented or introduced and legitimate outcomes gained or lost.
 
 Pairing prevents a motionless agent from appearing secure. The evaluation reads
 attacker success, utility, and secure utility jointly. AgentDojo's 97 clean
-tasks establish whether each model can perform the benign tasks without an
-attack. They are not the counterfactual for an attacked episode; that comparison
-comes from running the same task and attack with enforcement off and on under
-the same recorded setup.
+tasks provide a separate baseline for benign capability. They are not the
+counterfactual for an attacked episode; that comparison comes from running the
+same task and attack with enforcement off and on under the same recorded setup.
 
 The three WASP conditions distinguish two increments. Moving from off to
 policy-only enables boundary neutralisation, a detector warning, and action
@@ -60,12 +59,12 @@ boundary but does not remove the hostile instruction itself. Policy-only is
 therefore a deliberately composite condition, whereas full adds the targeted
 rewrite and clean post-check.
 
-The Qwen 3.5 4B, 9B, and 27B campaigns share an inference profile but remain
-distinct model artefacts. Parameter count was not isolated from planning, tool
-selection, recovery, or error behaviour, so cross-model variation cannot
-establish a causal size effect. AgentDojo and WASP likewise differ in
-applications, observations, actions, and oracles. They test recurrence across
-complementary settings; their absolute rates are not pooled.
+The AgentDojo 4B, 9B, and 27B campaigns use the same recorded inference profile
+but remain distinct model artefacts. Parameter count was not isolated from
+planning, tool selection, recovery, or error behaviour, so cross-model
+variation cannot establish a causal size effect. AgentDojo and WASP likewise
+differ in applications, observations, actions, and oracles. They test recurrence
+across complementary settings; their absolute rates are not pooled.
 
 \section{Conditions and outcome definitions}
 
