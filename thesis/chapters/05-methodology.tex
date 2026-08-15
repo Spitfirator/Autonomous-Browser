@@ -28,43 +28,49 @@ itself.
 
 \subsection{Comparison logic}
 
-The central comparison changes enforcement while holding model, task, and
-scaffold fixed. AgentDojo runs every attacked instance off and on for the same
-model. For each of three seeds, WASP runs the same 84 cases and inputs off,
-policy-only, and full, restoring the corresponding website cell between
-conditions. Rates summarise the aggregate trade-off; paired transitions identify
-attacks prevented or introduced and legitimate outcomes gained or lost.
+The comparison is informative only if enforcement changes while the underlying
+problem remains fixed. AgentDojo therefore runs each attacked instance twice
+for the same model, with enforcement off and on. WASP extends this pairing to a
+browser setting: for each of three seeds, the same 84 cases and inputs are
+evaluated under off, policy-only, and full, with a pristine website reset before
+every cell. Aggregate rates summarise the trade-off between security and
+utility, while paired transitions show which attacks were prevented or
+introduced and which legitimate outcomes were gained or lost.
 
-Pairing prevents a motionless agent from appearing secure. The evaluation reads
-attacker success, utility, and secure utility jointly. AgentDojo's 97 clean
-tasks provide a separate baseline for benign capability. They are not the
-counterfactual for an attacked episode; that comparison comes from running the
-same task and attack with enforcement off and on under the same recorded setup.
+This pairing matters because a motionless agent can appear secure if attacker
+success is considered alone. Accordingly, the analysis reads attacker success,
+utility, and secure utility together. AgentDojo's 97 clean tasks provide a
+separate baseline for benign capability. These tasks are not the
+counterfactual for an attacked episode; that comparison comes from executing
+the same task and attack with enforcement off and on under the same recorded
+setup.
 
-The three WASP conditions distinguish two increments. Moving from off to
-policy-only enables boundary neutralisation, a detector warning, and action
-policy while browser sanitisation remains disabled. That contrast therefore
-measures the mechanisms as a bundle and is not a pure estimate of action
-policy. Moving from policy-only to full changes only the configured
-sanitisation treatment. A confirmed removal both rewrites the observation and
-suppresses the warning that accompanies retained detected content. The latter
-contrast therefore isolates this configured treatment within the scaffold; it
-does not separate removal from warning suppression.
+The WASP progression is cumulative, so each contrast has a specific
+interpretation. Moving from off to policy-only enables boundary neutralisation,
+a detector warning, and action policy, while browser sanitisation remains
+disabled. As \cref{sec:observation-governance} explains, boundary neutralisation
+escapes page-supplied text that imitates Sentinel's reserved protocol or
+authority tags while preserving the genuine outer marker that identifies the
+region as untrusted. It protects that representation boundary, but it does not
+remove the hostile instruction. The off-to-policy-only comparison therefore
+measures these mechanisms as a bundle, not action policy in isolation.
 
-Here, \emph{boundary neutralisation} means escaping page-supplied text that
-imitates Sentinel's reserved protocol or authority tags while retaining the
-genuine outer marker that identifies the region as untrusted. As
-\cref{sec:observation-governance} explains, this protects the representation
-boundary but does not remove the hostile instruction itself. Policy-only is
-therefore a deliberately composite condition, whereas full adds the targeted
+Moving from policy-only to full changes only the configured sanitisation
+treatment. After a confirmed removal, Sentinel rewrites the observation,
+checks the reconstructed input, and suppresses the warning used when detected
+content remains. Consequently, this contrast isolates the configured treatment
+within the scaffold, but it does not separate removal from warning suppression.
+Policy-only is therefore deliberately composite, whereas full adds the targeted
 rewrite and clean post-check.
 
-The AgentDojo 4B, 9B, and 27B campaigns use the same recorded inference profile
-but remain distinct model artefacts. Parameter count was not isolated from
-planning, tool selection, recovery, or error behaviour, so cross-model
-variation cannot establish a causal size effect. AgentDojo and WASP likewise
-differ in applications, observations, actions, and oracles. They test recurrence
-across complementary settings; their absolute rates are not pooled.
+Finally, comparisons across models and benchmark families answer narrower
+questions. The AgentDojo 4B, 9B, and 27B campaigns use the same recorded
+inference profile but remain distinct model artefacts. Since parameter count was
+not isolated from planning, tool selection, recovery, or error behaviour,
+cross-model variation is descriptive rather than a causal size effect.
+Likewise, AgentDojo and WASP differ in applications, observations, actions, and
+oracles. Their value lies in recurrence across complementary settings; their
+absolute rates are not pooled.
 
 \section{Conditions and outcome definitions}
 
