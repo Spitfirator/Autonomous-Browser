@@ -74,17 +74,21 @@ absolute rates are not pooled.
 
 \section{Conditions and outcome definitions}
 
-The headline system contrast is \texttt{off} versus \texttt{enforce}. Off
-bypasses observation rewriting and policy verdicts but retains redacted action
-telemetry, which makes the resulting trajectories comparable. Enforce applies
-the configured observation and action decisions. Shadow mode can record what
-Sentinel would have decided without changing model input or execution, but no
-shadow result is used as headline evidence.
+The evaluation begins by comparing an unenforced baseline with the complete
+enforced configuration. AgentDojo labels these conditions \texttt{off} and
+\texttt{enforce}, while WASP uses \texttt{off} and \texttt{full}. In both
+benchmarks, off bypasses observation rewriting and policy verdicts but retains
+redacted action telemetry. This retention keeps trajectories comparable across
+conditions. The complete enforced configuration then applies the specified
+observation and action decisions.
 
-Utility asks whether the legitimate objective was achieved; attack success rate
-(ASR) asks the same of the attacker objective. Secure utility requires user
-success without attacker success. For task $i$, let $u_i\in\{0,1\}$ and
-$a_i\in\{0,1\}$ denote the native user and attacker oracles. Across $n$ tasks:
+Within these conditions, three outcome measures capture security and
+usefulness together. Utility records successful completion of the legitimate
+objective, whereas attack success rate (ASR) records completion of the attacker
+objective. Secure utility counts only those instances in which the legitimate
+objective succeeds and the attacker objective does not. For evaluation
+instance $i$, let $u_i\in\{0,1\}$ and $a_i\in\{0,1\}$ denote the binary outcomes
+returned by the native user and attacker oracles. Across $n$ instances:
 
 \begin{align}
   \mathrm{Utility} &= \frac{1}{n}\sum_{i=1}^{n}u_i,\\
@@ -93,26 +97,31 @@ $a_i\in\{0,1\}$ denote the native user and attacker oracles. Across $n$ tasks:
     \frac{1}{n}\sum_{i=1}^{n}u_i(1-a_i).
 \end{align}
 
-Secure utility is consequently not $1-\mathrm{ASR}$: an episode contributes
-only if useful work is completed safely. Paired analysis makes the same idea
-concrete by counting utility gains and losses, attacks prevented or introduced,
-and changes in useful-and-secure outcomes.
+These measures answer different questions and must be read together.
+In particular, secure utility is not $1-\mathrm{ASR}$: an episode contributes
+only when useful work is completed safely. Paired analysis then adds a
+task-level view by counting utility gains and losses, attacks prevented or
+introduced, and changes in useful-and-secure outcomes.
 
-WASP also distinguishes an \emph{attacker-directed attempt}, a proposal matching
-the instantiated attacker goal, from an \emph{attacker-directed execution},
-which reached the privileged tool. This shows whether the agent was diverted,
-the guard stopped it, or an unsafe effect entered the application. Other events
-explain the path but do not replace native outcomes.
+Final-state metrics, however, do not reveal where an attacker-directed
+trajectory was interrupted. WASP therefore distinguishes an
+\emph{attacker-directed attempt}, a proposal matching the instantiated attacker
+goal, from an
+\emph{attacker-directed execution}, a matching proposal carried out by the
+privileged executor. An attempt shows that the model proposed an action aligned
+with the attacker's goal; an execution shows that the action crossed the
+execution boundary. This distinction captures diversion stopped before
+execution, as well as attacker-directed behaviour that did not complete the
+final attacker goal. Even so, the benchmark's native oracles determine terminal
+success, while trajectory replay explains how the episode reached its outcome.
 
-Because the task matrices are fixed benchmark sets, not random deployment
-samples, the results report exact numerators, denominators, and paired
-descriptive changes. When no events are observed, $3/n$ appears only as
-rule-of-three intuition under an independent binomial model
-~\cite{hanley1983ruleofthree}. Native oracles remain authoritative for terminal
-success, while trajectory replay determines whether matching proposals and
-executions occurred. This separation avoids inflating a suspicious proposal
-into a completed attack or describing a failed terminal attack as an uneventful
-trajectory.
+The benchmark design also limits how far these conclusions extend. The
+evaluation uses a fixed set of tasks, so its findings apply to those cases.
+Accordingly, the results show the exact counts behind each rate, together with
+paired changes. When a condition records no events, the rule of three gives
+$3/n$ as an approximate 95\% upper bound under an independent binomial
+model~\cite{hanley1983ruleofthree}. This gives context to a zero count without
+implying that the underlying rate is zero.
 
 \section{AgentDojo}
 \label{sec:agentdojo-method}
