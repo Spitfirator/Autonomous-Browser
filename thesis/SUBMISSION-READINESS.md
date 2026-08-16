@@ -75,8 +75,10 @@ independent validator are indexed from `sentinel/EVALS.md` and
   runtime order, and connects the control plane, observation guard, action
   guard, selective authority, audit, and later evaluation. Chapter 5 now moves
   explicitly from component replay to controlled AgentDojo effects and then to
-  browser-native WASP transfer. Repetitive protocol detail was removed rather
-  than compressed through typography or spacing.
+  browser-native WASP transfer. It also identifies the fixed system-level
+  security guidance in AgentDojo's enforced condition and limits causal
+  attribution to the complete governed configuration. Repetitive protocol
+  detail was removed rather than compressed through typography or spacing.
 - The introduction gives AgentDojo appropriate quantitative weight before the
   principal three-seed WASP result. The background presents AgentDojo and WASP
   as complementary but non-poolable evidence and adds balanced primary
@@ -132,15 +134,15 @@ independent validator are indexed from `sentinel/EVALS.md` and
 - The approval and Activity views come from the deterministic local
   walkthrough. Their concise source mapping, reproduction commands, and image
   hashes are in `FIGURE-PROVENANCE.md`.
-- Tectonic produced a 65-page A4 PDF with the expected title, author, subject,
+- Tectonic produced a 66-page A4 PDF with the expected title, author, subject,
   and keywords. Under the formal exclusions supplied for the dissertation, the
-  counted text is exactly 49 pages and remains below the 50-page ceiling: the
-  Lists of Figures and Tables plus Arabic pages 1--47. Appendix A begins on
-  Arabic page 48 and the bibliography on page 53, so both are outside that
-  count. Concise captions keep the Lists of Figures and Tables compact and leave
-  detailed interpretation in the surrounding prose.
+  counted text is exactly 50 pages and meets the 50-page ceiling: the Lists of
+  Figures and Tables plus Arabic pages 1--48. Appendix A begins on Arabic page
+  49 and the bibliography on page 54, so both are outside that count. Concise
+  captions keep the Lists of Figures and Tables compact and leave detailed
+  interpretation in the surrounding prose.
 - Both `sentinel-submission.tex` and the official `project_report - pg.tex`
-  root compile to 65 A4 pages with identical extracted page text and page
+  root compile to 66 A4 pages with identical extracted page text and page
   geometry. All pages were rendered for visual inspection, with front matter,
   Figure 4.1, the control-plane views, the result tables and graph, the ethics
   subsection, and the assurance appendix checked again at higher
@@ -155,7 +157,7 @@ independent validator are indexed from `sentinel/EVALS.md` and
 - The release copy is
   `output/pdf/Sentinel-Independent-Runtime-Enforcement-for-Browser-Agents-submission-ready.pdf`
   with SHA-256
-  `86985cc86d8067f5fab00b3936c77534c695f50e90ca3d4bb0265651a0a71d19`.
+  `c7a37772a125b346965af83576509112663d6bf26af586ba653d8c61e9a9bedc`.
 - The title page records the supervisor as Arthur below the submission date.
 
 ## Final gate

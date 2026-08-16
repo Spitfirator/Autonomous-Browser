@@ -126,37 +126,37 @@ implying that the underlying rate is zero.
 \section{AgentDojo}
 \label{sec:agentdojo-method}
 
-AgentDojo asks whether Sentinel changes complete tool-agent outcomes under a
-tightly controlled intervention. Version 0.1.35 suite v1 contains 97 user tasks
-across banking, Slack, travel, and workspace environments. Crossing the
-applicable tasks with the published tool-knowledge attacks yields 629 attacked
-instances~\cite{debenedetti2024agentdojo}. Sentinel's adapter preserves the
-benchmark's tool names, arguments, environment state, and native user and
-attacker oracles. It disables only the raw trace logger, which would otherwise
-persist injected payloads.
+AgentDojo tests whether Sentinel changes complete tool-agent outcomes under a
+controlled intervention. Version 0.1.35 suite v1 contains 97 user tasks across
+banking, Slack, travel, and workspace environments. Crossing the applicable
+tasks with the published tool-knowledge attacks yields 629 attacked
+instances~\cite{debenedetti2024agentdojo}. Sentinel preserves the benchmark
+interface, state, and native oracles. To avoid recording injected payloads, its
+harness calls the task suite directly without the raw \texttt{TraceLogger}; the
+oracles remain unchanged.
 
-Before end-to-end execution, model-free replay applies the real detector and
-policy engine to 7,404 cases covering 16 public non-manual attack families and
-97 distinct benign tasks. A second scorecard uses the exact AgentDojo and WASP
-text representations. Because rules were revised after observed failures,
-these are development regressions, not held-out detector estimates;
-\cref{app:assurance} reports the details.
+Before model execution, component replay applies the real detector and policy
+engine to 7,404 security cases from 16 public non-manual attack families and,
+separately, to 97 benign tasks. A second scorecard replays the exact AgentDojo
+and WASP text representations. \Cref{app:assurance} reports the details.
 
-The end-to-end experiment then uses Qwen 3.5 4B, 9B, and
-27B~\cite{qwen3.5}. For each model, a 97-task clean run establishes capability
-without injection, and the full 629-instance attacked matrix is evaluated with
-enforcement off and on. Within each model, both attacked conditions share
-context and output limits, reasoning profile, sampling parameters, and seed;
-Ollama serves the local model artefacts~\cite{ollama2026}. These controls make
-paired within-model changes interpretable without turning the three model rows
-into a scaling experiment.
+The end-to-end stage uses Qwen 3.5 4B, 9B, and 27B~\cite{qwen3.5}. For each
+model, 97 clean tasks establish capability without injection, while 629
+attacked instances are evaluated with enforcement off and on. Paired conditions
+share context and output limits, reasoning profile, sampling parameters, seed,
+and a locally served model artefact~\cite{ollama2026}. However, enforce combines
+fixed system-level security guidance with Sentinel's observation and action
+controls. Policy decisions remain independent of model compliance, yet the
+paired result measures the complete governed configuration. It does not isolate
+the guards' contribution; component replay supplies that direct evidence.
 
-The adapter governs tool-result observations and executor calls while leaving
-task initialisation and native evaluators unchanged, so gains must appear in
-benchmark state. A summary is admitted only when task identifiers, totals,
-scores, model, inference profile, and sampling settings match the campaign
-record. \Cref{app:assurance} summarises the shared inference profile and
-provenance controls.
+During each task, the adapter governs tool-result observations and executor
+calls while leaving task initialisation and native evaluators unchanged, so
+gains must appear in benchmark state. Within-model changes are interpretable;
+cross-model differences remain descriptive. Finally, summaries are admitted
+only when task identifiers, totals, scores, model, inference profile, and
+sampling settings match the campaign record. \Cref{app:assurance} summarises
+the shared profile and provenance controls.
 
 \section{WASP}
 \label{sec:wasp-method}
@@ -210,7 +210,14 @@ this order.
 Only cells whose task coverage, native scores, reports, and frozen provenance
 agreed entered a denominator; failed or incomplete cells remain operational
 records. The checks are documented in
-\cref{sec:implementation-verification,sec:appendix-wasp-provenance}. The claim
-is therefore bounded to two benchmark families, three WASP seeds over one fixed
-matrix, finite step budgets, DOM-only observations, no human participants, and
-development-informed detector rules.
+\cref{sec:implementation-verification,sec:appendix-wasp-provenance}.
+
+A second safeguard concerns the boundary between development and evaluation.
+Some detector rules and representation-handling fixes arose from failures
+observed during AgentDojo and WASP development. Component replay therefore
+verifies regression coverage of known attack families, not generalisation to
+unseen attacks. The middleware and condition-specific policies were frozen
+before the final three-seed comparison and applied consistently throughout that
+experiment. The claim remains bounded to two benchmark families, three WASP
+seeds over one fixed matrix, finite step budgets, DOM-only observations, and no
+human participants.
