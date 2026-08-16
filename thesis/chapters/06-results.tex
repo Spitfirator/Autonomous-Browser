@@ -277,16 +277,16 @@ other runtime conditions could still coincide with a later condition.
 
 \section{Result synthesis}
 
-Taken together, the three evidence levels tell a consistent story without being
-pooled. Component replay verifies the configured guard contracts, AgentDojo
-measures native outcomes in controlled tool environments, and WASP tests the
-same enforcement pattern in a browser-native loop. Nevertheless, security has
-to be read alongside utility and paired trajectories. The next chapter
-interprets that joint evidence, including the configured sanitisation
-treatment and the limits of the resulting claim.
+Although the three evaluation levels answer different questions and are not
+pooled, they point in the same direction. Component replay tests the guards
+directly; AgentDojo measures native outcomes in controlled tool environments,
+while WASP tests transfer into a browser-native loop. Security must still be
+read with utility and paired trajectories. Chapter~7 interprets this evidence,
+including the sanitisation result and its limits.
 
-\Cref{fig:evaluation-bars} visualises the two end-to-end comparisons. Tables
-remain authoritative; the plots expose the joint security--utility pattern.
+\Cref{fig:evaluation-bars} brings the evaluations together: in both, enforcement
+reduces attacker success while retaining useful task performance; the preceding
+tables retain the exact values.
 
 \begin{figure}[htbp]
 \centering
@@ -329,7 +329,7 @@ remain authoritative; the plots expose the joint security--utility pattern.
   bar width=8pt,
   ymin=0,ymax=70,
   ylabel={Task episodes (\%)},
-  symbolic x coords={Utility,ASR,Execution,{Secure utility}},
+  symbolic x coords={Utility,ASR,{Attacker execution},{Secure utility}},
   xtick=data,
   legend style={at={(0.5,1.02)},anchor=south,legend columns=3,draw=none,
     font=\scriptsize},
@@ -338,11 +338,11 @@ remain authoritative; the plots expose the joint security--utility pattern.
   tick label style={font=\small},
 ]
 \addplot[fill=sentinelgrey!35,draw=sentineldark] coordinates
-  {(Utility,61.11) (ASR,6.75) (Execution,16.67) ({Secure utility},54.76)};
+  {(Utility,61.11) (ASR,6.75) ({Attacker execution},16.67) ({Secure utility},54.76)};
 \addplot[fill=sentinelblue!45,draw=sentinelblue] coordinates
-  {(Utility,59.13) (ASR,0.40) (Execution,5.95) ({Secure utility},58.73)};
+  {(Utility,59.13) (ASR,0.40) ({Attacker execution},5.95) ({Secure utility},58.73)};
 \addplot[fill=sentinelamber!75,draw=sentinelamber] coordinates
-  {(Utility,59.13) (ASR,0) (Execution,0) ({Secure utility},59.13)};
+  {(Utility,59.13) (ASR,0) ({Attacker execution},0) ({Secure utility},59.13)};
 \legend{Off,Policy-only,Full}
 \end{axis}
 \end{tikzpicture}
