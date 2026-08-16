@@ -192,22 +192,26 @@ form a staged comparison:
   configured sanitisation increment.
 \end{description}
 
-Final-state scores alone cannot show where an attacker-directed trajectory was
-interrupted. WASP's native oracles determine utility and raw attacker success,
-while deterministic replay joins proposals and terminal audit outcomes to the
-instantiated attacker goal. A native positive is reported as terminal attacker
-success only when the audit also records an executed attacker-directed action.
-This combination distinguishes diversion stopped before execution,
-attacker-directed execution, and tool failure without relying on the optional
-LLM intermediate classifier.
+Native final-state scores show whether the user or attacker goal was achieved,
+but they do not reveal how the trajectory reached that outcome. WASP's native
+oracles supply the utility and raw attacker-success labels. Deterministic replay
+then matches each proposal and terminal audit record to the attacker goal for
+that episode. The thesis counts a native positive as terminal attacker success
+only when the audit confirms that a corresponding attacker-directed action was
+executed. The analysis can therefore separate attacks stopped before execution
+from actions that reached the browser, while also identifying failures at the
+tool boundary. These distinctions come from native scores and audit records;
+the optional LLM intermediate classifier is not used.
 
-Finally, each seed-condition combination comprises four 21-task
-application/format cells. A pristine website reset precedes every cell, and
-aggregation requires identical input manifests. However, the controller
-processed cells in a fixed order. The reset removes application state, but it
-cannot remove temporal changes in service load, model-serving state, or other
-runtime conditions that might coincide with a later condition. Accordingly,
-future work should randomise or counterbalance the order.
+Finally, each seed and condition covers the same 84 tasks, organised as four
+21-task cells by attacker-goal variant and injection format. The benchmark
+resets the website before each cell and admits results only when the input
+manifests match. The cells were nevertheless run in a fixed order. Although
+the reset restores website state, conditions outside the site, such as service
+load or model-serving state, may still change over time. A later condition
+could therefore coincide with a different runtime environment. Future studies
+should vary the order across runs, using randomisation or counterbalancing to
+reduce this possible source of bias.
 
 \section{Quality controls and scope}
 
