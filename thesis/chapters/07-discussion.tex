@@ -62,21 +62,21 @@ plan can preserve work that a diverted trajectory would abandon. However, the
 experiments did not isolate intervention timing as an independent factor, so
 they do not establish a general advantage over later action blocking.
 
-\section{Why the two enforcement points are complementary}
+\section{Why both enforcement points matter}
 
 The results distinguish the purpose of the observation and action boundaries.
 The observation guard acts before the planner commits to a trajectory. In the
-final WASP condition it removed every detected hostile region before inference,
-and none of the attacker-directed executions seen in 42 off episodes or 15
-policy-only episodes was proposed. This is more than a presentation filter: it
-changes the information on which the model's next plan is conditioned. The
-policy-only condition preserves the remaining enforcement boundary while
-withholding that rewrite, so within this fixed scaffold the contrast identifies
-the configured sanitisation treatment. Aggregate utility remained 149/252
-across that contrast. Native terminal success changed by only one episode, from
-1/252 to zero, which is why the action audit matters: it reveals that 15
-attacker-directed executions disappeared before they could become terminal
-successes.
+full WASP condition, it removed all 740 detected hostile regions before
+inference, and no attacker-directed action was proposed. By comparison,
+attacker-directed actions were executed in 42/252 off episodes and 15/252
+policy-only episodes. This is more than a presentation filter: it changes the
+information on which the model's next plan is conditioned. Policy-only retains
+boundary neutralisation, the detector warning, and action policy but omits
+sanitisation. Within this fixed scaffold, the comparison with full therefore
+identifies the configured sanitisation treatment. Aggregate utility remained
+149/252 in both conditions. Terminal attacker success fell only from 1/252 to
+zero, but the action audit reveals a larger trajectory change: episodes
+containing attacker-directed execution fell from 15/252 to zero.
 
 The historical 9B development sequence explains why the final study does not
 rely on a warning alone. Its historical warning condition retained the hostile
@@ -84,13 +84,13 @@ observation while also enabling boundary neutralisation and action policy; it
 did not improve terminal or intermediate attack outcomes over off. Successive
 middleware revisions mean that this sequence cannot estimate the warning's
 independent effect. The final experiment therefore retains the warning only in
-the policy-only comparator. Full enforcement instead requires the exact
-reconstructed input to change and pass re-detection, after which it proceeds
-without a model-facing warning. If attribution or the post-check fails, the
-current observation is withheld and continuation begins only from a fresh
-capture after review. The final WASP rows contained no such unresolved case,
-so tests and the implementation walkthrough establish that mechanism while the
-benchmark does not measure its effect.
+the policy-only comparator. Full enforcement proceeds without a model-facing
+warning only when the targeted content has changed and the reconstructed input
+passes re-detection. If attribution or the post-check fails, the current
+observation is withheld and continuation begins only from a fresh capture after
+review. The final WASP rows contained no such unresolved case, so tests and the
+implementation walkthrough establish that mechanism while the benchmark does
+not measure its effect.
 
 The action guard addresses a different residual problem. No detector is
 complete, sanitisation may be unavailable for an effect proposed from earlier
@@ -105,7 +105,7 @@ Using only the action boundary would also change the utility profile. The
 system would allow the hostile observation to consume context and planning
 steps, then attempt to recognise the resulting effects one by one. Because
 ordinary and attacker-directed work may share tools and origins, a broad policy
-would have to refuse legitimate effects, whereas a narrow policy would miss
+risks refusing legitimate effects, whereas a narrow policy risks missing
 semantically disguised ones. Using only sanitisation would avoid that trade-off
 for detected text but leave no independent authority for protected data, unsafe
 schemes, uploads, or consequential actions. The two-boundary design therefore
