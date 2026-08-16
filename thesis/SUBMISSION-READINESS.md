@@ -157,7 +157,7 @@ independent validator are indexed from `sentinel/EVALS.md` and
 - The release copy is
   `output/pdf/Sentinel-Independent-Runtime-Enforcement-for-Browser-Agents-submission-ready.pdf`
   with SHA-256
-  `6d594196d6187f2a1a93573d035deaf73b4793025b000b3e6c024545193f6ae0`.
+  `d8318ff2a3621c56f9801492e0a0cb998579dc56e9eacc1c507b5eab961a171a`.
 - The title page records the supervisor as Arthur below the submission date.
 
 ## Final gate

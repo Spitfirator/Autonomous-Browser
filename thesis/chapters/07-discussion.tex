@@ -39,11 +39,11 @@ influence or model error.
 \section{Security and utility are coupled}
 
 The AgentDojo results show that security and utility did not move in opposite
-directions: utility increased under enforcement for all three models. Indirect
-injection explains how this can happen. An attack can consume steps, alter
-memory, and redirect the agent away from the user's task. Removing the injected
-result can therefore recover task completion as well as suppress the attacker
-goal.
+directions: utility increased under enforcement for all three models. This
+pattern has a plausible explanation. An indirect injection can consume steps,
+contaminate the agent's working context, and redirect it away from the user's
+task. Removing the injected result may therefore recover task completion while
+also suppressing the attacker goal.
 
 This observation changes how a defence should be evaluated. Clean utility
 estimates model capability without an attack; it is not the counterfactual for
@@ -53,14 +53,14 @@ paired gains and losses show whether an aggregate improvement conceals
 individual regressions.
 
 The difference between observation sanitisation and blanket action refusal is
-also important. A hard error on every tainted interaction can force repeated
-replanning and exhaust the action or approval budget. Removing the hostile
-source lets the planner continue through ordinary same-origin controls. The
-AgentDojo gains and the small aggregate WASP utility difference are consistent
-with that account: intervention before the next plan can preserve work that a
-diverted trajectory would abandon. However, the experiments did not isolate
-intervention timing as an independent factor, so they do not establish a
-general advantage over later vetoes.
+also important. Repeatedly returning a hard error can consume the remaining
+step budget, while escalating every tainted interaction can exhaust the
+approval budget. Removing the hostile source lets the planner continue through
+ordinary same-origin controls. The AgentDojo gains and the small aggregate WASP
+utility loss are consistent with that account: intervention before the next
+plan can preserve work that a diverted trajectory would abandon. However, the
+experiments did not isolate intervention timing as an independent factor, so
+they do not establish a general advantage over later action blocking.
 
 \section{Why the two enforcement points are complementary}
 
