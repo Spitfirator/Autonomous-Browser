@@ -243,21 +243,25 @@ cannot be read as middleware overhead alone.
 
 \subsection{Security by incompetence}
 
-Terminal ASR alone substantially understates baseline diversion. Of the 252 off
-episodes, 42 executed an attacker-directed action, but only 17 completed the
-attacker goal. The remaining 25 directly demonstrate execution without terminal
-success: the browser acted for the attacker, yet the agent failed to finish.
-One further episode proposed but did not execute a matching action. The other
-209 contained no recorded attempt. They are diagnostically indeterminate, not
-evidence of incapability, because exposure, recognition, navigation, replanning,
-or early termination may have failed first.
+Terminal ASR alone gives an incomplete picture of baseline diversion. In the 252
+off episodes, 42 executed an attacker-directed action, yet only 17 completed the
+attacker goal. The other 25 are direct examples of security by incompetence: the
+browser acted for the attacker, but the agent failed to carry the attack through.
+One additional episode proposed a matching action that never executed. No such
+action was recorded in the remaining 209 episodes. Those cases do not reveal why
+the attack failed: the agent may not have encountered or recognised the
+injection, may have broken down during navigation or replanning, or may simply
+have stopped early.
 
-Full enforcement recorded neither an attempted nor an executed attacker action.
-Zero terminal successes in 252 episodes does not establish a zero underlying
-rate: the rule-of-three heuristic gives an approximate upper bound of 1.19\%,
-and the repeated benchmark matrix is not a random deployment sample. The
-stronger evidence is the agreement of native outcome, independent action audit,
-per-seed replication, and 740 verified removals.
+By contrast, full enforcement recorded no attempted or executed
+attacker-directed action. Even so, zero terminal successes in 252 episodes should
+not be read as proof of a zero underlying rate. Under the rule-of-three
+heuristic, this result gives an approximate 95\% upper bound of 1.19\%, assuming
+independent binomial trials. The benchmark repeats a fixed set of tasks across
+seeds, however, so this figure is a descriptive bound for the experiment, not an
+estimate of deployment risk. The conclusion therefore rests not on the zero
+alone, but on its agreement with the independent action audit, the consistent
+direction across seeds, and 740 verified removals.
 
 \subsection{Campaign integrity}
 
