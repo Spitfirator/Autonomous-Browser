@@ -72,12 +72,16 @@ successes while 47 successes were lost. Utility for 27B rose by 55 and secure
 utility by 138, but that net change comprised 84 gains and 29 losses. An
 aggregate improvement did not therefore mean that every trajectory benefited.
 
-Secure utility matters here because user success could coexist with
-compromise. In off mode, this occurred in 65, 55, and 83 episodes for 4B, 9B,
-and 27B; enforcement reduced all three counts to zero. Conversely, failing the
-user task was not a proxy for safety: compromised failures changed from 141 to
-zero, from 76 to one, and from 120 to zero. The four-way outcome split thus
-exposes risk that either utility or attacker success alone would conceal.
+The headline rates become clearer when utility and attacker success are read
+together. Each episode falls into one of four groups: useful and secure, useful
+but compromised, unsuccessful and secure, or unsuccessful and compromised. In
+off mode, utility exceeded secure utility by 65, 55, and 83 episodes for 4B,
+9B, and 27B. These gaps are cases in which the model completed the user's task
+but also achieved the attacker's goal; enforcement reduced all three counts to
+zero. Nor did failure on the user's task imply safety. The attacker still
+succeeded in 141, 76, and 120 such episodes in off mode, compared with zero,
+one, and zero under enforcement. This four-way view therefore exposes risk
+that either utility or attacker success alone would conceal.
 
 Utility changes were also uneven across task suites. For 4B, utility increased
 in banking (86 to 99), Slack (58 to 60), travel (35 to 100), and workspace (183
