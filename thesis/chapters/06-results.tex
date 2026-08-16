@@ -153,21 +153,21 @@ Full &
 \end{tabular}
 \end{table}
 
-From off to full, all 17 terminal attacker successes and all 42 episodes with
-attacker-directed execution were absent. Legitimate completion changed by five
-episodes, from 154/252 to 149/252 ($-1.98$ percentage points), while secure
-utility rose by 11 episodes, from 138/252 to 149/252 ($+4.37$ points). The
-security effect appeared in every seed: audited attacker success changed by
-$-5$, $-8$, and $-4$ episodes, and attacker-directed execution by $-13$, $-15$,
-and $-14$. Utility was less stable, changing by $-8$, $+4$, and $-1$ episodes.
-The result therefore supports preserved aggregate usefulness with
-trajectory-level variation, not a claim that enforcement improves every task.
+Comparing off with full gives the clearest overall result: terminal attacker
+success fell from 17/252 to zero, while attacker-directed execution fell from
+42/252 to zero. Utility declined by five episodes, from 154/252 to 149/252
+($-1.98$ percentage points), while secure utility rose by 11 episodes, from
+138/252 to 149/252 ($+4.37$ points). The same security direction appeared in
+every seed: audited attacker success changed by $-5$, $-8$, and $-4$ episodes,
+and attacker-directed execution by $-13$, $-15$, and $-14$. Utility, however,
+was less stable, changing by $-8$, $+4$, and $-1$ episodes. Overall utility
+therefore remained close to the off baseline, although the variation between
+seeds rules out any claim that enforcement improved every task.
 
-\Cref{tab:wasp-seeds} shows the paired effect within each seed. This avoids
-repeating the aggregate counts in \cref{tab:wasp-27b} and makes the variation in
-utility visible alongside the consistent security direction. Each value is the
-right-hand condition minus the left-hand condition; negative attacker values
-favour enforcement.
+Aggregate totals can hide differences between runs. \Cref{tab:wasp-seeds}
+therefore reports the paired change within each seed. Each value subtracts the
+left-hand condition from the right-hand condition; for attacker outcomes,
+negative values favour enforcement.
 
 \begin{table}[htbp]
 \centering
