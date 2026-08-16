@@ -134,15 +134,15 @@ independent validator are indexed from `sentinel/EVALS.md` and
 - The approval and Activity views come from the deterministic local
   walkthrough. Their concise source mapping, reproduction commands, and image
   hashes are in `FIGURE-PROVENANCE.md`.
-- Tectonic produced a 66-page A4 PDF with the expected title, author, subject,
+- Tectonic produced a 65-page A4 PDF with the expected title, author, subject,
   and keywords. Under the formal exclusions supplied for the dissertation, the
-  counted text is exactly 50 pages and meets the 50-page ceiling: the Lists of
-  Figures and Tables plus Arabic pages 1--48. Appendix A begins on Arabic page
-  49 and the bibliography on page 54, so both are outside that count. Concise
+  counted text is 49 pages and meets the 50-page ceiling: the Lists of Figures
+  and Tables plus Arabic pages 1--47. Appendix A begins on Arabic page 48 and
+  the bibliography on page 53, so both are outside that count. Concise
   captions keep the Lists of Figures and Tables compact and leave detailed
   interpretation in the surrounding prose.
 - Both `sentinel-submission.tex` and the official `project_report - pg.tex`
-  root compile to 66 A4 pages with identical extracted page text and page
+  root compile to 65 A4 pages with identical extracted page text and page
   geometry. All pages were rendered for visual inspection, with front matter,
   Figure 4.1, the control-plane views, the result tables and graph, the ethics
   subsection, and the assurance appendix checked again at higher
@@ -157,7 +157,7 @@ independent validator are indexed from `sentinel/EVALS.md` and
 - The release copy is
   `output/pdf/Sentinel-Independent-Runtime-Enforcement-for-Browser-Agents-submission-ready.pdf`
   with SHA-256
-  `eda27b60eb97e2f0fdad5f7821cf4f85338b0c9f22ae50678a9b466c3b7d8148`.
+  `6d594196d6187f2a1a93573d035deaf73b4793025b000b3e6c024545193f6ae0`.
 - The title page records the supervisor as Arthur below the submission date.
 
 ## Final gate

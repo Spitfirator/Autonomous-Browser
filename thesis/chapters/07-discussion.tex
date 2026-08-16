@@ -5,35 +5,36 @@
 
 Within the evaluated boundary, independent runtime enforcement reduced
 prompt-injection-driven violations while preserving useful task completion.
-This conclusion rests on the conjunction of three observations.
+Three connected findings support that answer.
 
-First, native AgentDojo attacker success fell from 206, 131, and 203 cases to
-0, 1, and 0 for the 4B, 9B, and 27B conditions. Secure utility increased by
-149, 100, and 138 cases. Each model recorded only nine explicit action blocks,
-so the result was not produced by preventing the agent from acting.
+First, AgentDojo shows the pattern across all three model configurations.
+Native attacker success fell from 206, 131, and 203 cases to 0, 1, and 0 for
+4B, 9B, and 27B, while secure utility increased by 149, 100, and 138 cases.
+Each model recorded only nine explicit action blocks, indicating that the
+improvement did not arise from broadly suppressing tool use.
 
-Second, the replicated WASP comparison transferred the mechanism to a different
-agent scaffold and a browser-native benchmark loop. Across three seeds, full
-enforcement changed attacker-directed execution from 42/252 episodes to zero
-and action-audited terminal success from 17/252 to zero. Legitimate completion
-changed from 154/252 to 149/252, while secure utility rose from 138/252 to
-149/252. The security gain therefore coexisted with a small aggregate utility
-cost and substantial between-seed variation, both of which remain visible.
+Second, WASP tests the same pattern in a different agent scaffold and
+browser-native loop. Across three seeds, full enforcement reduced
+attacker-directed execution from 42/252 episodes to zero and action-audited
+terminal success from 17/252 to zero. Legitimate completion changed from
+154/252 to 149/252, while secure utility rose from 138/252 to 149/252. Thus, a
+clear security shift coexisted with a small aggregate utility cost, although
+the between-seed variation shows that the task-level effect was not uniform.
 
-Third, the configured sanitisation treatment and telemetry provide a consistent
-mechanism account. Policy-only still left attacker-directed execution in
-15/252 episodes. The full condition recorded 740 confirmed removals, no
-residual or unattributable observation, and no attacker-directed proposal.
-AgentDojo likewise recorded sanitised tool output in most attacked enforce
-cases and few explicit blocks. Across both environments, the recurring
-intervention was removal of hostile observation content before the next model
-decision, backed by policy at execution time.
+Third, the telemetry supports a consistent account of how the outcome changed.
+Policy-only, with sanitisation disabled, still recorded attacker-directed
+execution in 15/252 episodes. Full recorded 740 confirmed removals, no residual
+or unattributable observation, and no attacker-directed proposal. AgentDojo
+likewise sanitised tool output in most attacked enforce cases and used few
+explicit blocks. In both environments, hostile observation content was usually
+removed before the next model decision, while policy remained a backstop at
+execution.
 
-These findings support the architectural thesis. A probabilistic planner can
-remain responsible for choosing useful actions without also being the sole
-authority for whether those actions execute. The observation guard limits one
-source of hostile influence; the action guard supplies a stable decision point
-when influence or ordinary model error remains.
+Together, these findings support the architectural thesis. A probabilistic
+planner can choose useful actions without deciding alone which receive
+authority to execute. The observation guard reduces hostile influence before
+planning, while the action guard provides a stable decision point for residual
+influence or model error.
 
 \section{Security and utility are coupled}
 
