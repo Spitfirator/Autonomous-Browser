@@ -211,17 +211,20 @@ future work should randomise or counterbalance the order.
 
 \section{Quality controls and scope}
 
-Only cells whose task coverage, native scores, reports, and frozen provenance
-agreed entered a denominator; failed or incomplete cells remain operational
-records. The checks are documented in
+To protect the reported denominators, a cell entered the analysis only when
+its task coverage, native scores, reports, and frozen provenance were mutually
+consistent. Incomplete or failed cells were retained as operational records
+but excluded from the results. The corresponding admission checks are
+documented in
 \cref{sec:implementation-verification,sec:appendix-wasp-provenance}.
 
-A second safeguard concerns the boundary between development and evaluation.
-Some detector rules and representation-handling fixes arose from failures
-observed during AgentDojo and WASP development. Component replay therefore
-verifies regression coverage of known attack families, not generalisation to
-unseen attacks. The middleware and condition-specific policies were frozen
-before the final three-seed comparison and applied consistently throughout that
-experiment. The claim remains bounded to two benchmark families, three WASP
-seeds over one fixed matrix, finite step budgets, DOM-only observations, and no
-human participants.
+Provenance controls address a different risk. Failures observed during
+AgentDojo and WASP development informed several detector rules and
+representation-handling corrections. Consequently, component replay measures
+regression coverage of known attack families, not generalisation to unseen
+attacks. The middleware and condition-specific policies were then frozen
+before the final three-seed comparison and applied consistently throughout it.
+The resulting claim is limited to the evaluated models, two benchmark
+families, three WASP seeds over one fixed task matrix, finite step budgets,
+AgentDojo's tool interfaces, DOM/accessibility observations without screenshots
+in WASP, and technical evaluation without human participants.
