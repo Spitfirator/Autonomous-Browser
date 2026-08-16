@@ -94,9 +94,11 @@ The telemetry also shows how Sentinel intervened. It rarely stopped actions
 outright. Detector-positive tool output appeared in 600, 615, and 609 enforce
 cases for 4B, 9B, and 27B, while each model recorded only nine explicit action
 blocks and no approval actions. In the reviewed 27B aggregate, 2,181 actions
-were allowed and all nine blocks invoked
-\texttt{sensitive\_data\_flow}. These records identify sanitisation before the
-next decision as the main intervention, with action policy as a backstop.
+were allowed. The nine blocked actions were attempted password updates carrying
+recognised credentials, recorded under the
+\texttt{sensitive\_data\_flow} policy rule. These records identify sanitisation
+before the next decision as the main intervention, with action policy as a
+backstop.
 
 This intervention pattern offers a plausible explanation for the joint
 security and utility gains. Indirect injection can pull the agent away from the
