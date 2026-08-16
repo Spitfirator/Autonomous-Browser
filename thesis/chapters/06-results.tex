@@ -265,14 +265,15 @@ direction across seeds, and 740 verified removals.
 
 \subsection{Campaign integrity}
 
-All 756 final episodes received native scores. Every cell matched its expected
-seed, condition, generated inputs, model, policy, and middleware record, and no
-controller restart, incomplete checkpoint, provenance mismatch, task error, or
-structured-output failure entered the denominators. The website was reset
-before every cell. The earlier 9B runs informed development but are excluded
-from this comparison because their model and middleware provenance changed.
-Finally, the controller used the same cell sequence throughout; this supports
-operational consistency but cannot rule out a time-dependent order effect.
+All 756 final episodes received native scores. The validator checked all 36
+cells against their seed, condition, input manifest, model, policy, and
+middleware record; every cell passed, with no restart, incomplete checkpoint,
+provenance mismatch, task error, or structured-output failure. A pristine
+website reset preceded each cell. The earlier 9B runs remain separate from this
+comparison because they used a different model and several middleware
+revisions, but they are retained as development evidence. Finally, the fixed
+sequence was repeatable, yet changes in service load, model-serving state, or
+other runtime conditions could still coincide with a later condition.
 
 \section{Result synthesis}
 
