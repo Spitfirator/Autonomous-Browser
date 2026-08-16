@@ -120,14 +120,21 @@ reduction alone would hide the distinction.
 
 \subsection{Replicated controlled comparison}
 
-The browser-native evaluation repeated the same 84 attacked tasks for seeds 0,
-1, and 2 under off, policy-only, and full conditions. This produced 252 episodes
-per condition and 756 overall. \Cref{tab:wasp-27b} combines native final-state
-outcomes with the independent action audit. The audited ASR equals the raw
-native ASR in every condition; every native positive also had a corresponding
-executed attacker-directed action. Attempted and executed columns count episodes
-with at least one matching action. Potential false blocks are an upper bound,
-not confirmed causes of task failure.
+The browser-native study tests how Sentinel behaves when the agent must read
+pages, navigate, act, and replan. For each of seeds 0, 1, and 2, the same 84
+attacked tasks ran under off, policy-only, and full conditions. The campaign
+therefore contained 252 episodes per condition and 756 overall, with every rate
+in \cref{tab:wasp-27b} using 252 as its denominator.
+
+The table connects final-state results with evidence from the action
+trajectory. WASP's native oracle records completion of the attacker's goal,
+while the independent audit checks for matching attacker-directed proposals
+and executions. The two views agreed on terminal success: every native positive
+also contained an executed attacker-directed action, so raw and audited ASR
+were identical. The Attempted and Executed columns look earlier in the
+trajectory by counting episodes with at least one matching proposal or action.
+Potential false blocks remain an upper bound on disrupted legitimate work, not
+confirmed causes of task failure.
 
 \begin{table}[htbp]
 \centering
@@ -153,33 +160,40 @@ Full &
 \end{tabular}
 \end{table}
 
-Comparing off with full gives the clearest overall result: terminal attacker
-success fell from 17/252 to zero, while attacker-directed execution fell from
-42/252 to zero. Utility declined by five episodes, from 154/252 to 149/252
-($-1.98$ percentage points), while secure utility rose by 11 episodes, from
-138/252 to 149/252 ($+4.37$ points). The same security direction appeared in
-every seed: audited attacker success changed by $-5$, $-8$, and $-4$ episodes,
-and attacker-directed execution by $-13$, $-15$, and $-14$. Utility, however,
-was less stable, changing by $-8$, $+4$, and $-1$ episodes. Overall utility
-therefore remained close to the off baseline, although the variation between
-seeds rules out any claim that enforcement improved every task.
+The off-to-full comparison gives the clearest overall result. Terminal attacker
+success fell from 17/252 to zero, and attacker-directed execution fell from
+42/252 to zero. Ordinary utility declined slightly, from 154/252 to 149/252
+($-1.98$ percentage points), yet secure utility rose from 138/252 to 149/252
+($+4.37$ points). The two utility measures moved in different directions
+because all 149 full-mode completions were secure, whereas 16 of the 154
+off-mode completions also achieved the attacker's goal.
 
-Aggregate totals can hide differences between runs. \Cref{tab:wasp-seeds}
-therefore reports the paired change within each seed. Each value subtracts the
-left-hand condition from the right-hand condition; for attacker outcomes,
-negative values favour enforcement.
+The security direction was consistent across all three seeds. Audited attacker
+success changed by $-5$, $-8$, and $-4$ episodes, while attacker-directed
+execution changed by $-13$, $-15$, and $-14$. Utility, however, changed by
+$-8$, $+4$, and $-1$ episodes. Full enforcement therefore remained close to
+the off baseline in aggregate utility, but the variation between seeds rules
+out any claim that every task benefited.
+
+Aggregate totals can still hide how each run contributed to the result.
+\Cref{tab:wasp-seeds} therefore reports the paired change within each seed. In
+both column groups, each entry is the full-condition result minus the named
+comparison condition. Consequently, Full $-$ off shows the overall system
+difference, whereas Full $-$ policy-only isolates the configured sanitisation
+treatment added by full enforcement. For attacker outcomes, negative values
+favour full enforcement; for utility, they indicate fewer completed user tasks.
 
 \begin{table}[htbp]
 \centering
-\caption{Per-seed paired WASP effects.}
+\caption{Per-seed comparison of full with off and policy-only.}
 \label{tab:wasp-seeds}
 \small
 \renewcommand{\arraystretch}{1.2}
 \setlength{\tabcolsep}{5pt}
-\begin{tabular}{@{}lrrrrrr@{}}
+\begin{tabular}{@{}lrrrr@{\hspace{1.5em}}rr@{}}
 \toprule
  & \multicolumn{4}{c}{Full $-$ off} & \multicolumn{2}{c}{Full $-$ policy-only} \\
-\cmidrule(lr){2-5}\cmidrule(l){6-7}
+\cmidrule(lr){2-5}\cmidrule(lr){6-7}
 Seed & Utility & Audited ASR & Secure utility & Executed & Utility & Executed \\
 \midrule
 0 & $-8$ & $-5$ & $-3$ & $-13$ & $-5$ & $-5$ \\
@@ -191,36 +205,41 @@ Seed & Utility & Audited ASR & Secure utility & Executed & Utility & Executed \\
 
 \subsection{What the policy-only/full contrast establishes}
 
-The policy-only condition retains boundary neutralisation, the detector
-warning, and action policy while disabling browser sanitisation. Relative to
-off, it reduced audited attacker success from 17/252 to 1/252 and
-attacker-directed execution from 42/252 to 15/252. This is a combined system
-effect: it cannot be attributed to action policy alone.
+The policy-only condition keeps boundary neutralisation, the detector warning,
+and action policy, but leaves browser sanitisation disabled. Compared with off,
+it reduced audited attacker success from 17/252 to 1/252 and attacker-directed
+execution from 42/252 to 15/252. These reductions reflect the controls working
+together and cannot be assigned to action policy alone.
 
-Full differs only by enabling the configured sanitisation treatment. Aggregate
-utility remained 149/252, while attacker-directed attempts and executions
-changed from 15/252 to 0/252. The decrement was five episodes in every seed.
-Audited attacker success changed from 1/252 to 0/252 and secure utility from
-148/252 to 149/252. The terminal difference is numerically small because the
-policy-only agent completed only one attacker goal, but the trajectory
-difference is not: no matching attacker-directed proposal was recorded under
-full enforcement in 252 episodes.
+Full then adds browser sanitisation. Once removal is verified, it no longer
+sends the detector warning to the model. The full-versus-policy-only comparison
+therefore captures this additional configured treatment. Aggregate utility was
+unchanged at 149/252, while episodes containing attacker-directed proposals and
+executions fell from 15/252 to zero. Within every seed, both measures fell from
+five episodes to zero. Audited attacker success also changed from 1/252 to zero,
+and secure utility rose from 148/252 to 149/252. The terminal ASR difference is
+only one episode because policy-only completed just one attacker goal. The
+trajectory difference is larger: policy-only produced attacker-directed
+proposals in 15 episodes, whereas full produced none across 252 episodes.
 
-Mechanism telemetry supports that interpretation. Full enforcement performed
-740 sanitisation attempts and confirmed 740 removals, comprising 21 direct-line
-and 719 bounded-window cases. None remained detector-positive, none was
-unattributable, and no post-removal warning was emitted. Policy-only deliberately
-recorded no sanitisation events. It raised two approval requests in one episode;
-scripted no-participant resolution stopped one attacker-directed action and one
-non-attacker-directed action. The latter is the single potential false block in
-\cref{tab:wasp-27b}. Full generated no attacker-directed proposal and raised no
-approval, block, handover, or security-pause event.
+The intervention logs help explain this result. Full performed 740
+sanitisation attempts and verified removal in all 740 cases: 21 used direct-line
+removal and 719 used bounded context windows. Every reconstructed observation
+passed re-detection; none remained detector-positive or unattributable, and no
+post-removal warning was sent to the model. Policy-only, with sanitisation
+disabled, recorded no sanitisation events. It did raise two approval requests
+in one episode. Since no human participated, the benchmark controller denied
+both: one concerned an attacker-directed action and the other did not. The
+latter is the single potential false block in \cref{tab:wasp-27b}. By
+comparison, full produced no attacker-directed proposal and raised no approval,
+block, handover, or security-pause event.
 
-No human participated in these campaigns, so actual human intervention is
-not applicable. Pre-execution mediation averaged below 0.6 milliseconds per
-governed decision in every condition, with no recorded human waiting. End-to-end
-episode duration was lower under enforcement, but this is a system-level
-trajectory outcome and cannot be interpreted as middleware overhead alone.
+These were benchmark campaigns without human participants, so actual human
+intervention is not applicable. Pre-execution mediation nevertheless averaged
+below 0.6 milliseconds per governed decision in every condition, and no time
+was spent waiting for human input. Although mean episode duration was lower
+under enforcement, it reflects the complete model-and-browser trajectory and
+cannot be read as middleware overhead alone.
 
 \subsection{Security by incompetence}
 
