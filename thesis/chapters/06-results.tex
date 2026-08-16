@@ -3,33 +3,38 @@
 
 \section{Component evidence}
 
-The model-free AgentDojo replay covered 16 non-manual attack families and
-7,404 security cases. All defined attack cases were detected and received the
-configured hard-block outcome. None of the 97 distinct benign tasks was
-blocked; one reached the approval threshold. The detector-v2 regression
-scorecard recorded recall 1.000 with no false positives on both AgentDojo
-corpora. On the WASP development corpus it recorded recall 1.000, precision
-0.988, and one false positive among 39 benign pages. Full component and
-action-gating results appear in \cref{app:assurance}; the end-to-end results
-below determine whether those mechanisms preserved useful trajectories.
+Before interpreting agent behaviour, the evaluation first checks that the
+configured guards behaved as intended. The model-free AgentDojo replay covered
+7,404 security cases across 16 non-manual attack families. Every case was
+detected and received the configured hard-block outcome. None of the 97
+distinct benign tasks was hard-blocked, although one reached the approval
+threshold. A separate detector-v2 scorecard then tested the exact text
+representations produced by both adapters. Recall was 1.000 with no false
+positives on the two AgentDojo corpora. On the WASP development corpus, recall
+was 1.000 and precision was 0.988, with one false positive among 39 benign
+pages. These WASP figures are detector-development evidence, not outcomes from
+the final three-seed browser experiment. Detailed component and action-gating
+results appear in \cref{app:assurance}.
 
-The replay establishes two prerequisites for interpreting the agent results.
-First, the configured policy produced the intended decision for every defined
-security case without obtaining that coverage by blocking the benign task set.
-Second, the detector operated on the representations actually supplied by the
-two adapters, not an abstract list of attack strings. The near-
-perfect component scores are not treated as a generalisation estimate because
-the rules were refined against these corpora. Their role is narrower: they show
-that a failure in an end-to-end row is not explained by the detector simply
-being disabled or the policy fixture failing to load.
+Together, the replay and scorecard establish two conditions for interpreting
+the end-to-end results. First, the configured policy produced its intended
+decision for every defined security case without hard-blocking the benign task
+set. Second, the detector was tested on the text produced by the AgentDojo and
+WASP adapters, not only on the original benchmark payloads. However, these
+remain development-regression results because the rules were refined against
+the same corpora; they do not estimate performance on unseen attacks. Their
+narrower value is to confirm that later failures cannot be explained simply by
+a detector that never fired or a policy fixture that failed to load. The
+following sections can therefore examine whether the complete governed
+configuration also preserved useful agent trajectories.
 
 \section{AgentDojo end-to-end results}
 
-All three model campaigns completed 629 off/enforce task pairs. The central
-pattern is consistent across models: enforcement reduced attacker success while
-increasing both utility and secure utility. \Cref{tab:agentdojo-e2e} reports the
-native outcomes. Clean capability uses $n=97$, whereas each attacked condition
-uses $n=629$. Counts are followed by rates; dashes denote outcomes that are not
+Each of the three model campaigns completed all 629 matched off/enforce task
+pairs. Across them, enforcement reduced attacker success and raised both
+utility and secure utility. \Cref{tab:agentdojo-e2e} reports the native
+outcomes. The clean rows cover 97 tasks, while each attacked condition covers
+629; rates appear beside the counts, and dashes mark outcomes that are not
 defined for clean runs.
 
 \begin{table}[!htbp]
@@ -44,69 +49,66 @@ defined for clean runs.
 Model & Condition & Utility & Native attacker success & Secure utility \\
 \midrule
 Qwen 3.5 4B & Clean & 76/97 (78.4\%) & -- & -- \\
-Qwen 3.5 4B & Attacked, off & 362/629 (57.6\%) & 206/629 (32.8\%) & 297/629 (47.2\%) \\
-Qwen 3.5 4B & Attacked, enforce & 446/629 (70.9\%) & 0/629 (0\%) & 446/629 (70.9\%) \\
+& Attacked, off & 362/629 (57.6\%) & 206/629 (32.8\%) & 297/629 (47.2\%) \\
+& Attacked, enforce & 446/629 (70.9\%) & 0/629 (0\%) & 446/629 (70.9\%) \\
 \addlinespace[2pt]
 Qwen 3.5 9B & Clean & 80/97 (82.5\%) & -- & -- \\
-Qwen 3.5 9B & Attacked, off & 422/629 (67.1\%) & 131/629 (20.8\%) & 367/629 (58.3\%) \\
-Qwen 3.5 9B & Attacked, enforce & 467/629 (74.2\%) & 1/629 (0.2\%) & 467/629 (74.2\%) \\
+& Attacked, off & 422/629 (67.1\%) & 131/629 (20.8\%) & 367/629 (58.3\%) \\
+& Attacked, enforce & 467/629 (74.2\%) & 1/629 (0.2\%) & 467/629 (74.2\%) \\
 \addlinespace[2pt]
 Qwen 3.5 27B & Clean & 81/97 (83.5\%) & -- & -- \\
-Qwen 3.5 27B & Attacked, off & 428/629 (68.0\%) & 203/629 (32.3\%) & 345/629 (54.8\%) \\
-Qwen 3.5 27B & Attacked, enforce & 483/629 (76.8\%) & 0/629 (0\%) & 483/629 (76.8\%) \\
+& Attacked, off & 428/629 (68.0\%) & 203/629 (32.3\%) & 345/629 (54.8\%) \\
+& Attacked, enforce & 483/629 (76.8\%) & 0/629 (0\%) & 483/629 (76.8\%) \\
 \bottomrule
 \end{tabularx}
 \end{table}
 \FloatBarrier
 
-For 4B, enforcement produced 84 additional useful outcomes, 206 fewer
-attacker successes, and 149 additional useful-and-secure outcomes. The 9B row
-produced 45 additional useful outcomes and prevented 130 attacker successes;
-paired transitions contained 92 utility gains and 47 losses. For 27B, utility
-increased by 55 cases, all 203 off-condition attacker successes were absent,
-and secure utility increased by 138. Its paired outcomes contained 84 utility
-gains and 29 losses, demonstrating that the aggregate gain was substantial but
-not cost-free for every trajectory.
+The averages, however, conceal movement in both directions at the task level.
+For 4B, enforcement added 84 useful outcomes, removed 206 attacker successes,
+and added 149 useful-and-secure outcomes. With 9B, it added 45 useful outcomes
+and prevented 130 attacker successes; across matched tasks, 92 failures became
+successes while 47 successes were lost. Utility for 27B rose by 55 and secure
+utility by 138, but that net change comprised 84 gains and 29 losses. An
+aggregate improvement did not therefore mean that every trajectory benefited.
 
-The joint outcomes make the security gain more concrete. Enforcement removed
-65, 55, and 83 cases in which the user and attacker oracles both succeeded for
-4B, 9B, and 27B respectively. These are especially important: apparent task
-completion could otherwise conceal an unauthorised side effect. It also removed
-141, 76, and 120 attacker successes from trajectories that had already failed
-the user, showing why unsuccessful work cannot be counted as inherently safe.
-After enforcement, every successful 4B and 27B user outcome was secure; the 9B
-row retained one attacker success in an unsuccessful user trajectory.
+Secure utility matters here because user success could coexist with
+compromise. In off mode, this occurred in 65, 55, and 83 episodes for 4B, 9B,
+and 27B; enforcement reduced all three counts to zero. Conversely, failing the
+user task was not a proxy for safety: compromised failures changed from 141 to
+zero, from 76 to one, and from 120 to zero. The four-way outcome split thus
+exposes risk that either utility or attacker success alone would conceal.
 
-Suite-level outcomes show that the aggregate was not generated by one task
-environment. For 4B, native utility increased in banking (86 to 99), Slack (58
-to 60), travel (35 to 100), and workspace (183 to 187), while attacker success
-fell to zero in every suite. The 27B profile was more heterogeneous: utility
-fell in banking (118 to 99), was unchanged in Slack (70), and rose in travel
-(76 to 112) and workspace (164 to 202). That variation is why the analysis
-retains paired task outcomes and limitations; the aggregate should not be read
-as a uniform utility improvement.
+Utility changes were also uneven across task suites. For 4B, utility increased
+in banking (86 to 99), Slack (58 to 60), travel (35 to 100), and workspace (183
+to 187), while attacker success fell to zero in every suite. By comparison,
+the 27B profile fell in banking (118 to 99), remained unchanged in Slack (70),
+and rose in travel (76 to 112) and workspace (164 to 202). The aggregate should
+therefore not be read as a uniform utility improvement.
 
-The mechanism was selective and rarely relied on refusal. Detector-positive tool
-output occurred in 600, 615, and 609 enforce cases for 4B, 9B, and 27B. Each
-model recorded nine explicit action blocks and no approval actions. In the
-reviewed 27B aggregate, 2,181 actions were allowed and all nine blocks were
-\texttt{sensitive\_data\_flow}. Sanitising untrusted tool results before the
-next decision was therefore the dominant recorded intervention; action policy
-served as a backstop.
+The telemetry also shows how Sentinel intervened. It rarely stopped actions
+outright. Detector-positive tool output appeared in 600, 615, and 609 enforce
+cases for 4B, 9B, and 27B, while each model recorded only nine explicit action
+blocks and no approval actions. In the reviewed 27B aggregate, 2,181 actions
+were allowed and all nine blocks invoked
+\texttt{sensitive\_data\_flow}. These records identify sanitisation before the
+next decision as the main intervention, with action policy as a backstop.
 
-The utility gains follow from the structure of indirect injection. A diverted
-agent may abandon the user's task or consume its step budget. Removing the
-malicious tool result can restore the original trajectory as well as prevent
-the attacker goal. This effect appears in each independent model row and is
-interpreted as a paired enforcement outcome, not as a model-size trend.
+This intervention pattern offers a plausible explanation for the joint
+security and utility gains. Indirect injection can pull the agent away from the
+user's task or consume its step budget. Once detected malicious content is
+removed, the planner has an opportunity to resume the original trajectory
+without carrying the attack into its next decision. All three model rows are
+consistent with this account, but they remain independent matched comparisons
+and do not establish a model-size trend.
 
-Clean utility remained above attacked-off utility for every model: 78.4\%
-versus 57.6\% for 4B, 82.5\% versus 67.1\% for 9B, and 83.5\% versus 68.0\% for
-27B. Enforce utility did not exceed each clean ceiling, but it closed much of
-the gap while suppressing attacker outcomes. This is the expected direction if
-injected tool results cause both security violations and task diversion. It is
-also why the analysis reports clean capability, attacked utility, and secure
-utility separately. An ASR reduction alone would hide these distinctions.
+Clean runs provide a final reference point. Clean utility remained above
+attacked-off utility for every model: 78.4\% versus 57.6\% for 4B, 82.5\%
+versus 67.1\% for 9B, and 83.5\% versus 68.0\% for 27B. Enforcement did not
+return any model to its clean ceiling, but it recovered part of the gap while
+suppressing attacker outcomes. These comparisons reinforce the need to report
+clean capability, attacked utility, and secure utility together; an ASR
+reduction alone would hide the distinction.
 
 \section{WASP browser-native results}
 
