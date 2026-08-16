@@ -161,9 +161,10 @@ the shared profile and provenance controls.
 \section{WASP}
 \label{sec:wasp-method}
 
-WASP asks whether the pattern survives a browser loop in which each effect can
-change the next observation and plan. The adapter pins the benchmark and
-BrowserUse revisions while retaining WASP's official injector and native oracles
+WASP then asks whether Sentinel's enforcement pattern remains effective in a
+browser loop, where each action can change the observation on which the next
+plan is based. The adapter pins the benchmark and BrowserUse revisions while
+retaining WASP's official injector and native oracles
 ~\cite{evtimov2025wasp,zunic2026browseruse}. Twenty-one attacker scenarios are
 crossed with two legitimate user goals and two injection formats, producing 84
 attacked episodes in each condition. Repeating this matrix for seeds 0, 1, and
@@ -172,8 +173,9 @@ overall.
 
 All conditions share the Qwen 3.5 27B artefact, 30-step single-action scaffold,
 inputs, sampling settings, and DOM/accessibility observations; screenshots are
-excluded. No person reviewed or resolved requests during the campaign, which
-was conducted unattended. The progression is:
+excluded. The campaign used \texttt{participant=none}, so no human supplied
+approval or handoff decisions during an episode. Together, the three conditions
+form a staged comparison:
 
 \begin{description}[style=nextline,leftmargin=24mm]
   \item[Off] The prompt-injection boundary and action-policy enforcement are
@@ -190,20 +192,22 @@ was conducted unattended. The progression is:
   configured sanitisation increment.
 \end{description}
 
-Native final-state oracles determine utility and raw attacker success.
-Deterministic replay separately joins proposals and terminal outcomes to the
-instantiated attacker goal. A native positive is called terminal attacker
-success only when the audit also records attacker-directed execution. Replay
-therefore separates stopped diversion, executed danger, and tool failure
-without the optional LLM intermediate classifier.
+Final-state scores alone cannot show where an attacker-directed trajectory was
+interrupted. WASP's native oracles determine utility and raw attacker success,
+while deterministic replay joins proposals and terminal audit outcomes to the
+instantiated attacker goal. A native positive is reported as terminal attacker
+success only when the audit also records an executed attacker-directed action.
+This combination distinguishes diversion stopped before execution,
+attacker-directed execution, and tool failure without relying on the optional
+LLM intermediate classifier.
 
-Each seed and condition comprises four 21-task application/format cells. A
-pristine website reset precedes every cell, and aggregation requires identical
-input manifests. However, the controller processed conditions in a fixed order.
-The reset removes application state but not changes in service load,
-model-serving state, or other runtime conditions that might accumulate and
-coincide with a later condition. Future work should randomise or counterbalance
-this order.
+Finally, each seed-condition combination comprises four 21-task
+application/format cells. A pristine website reset precedes every cell, and
+aggregation requires identical input manifests. However, the controller
+processed cells in a fixed order. The reset removes application state, but it
+cannot remove temporal changes in service load, model-serving state, or other
+runtime conditions that might coincide with a later condition. Accordingly,
+future work should randomise or counterbalance the order.
 
 \section{Quality controls and scope}
 
