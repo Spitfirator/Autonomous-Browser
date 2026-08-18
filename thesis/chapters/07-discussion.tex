@@ -263,5 +263,7 @@ Taken together, these priorities reinforce the thesis's architectural
 conclusion. Under the tested conditions, useful planning remained possible
 without giving the model final authority over what it observed or executed.
 Sentinel does not remove the need for better semantic representations, adaptive
-testing, or human evaluation. It does, however, show why planning capability
-and execution authority should be treated as separate responsibilities.
+testing, or human evaluation. Model-level safeguards may help the agent resist
+hostile instructions, but they should not be the only security boundary.
+Sentinel adds an independent layer that governs the observations and actions
+crossing the agent loop without relying on model compliance.
