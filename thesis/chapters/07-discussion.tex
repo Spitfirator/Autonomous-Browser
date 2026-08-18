@@ -3,36 +3,35 @@
 
 \section{Answer to the research question}
 
-Taken together, the findings support a qualified but positive answer to the
-research question. Under the tested conditions, independent runtime enforcement
-reduced prompt-injection-driven violations without removing the agent's ability
-to complete useful work. This claim is deliberately narrower than saying that
-Sentinel solves prompt injection. It is limited to the tested models, tasks,
-and textual observation channels. The conclusion draws on converging evidence
-from two complementary evaluations, not on any single zero-attack result.
+The evidence gives a qualified but positive answer to the research question.
+In the evaluated settings, independent runtime enforcement reduced
+prompt-injection-driven violations and still allowed the agent to complete
+useful work. The scope of that answer matters. It applies to the models, tasks,
+and textual observation channels tested here; it does not mean that Sentinel
+solves prompt injection. The case rests on two complementary evaluations, not
+on any single run in which attacker success reached zero.
 
-AgentDojo provides the broader controlled comparison: across all three matched
-model configurations, enforcement reduced attacker success and increased both
-utility and secure utility. WASP then tests whether this broader
-security--utility result carries over to a browser-native loop. Across three
-seeds, full enforcement reduced
-action-audited terminal success from 17/252 episodes to zero and
-attacker-directed execution from 42/252 to zero. Although legitimate completion
-fell slightly, from 154/252 to 149/252, secure utility rose from 138/252 to
-149/252 (\cref{tab:agentdojo-e2e,tab:wasp-27b}). The benchmarks therefore do not
-show identical utility effects. They do, however, support the same broader
-conclusion: evaluated violations fell sharply while useful task completion
-remained close to the baseline in aggregate.
+AgentDojo first shows this under controlled conditions. Across all three
+matched model configurations, enforcement reduced attacker success and
+increased utility and secure utility. WASP then asks how the same approach fares
+in a browser-native loop, where the agent must read pages, navigate, and act.
+Across three seeds, full enforcement reduced action-audited terminal success
+from 17/252 episodes to zero and attacker-directed execution from 42/252 to
+zero. Legitimate completion fell slightly, from 154/252 to 149/252, while secure
+utility increased from 138/252 to 149/252
+(\cref{tab:agentdojo-e2e,tab:wasp-27b}). The utility effects differ: AgentDojo
+improved task completion, whereas WASP incurred a small aggregate cost. Even
+so, both evaluations show the same broad outcome: violations fell sharply
+without a collapse in useful task completion.
 
-The benchmarks use different interfaces, attack families, and success oracles,
-so their absolute rates should not be pooled. Their agreement is most
-informative at the architectural level. In both settings, the planner remained
-free to choose useful actions, but it was not the sole authority over which
-observations could shape its next plan or which effects could reach the
-executor. The central implication is therefore a separation of model capability
-from execution authority: the model plans, while an independent runtime governs
-the points at which untrusted information enters and privileged effects leave
-the agent loop.
+The two benchmarks should not be compared rate for rate, since their
+interfaces, attack families, and success oracles differ. What matters is that
+both point to the same architectural lesson. The planner remained free to
+choose useful actions, but it was not left to decide which observations shaped
+the next plan or which effects reached the executor. Sentinel separates
+capability from authority. The model plans; an independent runtime governs the
+points at which untrusted information enters and privileged effects leave the
+agent loop.
 
 \section{Interpreting security and utility}
 
