@@ -120,6 +120,11 @@ independent validator are indexed from `sentinel/EVALS.md` and
   Discussion identifies that study as the next step after the dissertation,
   while also stating the preparation required before participant research and
   keeping human effectiveness outside the evidence reported here.
+- Chapter 7 now answers the research question immediately and uses the evidence
+  to interpret security and utility, the two enforcement points, policy and
+  semantic limits, system-level trade-offs, validity, and future work. Detailed
+  mechanism descriptions and result walkthroughs remain in Chapters 4 and 6;
+  the Discussion retains only the empirical anchors needed for its analysis.
 - The active-run and password-handover captures came from the dedicated Chrome
   instance launched by `sentinel/start.sh`. The replacement handover capture is
   local run `8d78c714`: the model navigated to a distinct synthetic login page
@@ -134,15 +139,15 @@ independent validator are indexed from `sentinel/EVALS.md` and
 - The approval and Activity views come from the deterministic local
   walkthrough. Their concise source mapping, reproduction commands, and image
   hashes are in `FIGURE-PROVENANCE.md`.
-- Tectonic produced a 65-page A4 PDF with the expected title, author, subject,
+- Tectonic produced a 64-page A4 PDF with the expected title, author, subject,
   and keywords. Under the formal exclusions supplied for the dissertation, the
-  counted text is 49 pages and meets the 50-page ceiling: the Lists of Figures
-  and Tables plus Arabic pages 1--47. Appendix A begins on Arabic page 48 and
-  the bibliography on page 53, so both are outside that count. Concise
+  counted text is 48 pages and meets the 50-page ceiling: the Lists of Figures
+  and Tables plus Arabic pages 1--46. Appendix A begins on Arabic page 47 and
+  the bibliography on page 52, so both are outside that count. Concise
   captions keep the Lists of Figures and Tables compact and leave detailed
   interpretation in the surrounding prose.
 - Both `sentinel-submission.tex` and the official `project_report - pg.tex`
-  root compile to 65 A4 pages with identical extracted page text and page
+  root compile to 64 A4 pages with identical extracted page text and page
   geometry. All pages were rendered for visual inspection, with front matter,
   Figure 4.1, the control-plane views, the result tables and graph, the ethics
   subsection, and the assurance appendix checked again at higher
@@ -157,7 +162,7 @@ independent validator are indexed from `sentinel/EVALS.md` and
 - The release copy is
   `output/pdf/Sentinel-Independent-Runtime-Enforcement-for-Browser-Agents-submission-ready.pdf`
   with SHA-256
-  `bcae9f059b264e38866becca227048317bd4588d9d70f5f25ba162d58628485c`.
+  `0b8f1eaa9c727414556bad48c9d94ff152c4ef569b6859eabb03c6bec184ba09`.
 - The title page records the supervisor as Arthur below the submission date.
 
 ## Final gate
