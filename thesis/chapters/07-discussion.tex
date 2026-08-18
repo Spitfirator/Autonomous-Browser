@@ -122,52 +122,44 @@ planned.
 
 \section{Implications for agent architecture}
 
-Sentinel occupies a deliberate middle ground among the systems compared in
-\cref{tab:system-comparison}. It does not inherit CaMeL's program-based or
-Fides's information-flow guarantees: it preserves a free-form browser loop
-rather than introducing either trusted control and data flow or formal label
-propagation. Its contribution is correspondingly empirical: independently
-governed observation rewriting, immediate pre-tool enforcement, selective
-human authority, and paired audit operated together while retaining useful task
-performance. Structured planners can offer stronger guarantees where their
-trusted abstraction applies; an executor-side wrapper offers a practical
-control point when an existing agent exposes no security-specific reasoning
-interface.
+Sentinel's place among the systems in \cref{tab:system-comparison} is defined
+by a deliberate trade-off. CaMeL and Fides offer stronger formal guarantees
+within their supported abstractions by restructuring planning around trusted
+programs, capabilities, or information-flow labels. Sentinel instead preserves
+BrowserUse's ordinary proposal interface and governs the observations and
+actions that cross it. This choice makes enforcement compatible with a
+free-form browser loop, although its assurance remains empirical and
+policy-bounded. The experiments show how the complete governed configuration
+behaved under the tested conditions; they do not provide a formal guarantee for
+every browser trajectory.
 
-That practical position also exposes a semantic limit. In WASP, legitimate and
-attacker-directed trajectories often converge on the same-origin forms and
-controls. Treating every effect following a detector finding as dangerous would
-turn untrusted provenance into broad denial of service. Sentinel instead
-reserves deterministic rules for independently sensitive sinks, including
-prohibited cross-origin flow, protected values, unsafe schemes, local files,
-code, and configured consequential targets. These rules can establish
-compliance with encoded constraints, but they cannot prove that every allowed
-effect advances an open-ended user goal. A natural-looking instruction may
-evade detection, and a locally permissible click may have consequences that are
-not visible in the DOM.
+The trade-off is clearest when an action is permitted by encoded policy but its
+purpose remains ambiguous. A legitimate task and an injected goal can call for
+the same form, button, or origin. Consequently, provenance alone cannot
+establish whether the effect serves the operator. Sentinel can enforce explicit
+constraints on domains, protected-data handling, unsafe navigation schemes,
+and configured approval thresholds. It cannot prove that every allowed click
+advances an open-ended goal, and an unfamiliar instruction may still evade
+detection. Task Shield, MELON, and DRIFT suggest a complementary direction by
+testing actions against task-derived or counterfactual representations
+~\cite{jia2025taskshield,zhu2025melon,li2025drift}. An isolated semantic monitor
+could assess a proposal against a trusted task representation, while Sentinel
+retains final authority over deterministic policy and live browser state. Such
+a hybrid would be useful only if it improved coverage without excessive false
+intervention or loss of useful autonomy.
 
-This gap suggests a complementary rather than replacement architecture. Task
-Shield, MELON, and DRIFT use task-derived or counterfactual abstractions to
-reason about semantic alignment
-~\cite{jia2025taskshield,zhu2025melon,li2025drift}. An independently isolated
-component could use a trusted task representation to assess ambiguous effects,
-while Sentinel continues to enforce non-negotiable executor policy and binds
-authority to live browser state. Such a hybrid could reduce reliance on surface
-signatures without returning the final decision to the acting model. Its value
-would depend, however, on whether the semantic monitor adds meaningful coverage
-without enough false intervention to erase the utility retained here.
-
-Selective human authority addresses a related boundary: some operations are
-permissible yet consequential, while others require the operator rather than
-the agent to act. Narrow approval, direct takeover, hard refusal, and unresolved
-observation quarantine are therefore distinct authority states, not variations
-of one confirmation dialogue. Server-owned scope, expiry, live revalidation,
-and paired audit preserve that distinction (\cref{sec:human-authority}). Tests
-and walkthroughs establish that these mechanisms fail closed and record their
-outcomes. They do not establish that people will understand the distinctions,
-respond appropriately, or avoid warning fatigue. The authority workflow is
-complete as a technical boundary within the thesis scope; its human
-effectiveness remains an empirical question.
+Selective human authority addresses a related class of uncertainty. Some
+operations are permissible but consequential, while others require the
+operator to act directly. Sentinel therefore distinguishes narrow approval, a
+direct human step, hard refusal, and quarantine of an unresolved observation.
+Each state grants different authority, so collapsing them into one confirmation
+prompt would obscure whether the agent, the operator, or neither may proceed.
+Tests and walkthroughs establish the mechanics of these paths, including
+bounded approval, live revalidation, audit, and fail-closed resolution
+(\cref{sec:human-authority}). They do not show whether people will interpret
+the distinctions correctly or avoid warning fatigue. The architecture supplies
+the technical basis for a future human study; its human effectiveness remains
+an open empirical question.
 
 \section{Limitations and validity}
 \label{sec:discussion-limitations}
