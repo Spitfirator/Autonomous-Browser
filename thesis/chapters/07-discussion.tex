@@ -35,47 +35,45 @@ agent loop.
 
 \section{Interpreting security and utility}
 
-The most important empirical pattern is not simply that attacker success fell,
-but that containment did not require blanket refusal. Indirect prompt injection
-competes with the user's task for context, steps, and subsequent decisions.
-Removing detected hostile influence before the next plan therefore offers a
-plausible explanation for why enforcement can recover useful work as well as
-suppress an attacker goal. The AgentDojo utility gains are consistent with this
-account. However, WASP's small aggregate utility loss and its variation between
-seeds show that the benefit is neither automatic nor uniform. Because the
-experiments did not isolate intervention timing, this remains an interpretation
-of the joint results rather than an independently demonstrated causal effect.
+The main empirical result is that lower attacker success did not come from
+refusing every attacked task. Indirect prompt injection competes with the
+user's goal for context, steps, and later decisions. Removing detected hostile
+content before the agent plans again may therefore help it return to useful
+work while also suppressing the attacker's goal. The AgentDojo utility gains
+fit this explanation. WASP, however, recorded a small aggregate utility loss
+that varied across seeds, so the benefit was neither automatic nor uniform.
+The experiments did not isolate intervention timing, which means this account
+remains an interpretation of the combined results, not a demonstrated causal
+mechanism.
 
-This distinction also determines the appropriate counterfactual. Clean utility
-estimates what a model can achieve without an attack; it does not reveal what
-the same attacked trajectory would have achieved without enforcement. That
-question is addressed by the matched off/enforce or off/full comparison. Secure
-utility adds a further requirement by counting only episodes in which the
-user's objective succeeds and the attacker's does not. Consequently, a defence
-can lower ordinary utility yet still raise secure utility if it removes
-compromised completions, just as an aggregate utility gain can conceal
-task-level regressions. Security and usefulness should therefore be interpreted
-together, supported by paired gains and losses rather than opposing headline
-rates.
+The utility measures answer different questions. Clean utility estimates what a
+model can achieve when no attack is present, but it does not show how the same
+attacked task would fare without enforcement. The relevant comparison comes
+from matched off/enforce or off/full runs. Secure utility is stricter: it counts
+an episode only when the user's objective succeeds and the attacker's does not.
+A defence can therefore reduce ordinary utility yet improve secure utility by
+removing compromised completions. At the same time, an aggregate utility gain
+can hide regressions on individual tasks. Security and usefulness need to be
+read together, with paired gains and losses providing the link between them.
 
-Terminal attack success is necessary but, for the same reason, insufficient.
-In the WASP baseline, 42 episodes executed an attacker-directed action, whereas
-only 17 completed the final attacker objective. The remaining 25 are direct
-examples of the benchmark's ``security by incompetence'': the browser had
-already acted for the attacker, but the agent failed to complete the goal
-~\cite{evtimov2025wasp}. Action-level telemetry exposes this otherwise hidden
-failure and distinguishes a model proposal from an effect that crossed the
-privileged boundary. Nevertheless, the replay is conservative. It matches the
-instantiated attacker goals and cannot identify reasoning-only diversion or
-every semantically equivalent action.
+Terminal attack success tells only part of the story. In the WASP baseline, 42
+episodes executed an attacker-directed action, yet only 17 reached the final
+attacker objective. In the other 25, the browser had already acted for the
+attacker, but the agent failed to complete the goal. WASP describes this as
+``security by incompetence''~\cite{evtimov2025wasp}. Action-level telemetry
+makes this hidden failure visible and separates a model proposal from an effect
+that crossed the privileged boundary. The replay still has limits: it matches
+the attacker goals instantiated by the benchmark and cannot identify
+reasoning-only diversion or every semantically equivalent action.
 
-This joint view also limits cross-model interpretation. A more capable agent
-may complete more legitimate and malicious goals, while a weaker agent can
-appear secure because it fails at both. Moreover, the evaluated configurations
-differ in planning and recovery behaviour as well as parameter count. Neither
-model size nor a low off-condition attack rate is therefore an independent
-security axis. The defensible comparison remains within each matched model and
-reports useful completion, attacker outcomes, and executed effects together.
+The same evidence also cautions against simple cross-model comparisons. A more
+capable agent may complete more legitimate and malicious goals; a weaker one
+can appear secure simply because it fails at both. The evaluated configurations
+also differ in planning and recovery behaviour, not just in parameter count.
+Model size and a low off-condition attack rate therefore cannot be treated as
+independent measures of security. A defensible comparison stays within each
+matched model and considers useful completion, attacker outcomes, and executed
+effects together.
 
 \section{What the two enforcement boundaries contribute}
 
