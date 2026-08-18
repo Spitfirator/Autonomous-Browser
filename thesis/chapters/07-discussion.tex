@@ -77,56 +77,48 @@ effects together.
 
 \section{What the two enforcement boundaries contribute}
 
-Observation and action governance address related but distinct failure modes.
-The observation boundary changes the information on which the next plan is
-conditioned; the action boundary decides whether a concrete proposal may cross
-into the privileged executor. This distinction matters because an injected
-instruction can damage the trajectory before it produces an obviously
-prohibited action, whereas a safe-looking observation cannot guarantee that the
-model's eventual proposal is permissible.
+Observation and action governance protect different points in the agent loop.
+The observation boundary governs what reaches the planner; the action boundary
+governs which proposals reach the privileged executor. Both matter. An injected
+instruction can distort a trajectory before it produces an obviously
+prohibited action, while an apparently safe observation says nothing about
+whether the eventual action will be permissible.
 
-The policy-only/full contrast provides the clearest evidence for this division.
-Policy-only is not a pure action-policy baseline: it retains boundary
-neutralisation, a detector warning, and action policy, while full adds the
-verified browser rewrite and suppresses the warning after confirmed removal.
-Within that fixed scaffold, the comparison isolates the configured sanitisation
-increment. Aggregate utility remained 149/252 in both conditions, but episodes
-with attacker-directed proposals and executions fell from 15/252 under
-policy-only to zero under full; terminal attacker success changed from 1/252 to
-zero (\cref{tab:wasp-27b,tab:wasp-seeds}). The larger trajectory difference
-would therefore be almost invisible if evaluation stopped at the terminal
-oracle.
+The WASP policy-only/full comparison gives the clearest evidence for the
+observation boundary. Policy-only retained boundary neutralisation, the
+detector warning, and action policy, whereas full added verified browser
+sanitisation and removed the warning after confirmed removal. The comparison
+therefore isolates the configured sanitisation increment within that fixed
+scaffold; it is not a pure action-policy ablation. Aggregate utility remained
+149/252 in both conditions, but attacker-directed proposals and executions fell
+from 15/252 to zero, while terminal attacker success changed from 1/252 to zero
+(\cref{tab:wasp-27b,tab:wasp-seeds}). The trajectory evidence matters here: a
+terminal score alone would hide most of the difference. An earlier 9B
+development comparison points in the same direction: its combined
+policy-and-warning condition left attack success unchanged and did not reduce
+attacker-directed execution while hostile content remained in context.
 
-Historical development evidence reinforces this interpretation without turning
-it into a causal ablation. In the 9B sequence, retaining hostile content while
-warning the model did not improve terminal or intermediate attack outcomes over
-off. Because the middleware also changed across that sequence, the warning's
-independent effect cannot be estimated. Its value is instead negative and
-design-oriented: it shows why a warning around retained hostile content should
-not be treated as equivalent to attributable removal followed by re-detection.
+Sanitisation, however, does not remove the need for action governance. A
+detector can miss an unfamiliar instruction, a proposal may depend on earlier
+state, and an unrelated model error can still reach a privileged tool.
+Pre-execution policy can enforce stable constraints in those cases without
+reconstructing the model's full intention; the sensitive-data-flow blocks in
+AgentDojo illustrate that backstop. The evaluation did not include a comparator
+that passed hostile content to the model unchanged and attempted to contain the
+attack solely through pre-execution action checks. The results therefore show
+that the two boundaries provided different forms of control in the tested
+configuration; they do not establish that observation sanitisation is always
+more effective than action-only enforcement.
 
-At the same time, successful sanitisation does not make action governance
-redundant. A detector may miss an unfamiliar instruction, a proposal may depend
-on earlier state, and an unrelated model error can reach the same privileged
-tool. Immediate pre-execution policy can still enforce stable constraints
-without reconstructing the model's full intention. The few
-sensitive-data-flow blocks recorded in the AgentDojo enforce runs illustrate
-this backstop. Conversely, action-only enforcement would leave hostile content
-inside the planning context and require policy to recognise its effects one by
-one. That action-only system was not evaluated here, so the results do not show
-that sanitisation generally outperforms later vetoes. They show more narrowly
-that, in the tested configuration, the two boundaries contributed different
-forms of control.
-
-Their composition also clarifies Sentinel's model independence. The planner
-need not expose hidden reasoning or implement a security-specific interface; it
-receives a governed observation and returns the ordinary BrowserUse tool
-proposal. Sentinel can then evaluate deterministic context that would be
-unsuitable to delegate through the prompt, including protected-value classes,
-local file properties, target origins, and live browser state. Model
-independence therefore means compatibility at the enforcement interface, not
-equal performance across models: the model still determines how well the
-remaining task is planned.
+Together, the boundaries also explain the practical sense in which Sentinel is
+model-independent. The planner receives a governed observation and returns an
+ordinary BrowserUse tool proposal; it need not expose hidden reasoning or
+implement a security-specific interface. The runtime can then evaluate
+deterministic context such as protected-value classes, local file properties,
+target origins, and live browser state. Model independence here means
+compatibility at the enforcement interface. It does not mean equal performance
+across models, since the model still determines how well the remaining task is
+planned.
 
 \section{Implications for agent architecture}
 
