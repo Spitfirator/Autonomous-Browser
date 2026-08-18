@@ -3,34 +3,36 @@
 
 \section{Answer to the research question}
 
-Taken together, the results support a qualified but positive answer to the
-research question. Within the evaluated boundary, independent runtime
-enforcement reduced prompt-injection-driven violations while retaining useful
-task performance. This conclusion is deliberately narrower than claiming that
-Sentinel solves prompt injection: it concerns the tested models, tasks, and
-textual observation channels, and rests on a recurring pattern across two
-complementary evaluation settings rather than on any single zero-attack result.
+Taken together, the findings support a qualified but positive answer to the
+research question. Under the tested conditions, independent runtime enforcement
+reduced prompt-injection-driven violations without removing the agent's ability
+to complete useful work. This claim is deliberately narrower than saying that
+Sentinel solves prompt injection. It is limited to the tested models, tasks,
+and textual observation channels. The conclusion draws on converging evidence
+from two complementary evaluations, not on any single zero-attack result.
 
-AgentDojo provides the broader controlled comparison. Across all three matched
-model configurations, enforcement lowered attacker success while increasing
-both utility and secure utility. WASP then tests whether the same pattern
-transfers to a browser-native loop. Across three seeds, full enforcement
-reduced action-audited terminal success from 17/252 episodes to zero and
-attacker-directed execution from 42/252 to zero. Legitimate completion changed
-from 154/252 to 149/252, while secure utility rose from 138/252 to 149/252
-(\cref{tab:agentdojo-e2e,tab:wasp-27b}). Thus, the browser-native result shows a
-large change in evaluated security outcomes alongside a small aggregate utility
-cost, rather than security achieved by making the agent inactive.
+AgentDojo provides the broader controlled comparison: across all three matched
+model configurations, enforcement reduced attacker success and increased both
+utility and secure utility. WASP then tests whether this broader
+security--utility result carries over to a browser-native loop. Across three
+seeds, full enforcement reduced
+action-audited terminal success from 17/252 episodes to zero and
+attacker-directed execution from 42/252 to zero. Although legitimate completion
+fell slightly, from 154/252 to 149/252, secure utility rose from 138/252 to
+149/252 (\cref{tab:agentdojo-e2e,tab:wasp-27b}). The benchmarks therefore do not
+show identical utility effects. They do, however, support the same broader
+conclusion: evaluated violations fell sharply while useful task completion
+remained close to the baseline in aggregate.
 
-The absolute rates from the two benchmarks should not be pooled because their
-interfaces, attack families, and success oracles differ. Their agreement is
-more useful at the architectural level. In both settings, a probabilistic
-planner retained freedom to choose useful actions but did not decide alone
-which observations could shape its plan or which proposed effects received
-authority to execute. The central contribution is therefore a separation of
-model capability from execution authority: the model remains responsible for
-planning, while an independent layer governs the boundaries at which untrusted
-information enters and privileged effects leave the agent loop.
+The benchmarks use different interfaces, attack families, and success oracles,
+so their absolute rates should not be pooled. Their agreement is most
+informative at the architectural level. In both settings, the planner remained
+free to choose useful actions, but it was not the sole authority over which
+observations could shape its next plan or which effects could reach the
+executor. The central implication is therefore a separation of model capability
+from execution authority: the model plans, while an independent runtime governs
+the points at which untrusted information enters and privileged effects leave
+the agent loop.
 
 \section{Interpreting security and utility}
 
