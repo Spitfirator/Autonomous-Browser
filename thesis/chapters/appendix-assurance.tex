@@ -1,188 +1,58 @@
-\chapter{Technical assurance and reproducibility}
+\chapter{Evaluation assurance and provenance}
 \label{app:assurance}
 
-This appendix retains component evidence, protocol checks, and exact
-provenance needed to audit the main argument. It introduces no additional
-headline campaign. In the aggregate component replay, benign tasks recur across
-attack families; its benign outcome therefore uses the 97 distinct tasks.
+Not every safeguard described in this dissertation was exercised in every
+experiment. The table below separates the controls recorded in the frozen
+campaigns from those supported only by implementation tests, preventing later
+hardening from being credited to earlier results.
 
-\section{Component and policy replays}
+\section{Mechanism and evidence boundaries}
 
-\begin{table}[htbp]
+\begin{table}[!htbp]
 \centering
-\caption{AgentDojo v1 model-free component replay.}
-\label{tab:component-replay}
-\small
-\begin{tabular}{@{}lr@{}}
-\toprule
-Measure & Result \\
-\midrule
-Attack families & 16 \\
-Security cases across families & 7,404 \\
-Distinct benign tasks & 97 \\
-Detection precision / recall / F1 & 1.000 / 1.000 / 1.000 \\
-Security-case hard-block outcome & 7,404/7,404 \\
-Benign hard blocks & 0/97 \\
-Benign approval-triggering tasks & 1/97 (1.03\%) \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-The replay verifies the configured component contract on a development corpus.
-It contains no acting model and therefore cannot measure re-planning or native
-task success.
-
-The detector-v2 scorecard includes WASP development inputs collected after the
-live accessibility representation was inspected.
-
-\begin{table}[htbp]
-\centering
-\caption{Detector-v2 regression scorecard.}
-\label{tab:detector-scorecard}
-\small
-\begin{tabular}{@{}lrrrrr@{}}
-\toprule
-Corpus & Attack & Benign & Recall & Precision & FPR \\
-\midrule
-AgentDojo security & 130 & 58 & 1.000 & 1.000 & 0.000 \\
-AgentDojo v1 tool knowledge & 629 & 97 & 1.000 & 1.000 & 0.000 \\
-WASP security & 84 & 39 & 1.000 & 0.988 & 0.026 \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-The live-representation correction reproduced BrowserUse's href-free,
-split-line accessibility text for URL-format attacks. It changed 40 missed
-WASP classifications and two already-detected score bands while leaving all
-AgentDojo classifications and scores unchanged. The retained WASP false
-positive was a legitimate GitLab profile page containing password, key, and
-privacy language.
-
-An action-gating replay explains why observation sanitisation remained the
-primary browser control. WASP contains 20 cross-origin terminal goals and 64
-same-origin form goals. Gating every tainted side effect produced a median of
-eight requests per affected task (95th percentile 28, maximum 28) and exhausted
-the four-request prompt budget on 35 of 50 replayed tasks. Requiring an
-independent amplified sink reduced the median and 95th percentile to zero,
-with a maximum of two and no budget exhaustion, while retaining the
-cross-origin coverage. The replay did not change AgentDojo classifications.
-
-\section{Current authority and failure semantics}
-
-\begin{longtable}{@{}L{0.28\textwidth}L{0.66\textwidth}@{}}
-\caption{Fail-closed authority outcomes.}
-\label{tab:interface-failures}\\
-\toprule
-Condition & Runtime outcome \\
-\midrule
-\endfirsthead
-\toprule
-Condition & Runtime outcome \\
-\midrule
-\endhead
-Panel closes or WebSocket disconnects &
-The server request remains pending and a reconnecting snapshot reconstructs it. \\
-Approval or takeover expires &
-The server emits a timeout outcome; the withheld agent action does not execute. \\
-Stop or forced reset during a wait &
-Outstanding futures resolve as cancelled and cannot later supply authority. \\
-Live URL, target, parameter, file, or policy changes after approval &
-Fresh preflight recomputes risk and policy and rejects a changed or newly
-prohibited scope. \\
-Malformed, stale, or duplicate response &
-The API cannot resolve a missing or completed request identifier. \\
-Authority channel unavailable &
-The governed path blocks or terminates according to policy; it does not
-continue autonomously. \\
-Unresolved current browser observation &
-The provider call is skipped, the observation is discarded, and only a fresh
-capture can resume progress. \\
-Unresolved bounded extraction or history value &
-The complete value is omitted and replaced with a fixed marker. \\
-\bottomrule
-\end{longtable}
-
-The default approval budget is four requests per run. It is a configurable
-lifecycle bound and makes no behavioural claim about operator attention.
-Reusable grants remain run-local, expiring, use-capped, and bound to action,
-origin, capabilities, taint, protected-data classes, target fingerprint, and
-applicable parameter or content digests.
-
-\FloatBarrier
-\section{Implementation verification}
-\label{sec:implementation-verification}
-
-These gates exercise the current approval, takeover, incident, extraction,
-secret-channel, cancellation, navigation, audit, trace, and client contracts.
-They verify source behaviour without altering the frozen benchmark rows.
-The machine-readable verification record preserves commands, outputs, tool
-versions, repository revision, and source hashes.
-
-\begin{table}[htbp]
-\centering
-\caption{Submission-time implementation checks.}
-\label{tab:implementation-verification}
-\small
-\begin{tabularx}{\textwidth}{@{}L{0.38\textwidth}Y@{}}
-\toprule
-Gate & Result \\
-\midrule
-Complete Sentinel Python suite & 243 passed \\
-Deterministic security smoke & 5/5 expected cases; detection F1 and verdict
-accuracy 1.000; 0/2 benign interventions \\
-WASP campaign, replication, and intermediate suites & 52 passed \\
-WASP offline preflight & Pinned source, scenario matrix, reset policy, and
-dependency checks passed \\
-Chrome extension production build & TypeScript check and Vite build passed \\
-\bottomrule
-\end{tabularx}
-\end{table}
-
-\clearpage
-\section{Mechanism-to-evidence map}
-
-\begin{table}[htbp]
-\centering
-\caption{Implementation-to-evidence chronology.}
+\caption{Relationship between implemented mechanisms and reported evidence.}
 \label{tab:chronology}
 \small
 \begin{tabularx}{\textwidth}{@{}L{0.35\textwidth}L{0.24\textwidth}Y@{}}
 \toprule
-Mechanism & Evidence status & Interpretation \\
+Mechanism & Evidence status & Supported interpretation \\
 \midrule
-Executor-side policy and action audit & Present in reported runs &
-Represented by the recorded middleware and telemetry of each row. \\
-AgentDojo tool-result sanitisation & Present in AgentDojo runs &
-Primary recorded mechanism in the controlled tool-agent campaigns. \\
-WASP observation sanitisation and verification & Present in sanitisation rows &
-Primary recorded mechanism in the final browser rows. \\
-DOM/accessibility-only browser profile & Present in WASP rows &
-No reported WASP row supplied screenshot pixels to the interactive model. \\
-Unresolved-observation incident and bounded-value omission & Implemented; not
-benchmark-exercised &
-Implemented and tested; not exercised by the final WASP rows, which recorded no
-residual or unattributable sanitisation outcome. \\
-Human-only detected-secret takeover, upload inspection, approval
-revalidation, cancellation, and special-URL hardening & Implemented; not
-benchmark-exercised & Current tested behaviour without an attributed campaign
-effect. \\
+Executor-side policy and action audit & Recorded in AgentDojo and WASP runs &
+The reported results reflect the frozen middleware and telemetry used in each
+campaign. \\
+AgentDojo tool-result sanitisation & Exercised in AgentDojo &
+The tool-agent campaigns evaluate sanitisation together with executor-side
+policy. \\
+WASP observation sanitisation and verification & Exercised in the full
+condition & Comparing full with policy-only isolates the additional configured
+sanitisation treatment. \\
+DOM/accessibility-only browser profile & Part of the final WASP profile &
+The browser results do not cover instructions supplied only through pixels. \\
+Unresolved-observation incidents and bounded-value omission & Implemented and
+tested; not triggered by final WASP & No effect is attributed to these controls,
+since the final rows recorded no residual or unattributable outcome. \\
+Detected-secret takeover, upload inspection, approval revalidation,
+cancellation, and special-URL hardening & Implemented and tested; not
+benchmark-exercised & Implementation tests verify these controls, but no
+benchmark effect is attributed to them. \\
 \bottomrule
 \end{tabularx}
 \end{table}
 
-\clearpage
+\FloatBarrier
 \section{Campaign provenance}
 \label{sec:appendix-wasp-provenance}
 
-The AgentDojo table uses one thinking/32K profile for all three models: a
-32,768-token context, 4,096-token output cap, temperature 0.6, top-$p$ 0.95,
-and seed 0. The final WASP experiment uses the profile in
-\cref{tab:wasp-profile}; its native-thinking stream is separated from the
-schema-validated action output and is neither persisted nor treated as an
-action. Exact immutable identifiers and source hashes remain in the checked-in
-machine-readable result record.
+Experimental settings matter because rows with different middleware or
+provenance cannot be pooled. The AgentDojo table uses one thinking/32K profile
+for all three models: a 32,768-token context, 4,096-token output cap,
+temperature 0.6, top-$p$ 0.95, and seed 0. The final WASP experiment uses the
+profile in \cref{tab:wasp-profile}. Its native-thinking stream is separated
+from the schema-validated action output and is neither persisted nor treated as
+an action. Exact immutable identifiers and source hashes remain in the
+checked-in machine-readable result record.
 
-\begin{table}[htbp]
+\begin{table}[!htbp]
 \centering
 \caption{Final controlled WASP profile.}
 \label{tab:wasp-profile}
@@ -201,18 +71,21 @@ injection formats = 84 episodes per seed and condition \\
 Conditions & Off; policy-only without browser sanitisation; full enforcement
 with an otherwise identical policy \\
 Coverage & 252 episodes per condition; 756 native-scored episodes overall \\
-Authority mode & No participant; approval and handover outcomes are scripted
-benchmark controls \\
+Authority mode & \texttt{participant=none}; no human participant; approval and
+handover outcomes are scripted benchmark controls \\
 Reset and order & Pristine website reset before every 21-task cell; fixed cell
 order \\
 \bottomrule
 \end{tabularx}
 \end{table}
 
+\FloatBarrier
 The controller binds seed, condition, model, policy, generated inputs,
-middleware, benchmark, and scorer identity to each checkpoint; aggregation
-fails on incomplete coverage or provenance drift. The final curated record is
+middleware, benchmark, and scorer identity to each checkpoint. Aggregation
+fails on incomplete coverage or provenance drift, protecting the reported
+denominators from partial or mixed-provenance cells. The final curated record
+is
 \nolinkurl{sentinel/evals/wasp/results/wasp-qwen35-27b-multiseed-thinking8k-replication-v2.json}.
 Earlier 9B development rows and the prior single-seed 27B comparison remain
-separate historical records and are not pooled. No WASP human-participant or
-oracle-participant result is reported.
+separate historical records and are not pooled. Finally, no WASP human-
+participant or oracle-participant result is reported.

@@ -138,7 +138,8 @@ oracles remain unchanged.
 Before model execution, component replay applies the real detector and policy
 engine to 7,404 security cases from 16 public non-manual attack families and,
 separately, to 97 benign tasks. A second scorecard replays the exact AgentDojo
-and WASP text representations. \Cref{app:assurance} reports the details.
+and WASP text representations. Their outcomes and limitations are reported in
+\cref{sec:component-evidence}.
 
 The end-to-end stage uses Qwen 3.5 4B, 9B, and 27B~\cite{qwen3.5}. For each
 model, 97 clean tasks establish capability without injection, while 629
@@ -218,9 +219,8 @@ reduce this possible source of bias.
 To protect the reported denominators, a cell entered the analysis only when
 its task coverage, native scores, reports, and frozen provenance were mutually
 consistent. Incomplete or failed cells were retained as operational records
-but excluded from the results. The corresponding admission checks are
-documented in
-\cref{sec:implementation-verification,sec:appendix-wasp-provenance}.
+but excluded from the results. The corresponding admission and provenance
+checks are documented in \cref{sec:appendix-wasp-provenance}.
 
 Provenance controls address a different risk. Failures observed during
 AgentDojo and WASP development informed several detector rules and

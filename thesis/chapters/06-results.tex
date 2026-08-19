@@ -2,6 +2,7 @@
 \label{chap:results}
 
 \section{Component evidence}
+\label{sec:component-evidence}
 
 Before interpreting agent behaviour, the evaluation first checks that the
 configured guards behaved as intended. The model-free AgentDojo replay covered
@@ -13,8 +14,10 @@ representations produced by both adapters. Recall was 1.000 with no false
 positives on the two AgentDojo corpora. On the WASP development corpus, recall
 was 1.000 and precision was 0.988, with one false positive among 39 benign
 pages. These WASP figures are detector-development evidence, not outcomes from
-the final three-seed browser experiment. Detailed component and action-gating
-results appear in \cref{app:assurance}.
+the final three-seed browser experiment. An action-gating replay provided a
+separate design check: holding every tainted side effect exhausted the
+four-request budget on 35 of 50 replayed tasks, whereas the selective rule
+preserved cross-origin coverage and exhausted it on none.
 
 Together, the replay and scorecard establish two conditions for interpreting
 the end-to-end results. First, the configured policy produced its intended
