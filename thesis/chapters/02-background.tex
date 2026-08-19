@@ -8,12 +8,12 @@ observations, decisions, tool calls, and results. ReAct made the
 reasoning--action interleaving explicit, while Toolformer studied how models
 can learn to invoke tools~\cite{yao2023react,schick2023toolformer}. Browser
 agents extend that loop to URLs, page representations, interactive elements,
-downloads, uploads, and code-capable actions. WebArena and WorkArena evaluate
-such agents through executable environments and state-based task oracles
-~\cite{zhou2024webarena,drouin2024workarena}. Their structure highlights two
-properties relevant here: success is an environmental outcome, not a
-plausible response, and observations contain data outside the operator's
-control.
+and code-capable actions. WebArena and WorkArena evaluate such agents through
+executable environments and task-specific evaluators, including state and
+answer checks~\cite{zhou2024webarena,drouin2024workarena}. Their structure
+highlights two properties relevant here: success is a validated task outcome,
+not a plausible response, and observations contain data outside the
+operator's control.
 
 Prompt injection exploits the fact that instructions and data share the same
 model context. Direct attacks alter the user's prompt; indirect attacks arrive
@@ -23,16 +23,18 @@ content, including disclosure and propagation effects
 ~\cite{greshake2023indirect}. A browser-agent attacker can place equivalent
 instructions in a page, user-generated record, link label, or stored result.
 The agent encounters them while acting with the user's delegated authority. For
-example, an attacker-controlled project comment can instruct an agent that was
-asked to summarise an issue to open account settings and change a security
-property instead~\cite{evtimov2025wasp}. The page supplies the instruction, but
-the resulting action is performed through the user's browser session.
+example, injected issue content can divert an agent asked to comment on an
+issue towards account settings, with the attacker goal of making the benchmark
+user's profile public~\cite{evtimov2025wasp}. The page supplies the instruction,
+but the navigation occurs within the benchmark user's authenticated sandbox
+session.
 
 This differs from conventional parser injection. A browser agent is
 deliberately expected to understand previously unseen prose, so a fixed grammar
-cannot cleanly separate every instruction from every datum. Delimiters can mark
-provenance, but page text can imitate them and the model must still decide
-which instruction has authority. Formalisations and benchmarks identify this
+cannot by itself establish which source has authority. Delimiters can mark the
+distinction between trusted instructions and untrusted input, but page text can
+imitate them and the model must still decide which instruction has authority.
+Formalisations and benchmarks identify this
 instruction--data confusion as a central mechanism
 ~\cite{liu2024formalizing,yi2025bipia}. AgentDojo evaluates paired user and
 attacker goals in executable tool environments; WASP evaluates goal hijacking
@@ -44,7 +46,8 @@ appear secure under terminal attack success alone.
 The threat also extends beyond the current page: extracted page text and tool
 results can cross secondary model calls, while stored history can reintroduce
 hostile content later. Multimodal agents add pixels: image-hijack work shows that
-instructions embedded in images can redirect vision-language systems
+specially optimised adversarial images can carry the behavioural effect of a
+chosen text prompt and redirect a vision-language model's behaviour
 ~\cite{bailey2024imagehijacks}. A filter over the Document Object Model (DOM),
 the browser's structured representation of a page, cannot remove text rendered
 only in pixels. Visual observations therefore form a distinct threat surface
@@ -62,12 +65,13 @@ diverted but lacked the capability or remaining steps to finish the attack.
 
 AgentDojo addresses this by pairing realistic user tasks with attacker goals
 in executable banking, messaging, travel, and workspace environments
-~\cite{debenedetti2024agentdojo}. Its native oracles score both goals against
-the resulting state. WASP applies a similar distinction to browser agents and
-records whether a trajectory begins serving the attacker before the terminal
-goal is achieved~\cite{evtimov2025wasp}. The two benchmarks therefore
-complement one another: AgentDojo isolates controlled tool-agent effects,
-whereas WASP adds browser-native observations, navigation, and re-planning.
+~\cite{debenedetti2024agentdojo}. Its native oracles score both goals through
+task-specific checks that may inspect environment state and model output. WASP
+applies a similar distinction to browser agents and uses an LLM judge to assess
+whether a trajectory has been diverted before the terminal goal is achieved
+~\cite{evtimov2025wasp}. The two benchmarks therefore complement one another:
+AgentDojo provides controlled evidence about tool-agent effects, whereas WASP
+adds browser-native observations, navigation, and re-planning.
 Their absolute rates cannot be pooled because their tasks, action spaces, and
 oracles differ. ST-WebAgentBench broadens the picture further by studying
 policy compliance through Completion Under Policy and Risk Ratio
@@ -77,10 +81,11 @@ different parts of system behaviour.
 
 This dissertation therefore treats security and utility as a joint outcome.
 It reports native user completion, native attacker success, useful-and-secure
-completion, attacker-directed attempts and executions, and the interventions
-that changed the trajectory. The combination guards against two misleading
-conclusions: calling an inactive agent secure, or calling a capable but
-compromised agent useful.
+completion, attacker-directed attempts and executions, and recorded
+enforcement events alongside trajectory outcomes, while separating scripted
+controls from actual human intervention. The combination guards against two
+misleading conclusions: calling an inactive agent secure, or calling a capable
+but compromised agent useful.
 
 \section{Defence design space}
 
@@ -89,79 +94,90 @@ compromised agent useful.
 Model-facing defences try to help the planner recognise which content deserves
 instructional authority. BIPIA evaluates reminders, boundary awareness,
 in-context examples, and training across indirect-injection tasks
-~\cite{yi2025bipia}. Spotlighting instead transforms untrusted tokens through
-delimiting, datamarking, or encoding so their provenance remains salient to the
-model~\cite{hines2024spotlighting}.
+~\cite{yi2025bipia}. Spotlighting instead uses delimiting, datamarking, or
+encoding to keep the distinction between trusted instructions and untrusted
+input salient to the model~\cite{hines2024spotlighting}.
 
 Training can make this separation part of model behaviour. StruQ uses
 structured instruction tuning to distinguish prompt and data channels
 ~\cite{chen2025struq}, while SecAlign uses preference optimisation to favour
 responses that follow the legitimate instruction over the injection
 ~\cite{chen2025secalign}. Both report greater resistance to the evaluated
-attacks with limited utility loss in their settings. SecAlign reports 0\%
-attack success for the tested
+attacks with limited utility loss in their settings. On its principal
+AlpacaFarm evaluation, SecAlign reports 0\% attack success for the evaluated
 optimisation-free attacks and rates mainly below 10\% for stronger
 optimisation-based attacks, with utility similar to its
-non-preference-optimised counterparts. These findings remain bound to the
-paper's models, tasks, and attacks. A later diagnostic shows why attack
-rejection and benign utility must be read together: across its reasoning
-benchmarks and defended pipelines, benign suffix-task rejection rose from below
-10\% to as high as 90\%. The authors link these failures to position,
+non-preference-optimised counterparts. A separate out-of-distribution SEP
+Ignore evaluation reports 11.0\%, 3.6\%, and 6.5\% attack success when the
+injection appears at the start, middle, and end of the input. These findings
+remain bound to the paper's models, tasks, and attacks. A later diagnostic
+shows why attack rejection and benign utility must be read together: across
+its reasoning benchmarks and defended pipelines, benign suffix-task rejection
+rose from below 10\% to as high as 90\%. The authors link these failures to position,
 trigger-token, and topic correlations, suggesting that trained defences can
 rely on narrow surface cues without reliably identifying malicious intent
 ~\cite{li2026surfaceheuristics}.
 
 Other defences act during inference. Task Shield checks whether each instruction
 and proposed tool call contributes to the user's stated goal
-~\cite{jia2025taskshield}. On AgentDojo with GPT-4o, its authors report 2.07\%
-attack success and 69.79\% task utility. MELON instead reruns the agent
-trajectory with the user prompt masked and treats similarity between the
-original and counterfactual actions as evidence of hijacking
+~\cite{jia2025taskshield}. Under the one-trial-per-task Important
+Instructions attack condition on AgentDojo with GPT-4o, its authors report
+2.07\% attack success and 69.79\% utility under attack. MELON instead reruns
+the agent trajectory with the user prompt masked and treats similarity between
+the original and counterfactual tool calls as evidence of hijacking. The paper
+notes that response-based attacks without tool calls can evade this comparison
 ~\cite{zhu2025melon}. Both ask whether planned behaviour remains dependent on
 the authorised task and report AgentDojo trade-offs within their own
 configurations; Sentinel also tests transfer through WASP's browser-native
 loop. Even within AgentDojo, differences in models, attack construction,
 scaffolds, defence mechanisms, and metric definitions make the headline rates
-contextual rather than a controlled ranking against Sentinel.
+contextual and do not provide a controlled ranking against Sentinel.
 
-Detection supplies an inspectable decision before exposure. Removal systems
-separate attack identification from segmentation or task-conditioned filtering
-~\cite{chen2025detectremove}. Their effectiveness depends on both detecting an
-attack and identifying the region that can be removed without destroying the
-task. Distribution shift remains fundamental: finite corpora cannot cover all
-wordings, encodings, page contexts, and adaptive strategies. Targeted
-optimisation has bypassed defences that performed well against fixed attacks
+Detection supplies an inspectable decision before processed content reaches
+the downstream LLM. Detect-and-Remove separates document-level attack
+identification from sentence-level removal or generative extraction followed
+by longest-common-substring removal~\cite{chen2025detectremove}. Its
+effectiveness depends on detecting an attack and identifying the region that
+can be removed without destroying the task. Distribution shift remains
+fundamental: finite corpora cannot cover all wordings, encodings, page contexts,
+and adaptive strategies. White-box optimisation against specific defences has
+outperformed non-adaptive attacks in the evaluated settings
 ~\cite{zhan2025adaptive}. Sentinel therefore uses detection to govern
-observations while retaining policy and pre-execution checks as separate
-layers.
+observations while retaining policy and pre-execution checks as separate layers.
 
 Model-facing and runtime defences intervene at different points: the former may
 reduce hostile planning, while the latter constrains selected effects around
-the planner. They can therefore complement one another architecturally;
-evaluating their composition remains future work.
+the planner. They can therefore complement one another architecturally.
+Sentinel evaluates one such composition, combining observation governance with
+runtime action policy; composition with separately trained or inference-time
+model defences remains future work.
 
 \subsection{System-level authority}
 
-System-level work relocates the final decision outside unconstrained model
-reasoning. CaMeL extracts control and data flow from a trusted query, confines
-untrusted data to constrained processing, and enforces capabilities at tool
-calls~\cite{debenedetti2025camel}. Fides applies information-flow
+System-level work moves selected security and execution decisions outside
+unconstrained model reasoning, although some designs retain LLM components in
+the wider control architecture. CaMeL extracts control and data flow from a
+trusted query, confines untrusted data to constrained processing, and enforces
+capabilities at tool calls~\cite{debenedetti2025camel}. Fides applies information-flow
 control: confidentiality and integrity labels propagate through planning,
 deterministic policies govern tool effects, and information can be selectively
 hidden from the planner~\cite{costa2025fides}. Progent represents
 privilege as symbolic rules over tool names and arguments, checks every tool
-call deterministically, and requires approval before a policy update can expand
-the available privileges~\cite{shi2025progent}. PRUDENTIA builds on Fides by
-making planning policy-aware and evaluating autonomy through task completion at
-intervention budgets and scripted oversight load~\cite{kolluri2026prudentia}.
+call deterministically, applies privilege narrowing automatically, and can
+require approval before an expansion. Its main experiments use Auto-Approve,
+so they do not measure human-reviewed expansion~\cite{shi2025progent}.
+PRUDENTIA builds on Fides by making planning policy-aware and evaluating
+autonomy through task completion at intervention budgets and trace-derived
+oversight load under assumed approval~\cite{kolluri2026prudentia}.
 
 Other systems choose different trusted abstractions.
 AgentSpec provides a lightweight language of triggers, predicates, and runtime
 enforcement actions~\cite{wang2026agentspec}. DRIFT derives a minimal function
 trajectory and parameter checklist from the trusted query, validates
 deviations, and masks conflicting instructions before they persist in memory
-~\cite{li2025drift}. IPIGuard plans a tool-dependency graph before exposure to
-external data and constrains later execution to traversal of that graph
+~\cite{li2025drift}. IPIGuard plans an initial tool-dependency graph before
+exposure to external data and constrains later execution to its traversal,
+while allowing read-only query nodes to be added during execution
 ~\cite{an2025ipiguard}. VIGIL takes a different route: it permits speculative
 reasoning over the tool stream, then verifies a proposed effect against the
 trusted intent before commitment~\cite{lin2026vigil}. AttriGuard instead tests
@@ -201,7 +217,8 @@ Formal IFC model with empirical AgentDojo evaluation. \\
 Progent\newline\cite{shi2025progent} &
 Generated symbolic privilege rules over tool names and arguments &
 Every tool call and proposed privilege expansion &
-Deterministic checking and monotonic confinement; AgentDojo and ASB evaluation. \\
+Deterministic checking and monotonic confinement between expansions; AgentDojo
+and ASB evaluation. \\
 \addlinespace[3pt]
 
 PRUDENTIA\newline\cite{kolluri2026prudentia} &
@@ -219,13 +236,16 @@ Rule-based conformance evaluated in code, embodied, and driving domains. \\
 AttriGuard~\cite{he2026attriguard} &
 Survival of a proposed tool call under control-attenuated observations &
 Counterfactual shadow replay before tool execution &
-Static and adaptive evaluation across four LLMs and two agent benchmarks. \\
+Static evaluation across four LLMs and two agent benchmarks; adaptive
+evaluation with two backbones on a 61-case AgentDojo subset. \\
 \addlinespace[3pt]
 
 \systemname &
-Operator goal, configured policy, live browser context, and bounded authority &
-Exact model observation and immediate pre-execution action &
-Deterministic channel invariants with AgentDojo and matched WASP evidence. \\
+Operator request, configured policy, current URL, bounded target semantics, and
+narrow server-owned authority &
+Wrapped untrusted model-input regions and immediate pre-execution action &
+Deterministic channel invariants tested in implementation; controlled AgentDojo
+and matched WASP outcome evidence. \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -233,19 +253,20 @@ Deterministic channel invariants with AgentDojo and matched WASP evidence. \\
 Progent and AttriGuard offer two close action-boundary comparisons. Progent
 enforces symbolic tool privileges; AttriGuard tests whether a proposal survives
 attenuation of external control. Sentinel instead combines deterministic policy
-over each proposed effect and live browser context with governance of the
-planner's exact observation. These differences concern trusted mechanism and
-scope, not universal superiority.
+over each proposed effect and selected live browser context with governance of
+the wrapped observation regions passed to the planner. These differences
+concern trusted mechanism and scope, not universal superiority.
 
-Sentinel retains the browser agent's free-form planning loop so it can adapt
-when a page changes or an action fails. That flexibility leaves a semantic
-limit. Sentinel can reject actions that violate explicit policy, but it cannot
+Sentinel retains the browser agent's open-ended, structured planning loop so
+it can adapt when a page changes or an action fails. That flexibility leaves a
+semantic limit. Sentinel can reject actions that violate explicit policy, but it cannot
 formally prove that every permitted action advances the operator's goal. For
 example, a same-origin click stays within the current page's scheme, host, and
 port, yet may still contradict the requested task. The contribution is an
-implemented set of enforceable boundaries: exact pre-model observation
-governance, live executor-side policy, selective human authority, and
-evaluation within the browser loop that those mechanisms govern.
+implemented set of enforceable boundaries: pre-model governance of wrapped
+DOM, read, extraction, and tool-result regions; live executor-side policy;
+selective human authority; and evaluation within the browser loop that those
+mechanisms govern.
 
 \section{Protection principles for agent runtimes}
 
@@ -263,19 +284,21 @@ Information-flow control asks where data originated and which sinks it may
 reach. Denning's lattice model formalised label-constrained flow
 ~\cite{denning1976lattice}. Browser-agent values are less structured: page
 content becomes model context and a click can disclose information without an
-explicit network API. Sentinel therefore uses a bounded dynamic model:
-browser observations carry untrusted provenance, detections add injection
-taint, recognised values add sensitive categories, and actions expose
+explicit network API. At each action assessment, Sentinel derives a bounded
+dynamic model: wrapped browser observations carry untrusted provenance,
+detections add injection taint, recognised values add sensitive categories,
+and actions expose
 capabilities such as navigation, page write, file access, and code execution.
 These labels give the policy engine concrete source--sink facts to enforce at
 execution time. However, they are operational controls and do not prove that
 every information flow is isolated.
 
 Runtime enforcement also needs a precise authority protocol. Effective
-human-in-the-loop security requires information to be communicated, processed,
-applied, and returned to the system~\cite{cranor2008humanloop}; automation
-research likewise separates information acquisition, analysis, decision, and
-action~\cite{parasuraman2000automation}. Sentinel therefore maps hard refusal,
+human-in-the-loop security depends on communication, processing, application,
+and resulting behaviour~\cite{cranor2008humanloop}; automation research
+likewise separates information acquisition, information analysis, decision and
+action selection, and action implementation
+~\cite{parasuraman2000automation}. Sentinel therefore maps hard refusal,
 narrow approval, takeover, and observation review to distinct server outcomes.
 This structure prevents a generic confirmation from weakening a hard rule.
 Whether the interface helps people make sound choices remains a separate
@@ -287,6 +310,6 @@ response~\cite{sunshine2009cryingwolf,akhawe2013warningland}.
 Prior work spans learned separation, detection, structured control, information
 flow, and runtime rules. Can an independent layer govern both boundaries of a
 dynamic browser agent while retaining useful replanning and reducing terminal
-attacks and attacker-serving execution? AgentDojo isolates the mechanism, WASP
-tests browser transfer, and the server-owned workflow supplies technical
-evidence for selective operator control.
+attacks and attacker-serving execution? AgentDojo provides controlled mechanism
+evidence, WASP tests browser-native transfer, and the server-owned workflow
+supplies technical evidence for selective operator control.
