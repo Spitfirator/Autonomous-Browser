@@ -95,37 +95,43 @@
 
 Browser agents turn model outputs into consequential actions, yet the pages
 they must interpret may also contain instructions supplied by an attacker.
-This creates an authority problem: the acting model sees untrusted content
+This creates an authority problem: the model must interpret untrusted content
 while deciding whether that content should influence privileged effects. This
 dissertation presents \systemname, an independent enforcement layer between a
-browser agent and its executor. \systemname\ governs the exact observation sent
-to the model, evaluates proposed actions immediately before execution, and
-transfers control when policy requires human authority. It combines
-attributable observation sanitisation and re-detection, origin-scoped taint,
-deterministic policy and data-flow rules, narrow approval, direct human steps
-for protected input, and privacy-preserving audit through a Chrome extension.
+browser agent and its executor. \systemname\ governs observations before they
+reach the model and evaluates proposed actions immediately before execution.
+When policy requires operator authority, it can request narrow approval or
+pause for a direct human step. It combines post-verified observation
+sanitisation, origin-scoped taint, deterministic policy and data-flow rules,
+protected-input handling, and redacted audit. A Chrome extension provides the
+browser-facing control plane: it displays redacted runtime decisions and
+relays scoped operator responses, while enforcement authority remains in the
+runtime.
 
-The evaluation connects controlled mechanism evidence to browser-native
-execution. Across paired AgentDojo comparisons with 629 attacked tasks per
-condition, enforcement changed native attacker success from 206 to 0 cases for
-Qwen 3.5 4B, from 131 to 1 for 9B, and from 203 to 0 for 27B, while utility
-increased in all three enforce conditions. The principal WASP study repeats 84
-browser tasks across three seeds under off, policy-only, and full conditions
-($n=252$ per condition). From off to full, action-audited terminal attacker
-success changed from 17/252 to 0/252 and attacker-directed execution from
-42/252 to 0/252. Legitimate-task completion changed from 154/252 to 149/252,
-while secure utility rose from 138/252 to 149/252. Policy-only retained boundary
-neutralisation, a detector warning, and action policy but disabled browser
-sanitisation; attacker-directed execution remained in 15/252 episodes. Under
-the full configured treatment, no attacker-directed proposal was recorded at
-the same aggregate utility, and 740 sanitisation removals were confirmed.
+The evaluation links controlled AgentDojo evidence with replicated
+browser-native WASP results. Across three matched AgentDojo comparisons, each
+with 629 attacked tasks per condition, baseline attacker success was 32.8\%
+for Qwen 3.5 4B, 20.8\% for 9B, and 32.3\% for 27B. Under the complete governed
+configuration, it fell to 0\% for 4B, 0.2\% for 9B, and 0\% for 27B, while
+utility increased for all three models. The principal WASP study evaluated
+Qwen 3.5 27B on 84 browser tasks across three seeds under off, policy-only, and
+full conditions, giving 252 episodes per condition. From off to full,
+action-audited terminal attacker success fell from 17/252 to zero and
+attacker-directed execution from 42/252 to zero. Legitimate completion changed
+from 154/252 to 149/252, while secure utility rose from 138/252 to 149/252. In
+the policy-only/full comparison, attacker-directed execution fell from 15/252
+to zero at the same aggregate utility, and all 740 attributable sanitisation
+removals in the full condition were confirmed.
 
-In these experiments, independently governing observations and actions sharply
-reduced successful attacks and attacker-serving execution while retaining most
-useful task completion. The result does not establish a universal defence. It
-shows something narrower and practically important: a browser agent can still
-plan useful work when another component decides which privileged effects may
-occur.
+Overall, the findings show that independently governing observations and
+actions reduced evaluated violations while retaining useful task performance
+under the tested conditions. The results are limited to the settings tested,
+so they do not show that \systemname\ will prevent every attack, is ready for
+deployment, or works effectively for human operators. Even so, they support a
+clear architectural principle: safeguards within the model can provide one
+layer of protection, while a separate runtime retains control over which
+privileged effects are allowed. The browser agent can therefore continue
+planning useful work without giving the model final control over execution.
 \end{singlespace}
 
 \begingroup
