@@ -3,118 +3,275 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Governance policy summaries</title>
+  <title>Policy update brief | Northstar Research Council</title>
   <style>
     :root {
       color-scheme: light;
-      --ink: #17202a;
-      --muted: #667085;
-      --paper: #f5f6f3;
-      --card: #ffffff;
-      --line: #d9ded8;
-      --amber: #f3c316;
-      --navy: #17253a;
+      --ink: #182322;
+      --muted: #5d6966;
+      --paper: #f3f4ef;
+      --surface: #fffef9;
+      --line: #d4d8ce;
+      --forest: #173f3a;
+      --forest-soft: #e1ebe5;
+      --copper: #b65d35;
+      --copper-soft: #f5e7df;
     }
+
     * { box-sizing: border-box; }
+
     body {
       margin: 0;
+      min-height: 100vh;
       background: var(--paper);
       color: var(--ink);
       font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
-    header {
-      background: var(--navy);
-      color: white;
-      padding: 34px max(7vw, 48px) 38px;
-      border-bottom: 5px solid var(--amber);
-    }
-    .eyebrow {
-      color: #ffe67e;
+
+    .utility {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 42px;
+      padding: 0 max(6vw, 42px);
+      border-bottom: 1px solid rgba(255,255,255,.16);
+      background: #102e2a;
+      color: #dfe9e5;
       font-size: 12px;
-      font-weight: 750;
-      letter-spacing: .13em;
-      text-transform: uppercase;
     }
-    h1 {
-      margin: 8px 0 7px;
-      font-family: Georgia, "Times New Roman", serif;
-      font-size: clamp(34px, 4vw, 54px);
-      line-height: 1.08;
-    }
-    header p { max-width: 780px; margin: 0; color: #dce3ec; }
-    main { max-width: 1120px; margin: 42px auto; padding: 0 36px 64px; }
-    .intro { display: flex; justify-content: space-between; gap: 32px; align-items: end; }
-    h2 { margin: 0; font-family: Georgia, "Times New Roman", serif; font-size: 27px; }
-    .safe-note {
-      color: var(--muted);
+
+    .utility strong {
+      color: white;
       font-size: 13px;
-      border: 1px solid var(--line);
+      letter-spacing: .01em;
+    }
+
+    .utility nav {
+      display: flex;
+      gap: 22px;
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      padding: 46px max(6vw, 42px) 50px;
+      background: var(--forest);
+      color: white;
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      top: -110px;
+      right: 6vw;
+      width: 330px;
+      height: 330px;
+      border: 52px solid rgba(255,255,255,.055);
+      border-radius: 50%;
+    }
+
+    .section-label {
+      margin-bottom: 9px;
+      color: #c9ddd4;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    h1 {
+      max-width: 760px;
+      margin: 0;
+      font: 600 clamp(38px, 4.4vw, 58px)/1.05 Georgia, "Times New Roman", serif;
+      letter-spacing: -.025em;
+    }
+
+    .hero p {
+      max-width: 700px;
+      margin: 17px 0 0;
+      color: #dbe8e2;
+      font-size: 17px;
+    }
+
+    main {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 34px 34px 64px;
+    }
+
+    .brief-head {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 28px;
+      margin-bottom: 20px;
+    }
+
+    .brief-head h2 {
+      margin: 0 0 3px;
+      font: 600 25px/1.2 Georgia, "Times New Roman", serif;
+    }
+
+    .brief-head p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .effective {
+      flex: 0 0 auto;
+      padding: 7px 11px;
+      border: 1px solid #bfd0c6;
       border-radius: 999px;
-      padding: 7px 12px;
-      background: #fff;
-      white-space: nowrap;
-    }
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 24px; }
-    article {
-      background: var(--card);
-      border: 1px solid var(--line);
-      border-radius: 13px;
-      padding: 24px 25px;
-      box-shadow: 0 10px 30px rgba(23, 37, 58, .055);
-    }
-    article h3 { margin: 0 0 9px; font-size: 20px; }
-    article p { margin: 0 0 18px; color: #475467; }
-    .tag {
-      display: inline-block;
-      padding: 5px 9px;
-      border-radius: 6px;
-      background: #fff7cc;
-      color: #6a5300;
+      background: var(--forest-soft);
+      color: var(--forest);
       font-size: 12px;
       font-weight: 700;
     }
-    .checks {
-      margin-top: 24px;
-      background: #fff;
-      border-left: 4px solid var(--amber);
-      padding: 20px 24px;
+
+    .policy-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
     }
-    .checks strong { display: block; margin-bottom: 6px; }
-    .checks span { color: var(--muted); }
+
+    article {
+      display: grid;
+      grid-template-columns: 56px 1fr;
+      min-height: 228px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--surface);
+    }
+
+    .policy-code {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-right: 1px solid var(--line);
+      background: #eceee8;
+      color: var(--forest);
+      font: 700 13px/1 Georgia, "Times New Roman", serif;
+      writing-mode: vertical-rl;
+      transform: rotate(180deg);
+      letter-spacing: .08em;
+    }
+
+    .policy-body {
+      display: flex;
+      flex-direction: column;
+      padding: 24px 25px 22px;
+    }
+
+    .topic {
+      width: fit-content;
+      margin-bottom: 14px;
+      padding: 4px 8px;
+      border-radius: 5px;
+      background: var(--copper-soft);
+      color: #824325;
+      font-size: 11px;
+      font-weight: 750;
+    }
+
+    article h3 {
+      margin: 0 0 9px;
+      font-size: 21px;
+      letter-spacing: -.015em;
+    }
+
+    article p {
+      margin: 0;
+      color: #46514f;
+    }
+
+    .policy-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-top: auto;
+      padding-top: 20px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      color: var(--forest);
+      font-weight: 700;
+    }
+
+    .status::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--copper);
+    }
+
     @media (max-width: 760px) {
-      .grid { grid-template-columns: 1fr; }
-      .intro { display: block; }
-      .safe-note { display: inline-block; margin-top: 14px; }
+      .utility nav { display: none; }
+      .hero { padding-inline: 26px; }
+      main { padding-inline: 22px; }
+      .brief-head { align-items: flex-start; flex-direction: column; gap: 12px; }
+      .policy-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
-  <header>
-    <div class="eyebrow">Public test catalogue</div>
-    <h1>Governance policy summaries</h1>
-    <p>A benign local page used to document Sentinel's browser-integrated control layer. No account, credential, private page, or external service is involved.</p>
+  <div class="utility">
+    <strong>Northstar Research Council</strong>
+    <nav aria-label="Public guidance sections">
+      <span>Funding</span>
+      <span>Research standards</span>
+      <span>Public guidance</span>
+    </nav>
+  </div>
+
+  <header class="hero">
+    <div class="section-label">Public guidance · August 2026</div>
+    <h1>Policy update brief</h1>
+    <p>Two changes take effect this autumn. This brief summarises what research teams need to know before the new guidance comes into force.</p>
   </header>
+
   <main>
-    <div class="intro">
-      <h2>Two runtime controls</h2>
-      <div class="safe-note">Local capture fixture - read only</div>
+    <div class="brief-head">
+      <div>
+        <h2>What is changing</h2>
+        <p>Read the two summaries below for the scope and review requirements.</p>
+      </div>
+      <span class="effective">Effective 1 September 2026</span>
     </div>
-    <section class="grid" aria-label="Policy summaries">
+
+    <section class="policy-grid" aria-label="Policy update summaries">
       <article>
-        <h3>Executor-side mediation</h3>
-        <p>Proposed browser actions are evaluated immediately before privileged execution and recorded with one terminal outcome.</p>
-        <span class="tag">Complete mediation</span>
+        <div class="policy-code">DATA-14</div>
+        <div class="policy-body">
+          <span class="topic">Data management</span>
+          <h3>Research data retention</h3>
+          <p>Routine project logs will be kept for 30 days and then deleted automatically. Aggregated statistics may be retained once they no longer identify a project or contributor.</p>
+          <div class="policy-meta">
+            <span class="status">Approved guidance</span>
+            <span>Review due September 2027</span>
+          </div>
+        </div>
       </article>
+
       <article>
-        <h3>Selective authority</h3>
-        <p>Ordinary reading can remain autonomous while approval, protected input, and unresolved observations return authority to the operator.</p>
-        <span class="tag">Fail closed</span>
+        <div class="policy-code">PUB-08</div>
+        <div class="policy-body">
+          <span class="topic">Publication</span>
+          <h3>Publication review</h3>
+          <p>Public summaries can be released after a project-owner check. Working drafts and unpublished findings remain internal until the responsible team approves publication.</p>
+          <div class="policy-meta">
+            <span class="status">Approved guidance</span>
+            <span>Review due September 2027</span>
+          </div>
+        </div>
       </article>
     </section>
-    <div class="checks">
-      <strong>Capture boundary</strong>
-      <span>This page supplies presentation context only. The visible ownership and takeover controls are injected by Sentinel's production Chrome extension.</span>
-    </div>
   </main>
 </body>
 </html>

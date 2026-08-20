@@ -60,9 +60,9 @@ from server.traces import TraceStore  # noqa: E402
 MODEL = "qwen3.5:27b"
 PROVIDER = "ollama"
 LIVE_RUN = "b1c2d3e4"
-ACTIVITY_RUN = "c0ffee12"
-LIVE_TASK = "Compare the two public policy summaries and prepare a concise note; do not change any settings."
-ACTIVITY_TASK = "Review a public project page and prepare an update; do not submit changes without approval."
+ACTIVITY_RUN = LIVE_RUN
+LIVE_TASK = "Review a public project page and prepare an update."
+ACTIVITY_TASK = LIVE_TASK
 
 
 class WalkthroughBrowser:
@@ -200,49 +200,27 @@ def seed_activity(
 	config: ConfigStore,
 ) -> None:
 	started = time.time() - 52.4
-	hub.emit(
-		TaskStarted(
-			run_id=ACTIVITY_RUN,
-			ts=started,
-			task=ACTIVITY_TASK,
-			max_steps=30,
-			model=MODEL,
-			provider=PROVIDER,
-		)
+	approval = policy.evaluate(
+		"upload_file",
+		{"path": "[redacted benign test file]"},
+		"https://catalog.example.test/submissions",
 	)
-
-	allow = policy.evaluate("click", {"index": 7}, "https://catalog.example.test/projects")
-	allow_event = _decision_event(
+	approval_event = _decision_event(
 		run_id=ACTIVITY_RUN,
-		action="click",
-		url="https://catalog.example.test/projects",
-		verdict="allowed",
-		rule=allow.rule,
-		reason=allow.reason,
-		action_id="a11a11a1",
-		risk_score=18,
-		capabilities=["page_read"],
+		action="upload_file",
+		url="https://catalog.example.test/submissions",
+		verdict="approval_required",
+		rule=approval.rule,
+		reason=approval.reason,
+		action_id="d44d44d4",
+		risk_score=62,
+		capabilities=["file_read", "external_write"],
 	)
-	hub.emit(allow_event)
-	_audit_pair(hub, allow_event, "executed")
-
-	blocked = policy.evaluate("write_file", {"path": "[redacted]"}, None)
-	blocked_event = _decision_event(
-		run_id=ACTIVITY_RUN,
-		action="write_file",
-		url="https://catalog.example.test/projects",
-		verdict="blocked",
-		rule=blocked.rule,
-		reason=blocked.reason,
-		action_id="b22b22b2",
-		risk_score=72,
-		capabilities=["local_write"],
-	)
-	hub.emit(blocked_event)
-	_audit_pair(hub, blocked_event, "blocked")
+	hub.emit(approval_event)
+	_audit_pair(hub, approval_event, "denied")
 
 	enforcement = {
-		"decisions": {"allowed": 1, "blocked": 1},
+		"decisions": {"allowed": 1, "approval_required": 1},
 		"decision_count": 2,
 		"decision_ms_total": 1.4,
 		"decision_ms_mean": 0.7,
@@ -250,23 +228,23 @@ def seed_activity(
 		"enforcement_ms_total": 2.8,
 		"enforcement_ms_mean": 1.4,
 		"enforcement_ms_max": 1.5,
-		"human_wait_s": 0.0,
-		"approval_wait_s": 0.0,
+		"human_wait_s": 8.1,
+		"approval_wait_s": 8.1,
 		"handoff_wait_s": 0.0,
 		"incident_wait_s": 0.0,
 		"security_incidents": 0,
-		"human_interventions": 0,
+		"human_interventions": 1,
 		"prompt_injection_detections": 0,
-		"approval_prompts": 0,
+		"approval_prompts": 1,
 		"approval_reuses": 0,
 		"actions_attempted": 2,
-		"actions_completed": 2,
+		"actions_completed": 1,
 	}
 	hub.emit(
 		TaskDone(
 			run_id=ACTIVITY_RUN,
 			success=True,
-			final_result="Public information reviewed; no settings were changed.",
+			final_result="Public information reviewed; the proposed upload was not performed.",
 			steps=3,
 			duration_s=52.4,
 			usage={"prompt_tokens": 3110, "completion_tokens": 740, "total_tokens": 3850, "by_model": {MODEL: 3850}},
@@ -286,7 +264,7 @@ def seed_activity(
 			"policies": config.get().policies.model_dump(mode="json"),
 			"status": "done",
 			"success": True,
-			"final_result": "Public information reviewed; no settings were changed.",
+			"final_result": "Public information reviewed; the proposed upload was not performed.",
 			"steps": 3,
 			"llm_calls": 3,
 			"total_tokens": 3850,
@@ -449,8 +427,8 @@ async def main() -> None:
 		hub.status_provider = runner.status_dict
 		hub.add_listener(traces.on_event)
 
-		seed_activity(hub, history, policy, config)
 		seed_live_run(hub, policy)
+		seed_activity(hub, history, policy, config)
 
 		current_scenario = {"name": "governed"}
 
@@ -467,19 +445,6 @@ async def main() -> None:
 					"upload_file",
 					{"path": "[redacted benign test file]"},
 					"https://catalog.example.test/submissions",
-				)
-				hub.emit(
-					_decision_event(
-						run_id=LIVE_RUN,
-						action="upload_file",
-						url="https://catalog.example.test/submissions",
-						verdict="approval_required",
-						rule=decision.rule,
-						reason=decision.reason,
-						action_id="d44d44d4",
-						risk_score=62,
-						capabilities=["file_read", "external_write"],
-					)
 				)
 				approvals.create(
 					"upload_file",

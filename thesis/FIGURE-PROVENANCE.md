@@ -9,25 +9,29 @@ benchmark results.
 - `fig:architecture` uses `figures/sentinel-runtime-architecture-v2.png`, an
   explanatory diagram checked against the runtime and trust-boundary
   specification.
-- `fig:governed-run` uses run `4df00e0f` and the benign local fixture
+- `fig:governed-run` uses run `a0905831` and the benign local fixture
   `fixtures/sentinel-browser-capture.html`. It was captured from the production
   extension before the first model response.
-- `fig:handover-projection` uses run `8d78c714` and
+- `fig:handover-projection` uses run `13845d5e` and
   `fixtures/sentinel-login-handover.html`. The model requested human control at
   an empty password field; no password was entered or submitted.
-- `fig:unresolved-observation` uses run `0b0f1d3c` and
+- `fig:unresolved-observation` uses run `d2390d03` and
   `fixtures/sentinel-unresolved-observation.html`. The detector-positive
   observation was unattributable, was quarantined, and produced zero provider
   calls.
-- `fig:authority-audit-evidence` uses the approval and Activity captures from
-  `scripts/serve-interface-walkthrough.py`. The helper exercises the production
+- `fig:authority-audit-evidence` uses two stages of walkthrough run
+  `b1c2d3e4` from `scripts/serve-interface-walkthrough.py`. The approval panel
+  shows the `upload_file` request while it is held; the Activity panel records
+  the same task and decision after the run. The helper exercises the production
   policy, authority, event, trace, history, REST/WebSocket, and compiled
-  extension components with benign `.test` data and redacted parameters.
+  extension components with benign `.test` data and redacted parameters. The
+  Activity capture shows the per-decision understanding control with both
+  responses unset; it documents the instrument, not a participant response.
 
 No capture contains a credential, private URL, raw injection payload, personal
-browser state, screenshot supplied to a model, or model rationale. Whole-window
-captures were converted from JPEG to PNG without retouching; the approval and
-Activity images are rectangular crops.
+browser state, screenshot supplied to a model, or model rationale. Figures
+4.2--4.4 are the user's whole-window PNG captures. The approval and Activity
+images are rectangular crops exported to PNG without retouching.
 
 ## Reproduction
 
@@ -49,14 +53,14 @@ authority scenarios on port 18765. Stop both local servers after capture.
 ## SHA-256 manifest
 
 ```text
-a39026c6ef396d36a0c03b7dcf1c0c5a5752e31026e2d0fb4de65e443fefe4af  scripts/serve-interface-walkthrough.py
+7e528883e8c63bc61fcffda7ed731b94d875caab1886f238b71b76ad3718f966  scripts/serve-interface-walkthrough.py
 c5983784418685972e20da4056a4a2add46cc186463f0e1c39e111b8fef17b14  figures/sentinel-runtime-architecture-v2.png
-05fcae9cfd144111116dc1e4b033ef0bdfafecfd4343c53024d10b1529388e6f  fixtures/sentinel-browser-capture.html
-819fbeb37a0c8c3aec4855372eb71bce72ed6ca5d06846704b14951612ce2f65  fixtures/sentinel-login-handover.html
+ed62ba14bbeff51260feff3cdab046ad270678f345e379b2ec04efaa908945db  fixtures/sentinel-browser-capture.html
+6bf553c3a99a179345c46e71140d4897d2913fd17594d8cb98c364f74514a724  fixtures/sentinel-login-handover.html
 741eb8ed7d05681343b48940327d375481ac2c6e9b4729cb28ca939fbd05f722  fixtures/sentinel-unresolved-observation.html
-3c7e6e79152ce5292b2f8680ef68fb652a1586b1bc0a3c2c2b1bcda339852074  figures/interface-browser-and-panel-running-live.png
-973d71cb30ad7c8aab71a495931e7d0e506db0422927f1137f100c9325207df7  figures/interface-browser-and-panel-password-handover-live.png
-4e1b8d9cc94ce6bfe0773798dbf85e2fb145dd4a6792df9f2d240c8724270569  figures/interface-browser-and-panel-unresolved-live.png
-64b063dad08b30163cd9d7a9617384fce73293da8abeddca3fad45b344d8de22  figures/interface-activity-detail-walkthrough.png
-689990393e490a2b2173a7c6659deb5e597dcd364e6f501219a23ddbc6beb369  figures/interface-approval-walkthrough.png
+d507b36a90cd36dfc71d0880e7621e6556dd41a684db7fb023c27002ece686c3  figures/interface-browser-and-panel-running-live.png
+65e20010340957682d0e4962e21e0e5e3c1d69cc6d96d4dce8694de2f7ee1e77  figures/interface-browser-and-panel-password-handover-live.png
+359b8278293ae0fdfd19836f065cabe7e0caf4e5384bbc125e91c1c76612d926  figures/interface-browser-and-panel-unresolved-live.png
+843638eb826ebc47fc011bb6944c979d902f5255d8726a61e6aa935167479189  figures/interface-activity-detail-walkthrough.png
+095b08ced4a4b57e7b5f6d11ad8f5f321021a7bd46fef7c0f8c01a764c1169f1  figures/interface-approval-walkthrough.png
 ```
