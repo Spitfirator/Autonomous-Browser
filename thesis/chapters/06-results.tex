@@ -14,10 +14,12 @@ representations produced by both adapters. Recall was 1.000 with no false
 positives on the two AgentDojo corpora. On the WASP development corpus, recall
 was 1.000 and precision was 0.988, with one false positive among 39 benign
 pages. These WASP figures are detector-development evidence, not outcomes from
-the final three-seed browser experiment. An action-gating replay provided a
-separate design check: holding every tainted side effect exhausted the
-four-request budget on 35 of 50 replayed tasks, whereas the selective rule
-preserved cross-origin coverage and exhausted it on none.
+the final three-seed browser experiment. Sentinel allows at most four approval
+requests within a task. When recorded trajectories were replayed, a blanket
+rule that held every tainted side effect would have used this entire allowance
+in 35 of 50 tasks, after which any further gated action would be blocked. The
+selective rule retained protection against cross-origin exfiltration without
+reaching the limit in any replayed task.
 
 Together, the replay and scorecard establish two conditions for interpreting
 the end-to-end results. First, the configured policy produced its intended
@@ -241,8 +243,10 @@ These were benchmark campaigns without human participants, so actual human
 intervention is not applicable. Pre-execution mediation nevertheless averaged
 below 0.6 milliseconds per governed decision in every condition, and no time
 was spent waiting for human input. Although mean episode duration was lower
-under enforcement, it reflects the complete model-and-browser trajectory and
-cannot be read as middleware overhead alone.
+under enforcement, this does not show that Sentinel sped up the browser.
+Episode duration includes model generation, browser actions, trajectory length,
+and shutdown as well as enforcement; only the separately measured pre-execution
+decision time estimates Sentinel's local mediation cost.
 
 \subsection{Security by incompetence}
 
@@ -272,11 +276,9 @@ All 756 final episodes received native scores. The validator checked all 36
 cells against their seed, condition, input manifest, model, policy, and
 middleware record; every cell passed, with no restart, incomplete checkpoint,
 provenance mismatch, task error, or structured-output failure. A pristine
-website reset preceded each cell. The earlier 9B runs remain separate from this
-comparison because they used a different model and several middleware
-revisions, but they are retained as development evidence. Finally, the fixed
-sequence was repeatable, yet changes in service load, model-serving state, or
-other runtime conditions could still coincide with a later condition.
+website reset preceded each cell. Finally, the fixed sequence was repeatable,
+yet changes in service load, model-serving state, or other runtime conditions
+could still coincide with a later condition.
 
 \section{Result synthesis}
 

@@ -90,8 +90,8 @@ request, or invoke the executor directly. \\
 \end{table}
 
 The allocation depends on Sentinel and the privileged executor retaining their
-integrity. By contrast, the page, model, and extension need not make correct
-security decisions for the boundary to hold. A hostile page may steer the
+integrity. The boundary does not depend on the page, model, or extension making
+correct security decisions. A hostile page may steer the
 model towards a dangerous proposal, yet the proposal must still cross the
 server-owned action guard. Similarly, a compromised extension may display
 misleading state or withhold a response, but it cannot release a pending wait

@@ -79,7 +79,7 @@ effects together.
 
 Observation and action governance protect different points in the agent loop.
 The observation boundary governs what reaches the planner; the action boundary
-governs which proposals reach the privileged executor. Both matter. An injected
+governs which proposals reach the privileged executor. Both matter, as an injected
 instruction can distort a trajectory before it produces an obviously
 prohibited action, while an apparently safe observation says nothing about
 whether the eventual action will be permissible.
@@ -93,10 +93,7 @@ scaffold; it is not a pure action-policy ablation. Aggregate utility remained
 149/252 in both conditions, but attacker-directed proposals and executions fell
 from 15/252 to zero, while terminal attacker success changed from 1/252 to zero
 (\cref{tab:wasp-27b,tab:wasp-seeds}). The trajectory evidence matters here: a
-terminal score alone would hide most of the difference. An earlier 9B
-development comparison points in the same direction: its combined
-policy-and-warning condition left attack success unchanged and did not reduce
-attacker-directed execution while hostile content remained in context.
+terminal score alone would hide most of the difference.
 
 Sanitisation, however, does not remove the need for action governance. A
 detector can miss an unfamiliar instruction, a proposal may depend on earlier

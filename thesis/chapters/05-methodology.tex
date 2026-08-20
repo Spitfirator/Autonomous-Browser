@@ -145,11 +145,15 @@ The end-to-end stage uses Qwen 3.5 4B, 9B, and 27B~\cite{qwen3.5}. For each
 model, 97 clean tasks establish capability without injection, while 629
 attacked instances are evaluated with enforcement off and on. Paired conditions
 share context and output limits, reasoning profile, sampling parameters, seed,
-and a locally served model artefact~\cite{ollama2026}. However, enforce combines
-fixed system-level security guidance with Sentinel's observation and action
-controls. Policy decisions remain independent of model compliance, yet the
-paired result measures the complete governed configuration. It does not isolate
-the guards' contribution; component replay supplies that direct evidence.
+and a locally served model artefact~\cite{ollama2026}. However, the enforce
+condition also includes a fixed security instruction in the model's system
+prompt. That instruction may influence what the model proposes, but it does not
+itself allow or block executor calls. Sentinel's external controls operate
+independently: they sanitise detected tool results and evaluate every proposed
+action before execution. The paired comparison measures the resulting governed
+configuration, while a separate model-free replay confirms that Sentinel's
+detector and policy engine produced the intended decisions without a model in
+the loop.
 
 During each task, the adapter governs tool-result observations and executor
 calls while leaving task initialisation and native evaluators unchanged, so
@@ -195,14 +199,14 @@ form a staged comparison:
 
 Native final-state scores show whether the user or attacker goal was achieved,
 but they do not reveal how the trajectory reached that outcome. WASP's native
-oracles supply the utility and raw attacker-success labels. Deterministic replay
-then matches each proposal and terminal audit record to the attacker goal for
-that episode. The thesis counts a native positive as terminal attacker success
-only when the audit confirms that a corresponding attacker-directed action was
-executed. The analysis can therefore separate attacks stopped before execution
-from actions that reached the browser, while also identifying failures at the
-tool boundary. These distinctions come from native scores and audit records;
-the optional LLM intermediate classifier is not used.
+oracles determine final utility and attacker success. A deterministic replay of
+Sentinel's audit records then identifies attacker-directed proposals and
+executions by matching them against each task's known attacker goal. The thesis
+counts a native positive as terminal attacker success only when the audit
+confirms that a corresponding attacker-directed action was executed. The
+analysis can therefore separate attacks stopped before execution from actions
+that reached the browser, while also identifying failures at the tool boundary.
+No additional model was used to judge these outcomes.
 
 Finally, each seed and condition covers the same 84 tasks, organised as four
 21-task cells by attacker-goal variant and injection format. The benchmark
