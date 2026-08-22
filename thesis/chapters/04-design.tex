@@ -130,13 +130,20 @@ and dashboard receive service state through HTTP and WebSocket interfaces.
 Consequently, the clients can display decisions and return bounded responses,
 but they cannot create permission themselves.
 
-During a task, the in-page strip first shows whether the agent or operator
-controls the browser. Alongside it, the side panel reports the active model and
-policy mode, the remaining budget, the current step, and the agent exchange.
-When Sentinel requests approval, hands over a protected step, or withholds an
-observation, the same panel replaces ordinary controls with the relevant
-response. \Cref{fig:governed-run} shows the simpler starting point: ordinary
-autonomous work before any such intervention.
+That separation appears across three complementary surfaces. The side panel is
+the task-facing surface: when no task is running, its composer starts a new
+task; during a run, a new message steers the next agent step; and after
+completion, it begins a contextual follow-up from the browser's current state.
+It reports the active model, remaining call budget, token use, current step, and
+redacted agent exchange. By contrast, the in-page strip provides an immediate
+control cue over the browser: it shows at a glance whether the agent or the
+operator currently controls it, with controls to take over, return control to
+the agent, or stop the task. These interactions change browser ownership or
+lifecycle state, not policy.
+If Sentinel requests approval, hands over a protected step, or withholds an
+observation, the panel presents the corresponding server-owned response card.
+\Cref{fig:governed-run} shows the simpler starting point: ordinary autonomous
+work before any such intervention.
 
 \begin{figure}[tbp]
 \centering
@@ -145,25 +152,29 @@ autonomous work before any such intervention.
 \label{fig:governed-run}
 \end{figure}
 
-The page layer remains deliberately sparse: it communicates ownership and
-offers return control without exposing protected input, hostile text, or the
-full audit record. The dashboard then provides the longer view. Its Policies
-tab configures the mode, domain and action rules, protected data flows,
-approval behaviour, audit options, and budgets used in subsequent service
-decisions. Saving those settings updates policy; it does not decide a pending
-request or bypass server validation. Activity serves the complementary role of
-reconstructing what already happened from paired attempted and terminal
-events. Its filters expose mode, outcome, authority demand, and pauses, while
-its timeline aligns model, tool, waiting, and incident intervals.
+This page-level interface remains deliberately sparse, keeping essential
+control close to the browser without exposing protected input, hostile text,
+or the full audit record. The dashboard serves a different purpose by
+separating configuration from retrospective review. Its Models tab selects the
+primary and fallback provider settings for the next task, whereas the Policies
+tab both displays the active policy mode and configures domain and action rules,
+protected data flows, approval behaviour, audit options, and budgets.
+Saved~policy~changes take effect at the next action boundary, even during a run,
+but cannot decide an already pending request or bypass server validation.
+Activity then reconstructs what happened from paired attempted and terminal
+events. An expanded run exposes its policy mode, outcome, decision and
+intervention counts, recorded wait and policy-check time, and the corresponding
+sequenced log.
 
-Finally, the projection must remain reliable when the extension disconnects.
-Each client receives a service snapshot followed by sequenced events; if it
-detects a gap, it discards the incomplete view and reloads. Likewise, closing
-the extension cannot resolve a waiting proposal, and a vanished card never
-counts as consent. Responses return through bounded REST endpoints and are
-accepted only for the request that is still pending. With the operator-facing
-control plane established, the design now turns to the observation that the
-planner is allowed to see.
+Because any client may close or reconnect during a wait, its local view must be
+reconstructible rather than authoritative. On each connection, the service
+first sends a snapshot of current status, recent events, and pending authority
+requests; sequenced events then keep that view current. A reconnecting client
+therefore replaces its local projection from a fresh snapshot. Closing the
+extension cannot resolve a waiting proposal, and a vanished card never counts
+as consent. Only a bounded REST response for a request that remains pending can
+change that state. With the operator-facing control plane established, the
+design now turns to the observation that the planner is allowed to see.
 
 \FloatBarrier
 \section{Observation governance}
@@ -515,13 +526,12 @@ walkthrough run in the dashboard's Activity view.
 
 \begin{figure}[!htbp]
 \centering
-\begin{minipage}[t]{0.44\textwidth}
+\begin{minipage}[t]{0.34\textwidth}
   \centering\scriptsize\textbf{(a) Approval view}\par\smallskip
   \includegraphics[width=\linewidth]{figures/interface-approval-walkthrough.png}
 \end{minipage}
-
-\vspace{2mm}
-\begin{minipage}[t]{0.86\textwidth}
+\hfill
+\begin{minipage}[t]{0.62\textwidth}
   \centering\scriptsize\textbf{(b) Activity view}\par\smallskip
   \includegraphics[width=\linewidth]{figures/interface-activity-detail-walkthrough.png}
 \end{minipage}
