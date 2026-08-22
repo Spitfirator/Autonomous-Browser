@@ -59,8 +59,9 @@ and returns bounded responses, but offers no route around either guard.
 
 The Python service inserts the guards without forking BrowserUse. Each task has
 a run-local context for budgets, origin-scoped findings, grants, interventions,
-latency, cancellation, and a fresh hash-based message authentication code
-(HMAC) key. \texttt{GovernedLLM} replaces the raw model client, while
+latency, cancellation, and a fresh HMAC (hash-based message authentication code)
+key for run-keyed digests. \texttt{GovernedLLM} replaces the raw model client,
+while
 \texttt{GovernedTools} wraps the tool registry
 ~\cite{zunic2026browseruse}. BrowserUse retains its usual interfaces, but
 observations cross the first wrapper and proposals cross the second.
@@ -76,14 +77,24 @@ evaluation. Extending Sentinel to a multimodal planner would therefore require
 a separate guard for visual observations; DOM sanitisation alone would not
 govern image content.
 
-Sentinel also checks cancellation before and after an authority wait and again
-immediately before execution. Approval and takeover deadlines expire before the
-outer agent-step timeout, so a pending proposal closes with a deliberate denial,
-timeout, or cancellation. Lifecycle control is part of the authority boundary.
+Three operating modes determine whether those controls alter execution. Off
+disables observation enforcement and returns allow while retaining redacted
+action audit. Shadow records but does not apply would-be interventions. Enforce
+applies the configured controls; the evaluated full configuration enables both
+guards. The text-only channel, untrusted tool-result wrapping, and
+navigation-metadata redaction remain active throughout because they define the
+supported interface, not the experimental treatment.
+
+Sentinel also checks cancellation around every authority wait and again
+immediately before execution. Approval and human-control deadlines expire
+before the outer step timeout, so a pending proposal closes deliberately on
+denial, timeout, or cancellation. Lifecycle control is therefore part of the
+authority boundary.
 
 \subsection{One governed agent step}
 
-One agent step begins with captured state and ends with a terminal action
+A model step may return a short, ordered action sequence. Sentinel treats each
+action as a separate proposal with its own authority decision and terminal
 outcome:
 
 \begin{enumerate}[leftmargin=8mm]
@@ -98,24 +109,29 @@ outcome:
   before the model request.
 
   \item \textbf{Plan.} The model receives the governed representation and
-  returns an ordinary BrowserUse proposal. It describes an intended effect but
-  carries no authority to produce it.
+  returns one or more ordinary BrowserUse action proposals in an ordered
+  sequence. Each describes an intended effect but carries no authority to
+  produce it.
 
-  \item \textbf{Rebuild authority.} \texttt{GovernedTools} records the attempt
-  and reads the live origin, target, policy version, destination, protected-data
-  class, and sticky taint. The policy engine returns allow, block, approval, or
-  takeover. An operator response triggers the same preflight again.
+  \item \textbf{Rebuild authority.} For each proposal,
+  \texttt{GovernedTools} records the attempt and rebuilds its live context:
+  origin, target, policy version, destination, protected-data class, and sticky
+  taint. Policy then allows, blocks, requests narrow approval, or requires a
+  human-step handoff. Approval triggers complete preflight again; handoff
+  withholds the proposal for direct operator action.
 
   \item \textbf{Execute and close.} Only an allowed, still-valid proposal
-  reaches the tool. Success, failure, or cancellation closes its audit pair
-  before the next page state enters the loop.
+  reaches the tool, and its audit pair closes before the next is considered. An
+  error, sequence-terminating action, or URL or focus change abandons the
+  remainder rather than risking stale browser state.
 \end{enumerate}
 
-Observation governance comes first because a later block cannot erase a
-compromised plan. Action governance comes last because page, target, and policy
-may change after planning. Sticky origin taint connects the two moments without
-replacing a live decision about the specific proposal. The following sections
-develop the same loop through its control plane, guards, authority, and audit.
+Observation governance comes first: a later block cannot undo a compromised
+plan. Action governance then repeats for every proposal because the
+page, target, or policy may change after planning or an earlier action. Sticky
+origin taint connects the two boundaries without replacing a live decision
+about each effect. The following sections develop this loop through its control
+plane, guards, authority, and audit.
 
 \section{Chrome extension control plane}
 \label{sec:control-plane}
@@ -192,9 +208,9 @@ escapes reserved protocol tags inside it and adds a dedicated untrusted wrapper.
 This separation matters because a hostile page can print text that resembles
 BrowserUse or Sentinel prompt structure. In enforce mode, \emph{boundary
 neutralisation} escapes reserved tags only when they occur inside a recognised
-untrusted region. The genuine outer wrappers and ordinary DOM tags remain
-unchanged. Consequently, forged prompt syntax remains page data instead of
-creating a trusted region or closing the real untrusted one.
+untrusted region. Genuine outer wrappers and ordinary DOM tags remain
+unchanged, so forged prompt syntax stays page data rather than creating a
+trusted region or closing the real untrusted one.
 
 Navigation metadata is also reduced before a provider call. Model-facing
 browser state withholds page titles and replaces every HTTP(S) query string and
@@ -235,13 +251,13 @@ them again. This second pass is essential: changing one region does not show
 that another detected instruction has disappeared. The post-check consequently
 produces one of three states:
 
-\begin{description}[style=nextline,leftmargin=29mm]
-  \item[\texttt{removed}] at least one attributable region changed and the
-  reconstructed input is detector-clear;
-  \item[\texttt{residual}] the input changed but remains detector-positive; or
-  \item[\texttt{unattributable}] the finding could not be mapped to a region
-  that could be removed safely.
-\end{description}
+\noindent\begin{tabularx}{\textwidth}{@{}l@{\hspace{1.5em}}Y@{}}
+  \texttt{removed} & at least one attributable region changed and the
+  reconstructed input is detector-clear; \\
+  \texttt{residual} & the input changed but remains detector-positive; or \\
+  \texttt{unattributable} & the finding could not be mapped to a region that
+  could be removed safely.
+\end{tabularx}
 
 These states determine whether a provider call may proceed. Under the full
 configuration evaluated here, only \texttt{removed} continues. The planner
@@ -376,14 +392,6 @@ Execute under current policy and audit the terminal outcome. \\
 \end{table}
 \FloatBarrier
 
-The operating modes determine whether these decisions alter the run. Off mode
-returns allow and disables observation enforcement, although redacted action
-audit remains. Shadow mode records the intervention that would have occurred
-without applying it, whereas enforce mode applies both guards. The text-only
-model channel, untrusted tool-result wrapping, and navigation-metadata
-redaction remain active throughout because they define the supported interface,
-not the experimental treatment.
-
 Finally, a link, redirect, or page script can move the browser without an
 explicit proposal. In enforce mode, Sentinel therefore mirrors its live domain
 lists into BrowserUse's watchdog. The watchdog handles browser-level
@@ -411,7 +419,8 @@ interface, as summarised in \cref{tab:authority-taxonomy}.
 Runtime state & Trigger and response & Authority effect \\
 \midrule
 Hard refusal & Policy prohibits the effect; no approval control is offered &
-The proposal cannot execute in the current run. \\
+The proposal is refused under the current policy; no operator response can
+release it. \\
 Narrow approval & Server requests allow once, bounded similar scope, or deny &
 Only the reviewed proposal or an explicitly approved match may proceed after
 live preflight. \\
@@ -435,6 +444,9 @@ response or grant match. A changed URL, DOM target, parameter, file, or scope
 invalidates the authority; a refreshed policy withholds execution only if it
 blocks the action, requires a human step, or changes that scope. Approval thus
 authorises the present opportunity, not frozen browser state.
+
+A per-run budget also caps approval prompts. At exhaustion, Sentinel follows
+the configured handoff-or-block strategy; it never grants authority.
 
 \subsection{Three routes to human control}
 
