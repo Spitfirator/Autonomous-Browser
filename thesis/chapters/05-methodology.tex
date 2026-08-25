@@ -26,6 +26,14 @@ failure paths. The analysis therefore reads native outcomes with redacted
 trajectory evidence, never treating an alert or block as a security result by
 itself.
 
+The empirical chain evaluates Sentinel's observation and action guards, not
+human performance. The authority workflow and control plane are therefore
+assessed separately through automated tests and deterministic walkthroughs,
+summarised in \cref{app:assurance}. This technical evidence establishes that
+the implemented states and control paths behave as designed; it does not
+measure operator comprehension, decision quality, usability, or intervention
+burden.
+
 \subsection{Comparison logic}
 
 The comparison is informative only if enforcement changes while the underlying
@@ -67,7 +75,8 @@ Finally, comparisons across models and benchmark families answer narrower
 questions. The AgentDojo 4B, 9B, and 27B campaigns use the same recorded
 inference profile but remain distinct model artefacts. Since parameter count was
 not isolated from planning, tool selection, recovery, or error behaviour,
-cross-model variation is descriptive rather than a causal size effect.
+cross-model variation is descriptive and cannot support a causal claim about
+model size.
 Likewise, AgentDojo and WASP differ in applications, observations, actions, and
 oracles. Their value lies in recurrence across complementary settings; their
 absolute rates are not pooled.

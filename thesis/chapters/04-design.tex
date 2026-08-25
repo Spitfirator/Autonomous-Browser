@@ -130,7 +130,7 @@ authority decision and terminal outcome:
   \item \textbf{Execute and close.} Only an allowed, still-valid proposal
   reaches the tool, and its audit pair closes before the next is considered. An
   error, sequence-terminating action, or URL or focus change abandons the
-  remainder rather than risking stale browser state.
+  remainder to avoid acting on stale browser state.
 \end{enumerate}
 
 Observation governance comes first: a later block cannot undo a compromised
@@ -144,7 +144,8 @@ plane, guards, authority, and audit.
 \section{Chrome extension control plane}
 \label{sec:control-plane}
 
-Runtime enforcement is useful only if its state and requests remain visible
+Sentinel can pause execution for approval, direct human action, or observation
+review. These server-owned states therefore need an operator-facing projection
 during browser work. The Chrome extension provides that control plane without
 becoming another source of authority. The service owns the run, policy, pending
 requests, timers, audit sequence, and executor; the extension presents a
@@ -187,8 +188,8 @@ but cannot decide an already pending request or bypass server validation. The
 Activity tab provides the retrospective counterpart, reconstructing completed
 runs from the service's audit record.
 
-The intervention cards preview service-owned states rather than defining them
-in the client. The following sections explain how those states arise, beginning
+The intervention cards reflect service-owned states; they do not define those
+states in the client. The following sections explain how they arise, beginning
 with the observation that the planner may see, before returning to their
 operator responses, reconnection behaviour, and audit projection.
 
@@ -209,8 +210,8 @@ This separation matters because a hostile page can print text that resembles
 BrowserUse or Sentinel prompt structure. In enforce mode, \emph{boundary
 neutralisation} escapes reserved tags only when they occur inside a recognised
 untrusted region. Genuine outer wrappers and ordinary DOM tags remain
-unchanged, so forged prompt syntax stays page data rather than creating a
-trusted region or closing the real untrusted one.
+unchanged, so forged prompt syntax remains page data and cannot create a trusted
+region or close the real untrusted one.
 
 Navigation metadata is also reduced before a provider call. Model-facing
 browser state withholds page titles and replaces every HTTP(S) query string and
@@ -231,8 +232,8 @@ and origin, but replaces the detector's content hash with a run-keyed digest.
 Repeated content can therefore be linked within one run without creating a
 stable identifier across runs.
 
-Because detection is pattern-based, findings are repeatable and later removal
-is attributable. However, an unfamiliar formulation may match no signal, so
+Pattern-based detection makes findings repeatable and later removal
+attributable. However, an unfamiliar formulation may match no signal, so
 Sentinel does not claim complete prompt-injection detection.
 
 \subsection{Attributable sanitisation and its post-condition}
@@ -320,7 +321,7 @@ authorise it. Sentinel then classifies capabilities and protected-data
 categories and derives redacted, run-keyed evidence for the parameters and any
 approval scope. If active domain policy requires a current URL and none can be
 obtained, the proposal is blocked. Other preflight exceptions end with a
-terminal exception record rather than execution.
+terminal exception record, and execution does not begin.
 
 File upload shows why this reconstruction matters. Only BrowserUse-authorised,
 session-downloaded, or managed paths are eligible for bounded inspection, and
@@ -482,9 +483,9 @@ withholds the protected proposal, while later actions still pass through
 \texttt{GovernedLLM}; a failed clean post-condition enters the incident path.
 
 After a sensitive-domain handoff, Sentinel marks the matching pattern as
-handled for the run rather than interrupting every later action on that domain.
-It does not clear origin taint or create a policy exemption: observations still
-cross \texttt{GovernedLLM}, and proposed effects still cross
+handled for the run, so it does not interrupt every later action on that
+domain. This does not clear origin taint or create a policy exemption:
+observations still cross \texttt{GovernedLLM}, and proposed effects still cross
 \texttt{GovernedTools}.
 
 \Cref{fig:handover-projection} illustrates the second route at a protected
@@ -515,7 +516,7 @@ explains the transition without recreating the sensitive content.
 
 The audit design follows a simple tension: a record must explain a security
 decision without reproducing the exposure it describes. Sentinel therefore
-stores structured evidence rather than transcripts of untrusted content. As
+stores structured evidence, not transcripts of untrusted content. As
 introduced at the action boundary, each proposed effect has paired
 \texttt{attempted} and terminal records. Blocks, denials, timeouts,
 cancellations, exceptions, and executor failures remain in the denominator even
@@ -564,19 +565,18 @@ walkthrough run in the dashboard's Activity view.
 \label{fig:authority-audit-evidence}
 \end{figure}
 
+The authority workflow and control plane are implementation contributions
+supported by automated tests and deterministic walkthroughs. These verify
+fail-closed state transitions, redacted projection, and audit reconstruction,
+but not operator comprehension, decision quality, usability, or intervention
+burden; those outcomes require participant evidence.
+
 \section{From mechanism to evidence}
 
-Architecture alone cannot establish a security result: an unfamiliar attack may
-pass detection, mediation may arrive too late, or legitimate work may collapse
-alongside the attack. The design therefore creates three evidential obligations:
-verify each guard's contract, trace whether attacker-directed proposals execute
-or achieve their terminal objective, and measure utility alongside security.
-Redacted audit explains the trajectory, whereas native benchmark oracles
-determine the final state.
-
-Chapter~\ref{chap:methodology} operationalises this chain: component replay
-tests detector coverage and guard outcomes, AgentDojo tests controlled
-end-to-end effects, and WASP adds browser-native navigation, observations, and
-replanning. Together, they test whether enforcement reduces evaluated
-violations while preserving useful autonomy, rather than merely suppressing
-agent activity.
+Architecture alone cannot establish security: attacks may evade detection,
+mediation may arrive too late, or legitimate work may fail.
+Chapter~\ref{chap:methodology} therefore evaluates guard contracts,
+attacker-directed execution and terminal success, and utility. Component replay
+tests direct outcomes, AgentDojo end-to-end effects, and WASP browser-native
+navigation and replanning. Audit explains trajectories; native oracles determine
+final state. Together, they test violation reduction alongside useful autonomy.
