@@ -1,9 +1,8 @@
 \documentclass[12pt,a4paper]{report}
 
-% Retain the project-report structure while applying the dissertation module's
-% explicit 12-point and A4 formatting requirements.
-\usepackage[margin=25mm,headheight=14pt]{geometry}
 \usepackage{setspace}
+\pagestyle{plain}
+\usepackage{a4wide}
 \usepackage{amsmath,amssymb}
 \usepackage{array}
 \usepackage{booktabs}
@@ -91,8 +90,6 @@
 
 \chapter*{Abstract}
 \addcontentsline{toc}{chapter}{Abstract}
-\begin{singlespace}
-
 Browser agents turn model outputs into consequential actions, yet the pages
 they must interpret may also contain instructions supplied by an attacker.
 This creates an authority problem: the model must interpret untrusted content
@@ -132,7 +129,6 @@ clear architectural principle: safeguards within the model can provide one
 layer of protection, while a separate runtime retains control over which
 privileged effects are allowed. The browser agent can therefore continue
 planning useful work without giving the model final control over execution.
-\end{singlespace}
 
 \begingroup
 \small
