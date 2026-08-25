@@ -33,6 +33,19 @@ a detector that never fired or a policy fixture that failed to load. The
 following sections can therefore examine whether the complete governed
 configuration also preserved useful agent trajectories.
 
+\newpage
+Finally, automated tests exercised approval revalidation, protected-value and
+upload handoff, unresolved-observation withholding, timeouts, cancellation,
+paired audit records, and redaction. Deterministic walkthroughs then traced
+ordinary operation, approval, takeover, and incident states through the
+production service and compiled Chrome extension. The checks confirmed
+fail-closed authority transitions and redacted projection of server-owned
+state; the manifest records zero model calls and confirms that no browser agent
+or benchmark was started. These findings show that the implementation behaved
+as designed; they do not measure operator comprehension, decision quality,
+usability, or intervention burden. Reproduction commands and hashes appear in
+\nolinkurl{thesis/FIGURE-PROVENANCE.md}.
+
 \section{AgentDojo end-to-end results}
 
 Each of the three model campaigns completed all 629 matched off/enforce task
