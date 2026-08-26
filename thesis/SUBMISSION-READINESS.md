@@ -69,6 +69,17 @@ independent validator are indexed from `sentinel/EVALS.md` and
 
 ## Completed release checks
 
+- The final page-limit pass preserves `a4wide`, 12-point body text,
+  one-and-a-half spacing, and the existing chapter breaks. The abstract remains
+  one page. After an over-compressed draft was reviewed, the committed prose
+  was restored throughout Chapters 3, 6, and 8 and substantially restored in
+  Chapters 2, 4, and 7. The remaining reductions target duplicated benchmark
+  definitions, table and figure narration, repeated numerical summaries, and
+  recurring future-work material. Table 2.1 is a normal top float; Figures
+  4.2--4.4 use a modestly smaller width; and Figure 6.1 shares its page with the
+  result synthesis. The dedicated ethics discussion, material limitations,
+  exact denominators, provenance qualifications, and AgentDojo/WASP
+  distinctions remain intact.
 - The final narrative pass rewrites Design and Implementation and Evaluation
   Methodology as continuous arguments. Chapter 4 now walks Figure 4.1 from task
   to browser effect and back to the planner, follows one governed step in
@@ -139,20 +150,21 @@ independent validator are indexed from `sentinel/EVALS.md` and
 - The approval and Activity views come from the deterministic local
   walkthrough. Their concise source mapping, reproduction commands, and image
   hashes are in `FIGURE-PROVENANCE.md`.
-- Tectonic produced a 64-page A4 PDF with the expected title, author, subject,
-  and keywords. Under the formal exclusions supplied for the dissertation, the
-  counted text is 48 pages and meets the 50-page ceiling: the Lists of Figures
-  and Tables plus Arabic pages 1--46. Appendix A begins on Arabic page 47 and
-  the bibliography on page 52, so both are outside that count. Concise
-  captions keep the Lists of Figures and Tables compact and leave detailed
-  interpretation in the surrounding prose.
+- Tectonic produced a 67-page A4 PDF with the expected title, author, subject,
+  and keywords. Under the confirmed dissertation-body convention, Chapters
+  1--8 occupy exactly Arabic pages 1--50. Appendix A begins on Arabic page 51
+  and the bibliography on page 54, so both remain outside the body count.
+  Concise captions keep the Lists of Figures and Tables compact and leave
+  detailed interpretation in the surrounding prose.
 - Both `sentinel-submission.tex` and the official `project_report - pg.tex`
-  root compile to 64 A4 pages with identical extracted page text and page
-  geometry. All pages were rendered for visual inspection, with front matter,
-  Figure 4.1, the control-plane views, the result tables and graph, the ethics
-  subsection, and the assurance appendix checked again at higher
-  resolution. No missing references, material box warnings, or other LaTeX
-  warnings remain in either final log.
+  root compile to 67 A4 pages with identical page labels and geometry. Their
+  extracted text is identical from the abstract onward; the title pages retain
+  only their existing submission-date difference (`September 2026` and
+  `1st September 2026`). All pages were rendered for visual inspection, with
+  the abstract, Tables 2.1 and 3.1, Figures 4.2--4.5 and 6.1, chapter endings,
+  the Discussion/Conclusion transition, and the assurance appendix checked
+  again at higher resolution. No missing references, material box warnings,
+  or other LaTeX warnings remain in either final log.
 - The root-level PDFs have been regenerated from those canonical sources, so
   they now include Progent, SecAlign, Task Shield, MELON, IPIGuard, VIGIL,
   AttriGuard, MUZZLE, and the final warning semantics rather than the earlier
@@ -162,7 +174,7 @@ independent validator are indexed from `sentinel/EVALS.md` and
 - The release copy is
   `output/pdf/Sentinel-Independent-Runtime-Enforcement-for-Browser-Agents-submission-ready.pdf`
   with SHA-256
-  `0b8f1eaa9c727414556bad48c9d94ff152c4ef569b6859eabb03c6bec184ba09`.
+  `732541c43df9f938f302d0b54f6f079b438ad430ee94435e0d44469afcbda6f2`.
 - The title page records the supervisor as Arthur below the submission date.
 
 ## Final gate

@@ -34,14 +34,9 @@ deliberately expected to understand previously unseen prose, so a fixed grammar
 cannot by itself establish which source has authority. Delimiters can mark the
 distinction between trusted instructions and untrusted input, but page text can
 imitate them and the model must still decide which instruction has authority.
-Formalisations and benchmarks identify this
-instruction--data confusion as a central mechanism
-~\cite{liu2024formalizing,yi2025bipia}. AgentDojo evaluates paired user and
-attacker goals in executable tool environments; WASP evaluates goal hijacking
-in a browser loop and distinguishes trajectory diversion from final attacker
-success~\cite{debenedetti2024agentdojo,evtimov2025wasp}. This distinction is
-important because an incapable agent may achieve neither goal and therefore
-appear secure under terminal attack success alone.
+Formalisations and benchmarks identify this instruction--data confusion as a
+central mechanism~\cite{liu2024formalizing,yi2025bipia}; the next subsection
+separates detector, trajectory, and final-state evidence.
 
 The threat also extends beyond the current page: extracted page text and tool
 results can cross secondary model calls, while stored history can reintroduce
@@ -145,12 +140,9 @@ outperformed non-adaptive attacks in the evaluated settings
 ~\cite{zhan2025adaptive}. Sentinel therefore uses detection to govern
 observations while retaining policy and pre-execution checks as separate layers.
 
-Model-facing and runtime defences intervene at different points: the former may
-reduce hostile planning, while the latter constrains selected effects around
-the planner. They can therefore complement one another architecturally.
-Sentinel evaluates one such composition, combining observation governance with
-runtime action policy; composition with separately trained or inference-time
-model defences remains future work.
+Model-facing and runtime defences can complement one another: Sentinel combines
+observation governance with runtime action policy. Composition with separately
+trained or inference-time model defences remains future work.
 
 \subsection{System-level authority}
 
@@ -191,82 +183,67 @@ system's trusted abstraction and expressible policy.
 the more durable architectural question: what each system trusts and where that
 trust is enforced.
 
-\begin{table}[htbp]
+\begin{table}[!t]
 \centering
 \caption{Representative system-level approaches.}
 \label{tab:system-comparison}
 \footnotesize
-\renewcommand{\arraystretch}{1.12}
+\renewcommand{\arraystretch}{1.08}
 \setlength{\tabcolsep}{3.5pt}
 \begin{tabularx}{\textwidth}{@{}L{0.16\textwidth}L{0.22\textwidth}L{0.22\textwidth}Y@{}}
 \toprule
 System & Trusted abstraction & Enforcement boundary & Evidence and assurance \\
 \midrule
 CaMeL~\cite{debenedetti2025camel} &
-Program extracted from the trusted query; capabilities &
-Structured control/data flow and tool calls &
-Provable security for representable flows; AgentDojo evaluation. \\
-\addlinespace[3pt]
+Trusted-query program and capabilities &
+Structured flow and tool calls &
+Formal result for representable flows; AgentDojo. \\
+\addlinespace[2.25pt]
 
 Fides\newline\cite{costa2025fides} &
-Security labels, propagation rules, and flow policy &
-Planner information and tool execution &
-Formal IFC model with empirical AgentDojo evaluation. \\
-\addlinespace[3pt]
+Security labels and flow policy &
+Planner exposure and tools &
+Formal IFC; AgentDojo. \\
+\addlinespace[2.25pt]
 
 Progent\newline\cite{shi2025progent} &
-Generated symbolic privilege rules over tool names and arguments &
-Every tool call and proposed privilege expansion &
-Deterministic checking and monotonic confinement between expansions; AgentDojo
-and ASB evaluation. \\
-\addlinespace[3pt]
+Generated symbolic tool and argument privileges &
+Every call and privilege expansion &
+Deterministic confinement; AgentDojo and ASB. \\
+\addlinespace[2.25pt]
 
 PRUDENTIA\newline\cite{kolluri2026prudentia} &
-Fides labels and policy-aware plan &
-Planning, selective exposure, endorsement, and tools &
-Deterministic IFC with autonomy evaluation on AgentDojo and WASP. \\
-\addlinespace[3pt]
+Fides labels and policy-aware planning &
+Planning, exposure, endorsement, and tools &
+Deterministic IFC; AgentDojo and WASP. \\
+\addlinespace[2.25pt]
 
 AgentSpec~\cite{wang2026agentspec} &
 Trigger--predicate--enforcement rules &
-Configured runtime events around agent actions &
-Rule-based conformance evaluated in code, embodied, and driving domains. \\
-\addlinespace[3pt]
+Configured runtime events &
+Rule conformance in code, embodied, and driving domains. \\
+\addlinespace[2.25pt]
 
 AttriGuard~\cite{he2026attriguard} &
-Survival of a proposed tool call under control-attenuated observations &
-Counterfactual shadow replay before tool execution &
-Static evaluation across four LLMs and two agent benchmarks; adaptive
-evaluation with two backbones on a 61-case AgentDojo subset. \\
-\addlinespace[3pt]
+Survival under control-attenuated observations &
+Shadow replay before tool execution &
+Static: four LLMs and two benchmarks; adaptive: two backbones on a 61-case
+AgentDojo subset. \\
+\addlinespace[2.25pt]
 
 \systemname &
-Operator request, configured policy, current URL, bounded target semantics, and
-narrow server-owned authority &
-Wrapped untrusted model-input regions and immediate pre-execution action &
-Deterministic channel invariants tested in implementation; controlled AgentDojo
-and matched WASP outcome evidence. \\
+Trusted request, policy, live context, and narrow server-owned authority &
+Wrapped model-input regions and pre-execution actions &
+Contract tests; AgentDojo and matched WASP outcomes. \\
 \bottomrule
 \end{tabularx}
 \end{table}
 
-Progent and AttriGuard offer two close action-boundary comparisons. Progent
-enforces symbolic tool privileges; AttriGuard tests whether a proposal survives
-attenuation of external control. Sentinel instead combines deterministic policy
-over each proposed effect and selected live browser context with governance of
-the wrapped observation regions passed to the planner. These differences
-concern trusted mechanism and scope, not universal superiority.
-
-Sentinel retains the browser agent's open-ended, structured planning loop so
-it can adapt when a page changes or an action fails. That flexibility leaves a
-semantic limit. Sentinel can reject actions that violate explicit policy, but it cannot
-formally prove that every permitted action advances the operator's goal. For
-example, a same-origin click stays within the current page's scheme, host, and
-port, yet may still contradict the requested task. The contribution is an
-implemented set of enforceable boundaries: pre-model governance of wrapped
-DOM, read, extraction, and tool-result regions; live executor-side policy;
-selective human authority; and evaluation within the browser loop that those
-mechanisms govern.
+Progent and AttriGuard mediate the action boundary; Sentinel also governs
+wrapped planner observations. It preserves open-ended replanning, so policy can
+reject prohibited effects but cannot prove that allowed clicks advance the
+operator's goal. Its claim is limited to the evaluated observation, action, and
+authority boundaries, not universal superiority.
 
 \section{Protection principles for agent runtimes}
 
@@ -308,8 +285,8 @@ response~\cite{sunshine2009cryingwolf,akhawe2013warningland}.
 \section{Research gap}
 
 Prior work spans learned separation, detection, structured control, information
-flow, and runtime rules. Can an independent layer govern both boundaries of a
-dynamic browser agent while retaining useful replanning and reducing terminal
-attacks and attacker-serving execution? AgentDojo provides controlled mechanism
-evidence, WASP tests browser-native transfer, and the server-owned workflow
-supplies technical evidence for selective operator control.
+flow, and runtime rules. The gap is whether an independent layer can govern
+browser-agent observation and action while retaining useful replanning and
+reducing attacker-serving execution. AgentDojo tests the mechanism, WASP
+browser-native transfer, and the server-owned workflow selective operator
+control.

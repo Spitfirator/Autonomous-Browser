@@ -156,42 +156,40 @@ responses, but cannot create permission.
 
 That separation appears across three complementary surfaces. The side panel is
 the task-facing surface: when no task is running, its composer starts a new
-task; during a run, a new message steers the next agent step; and after
+task; during a run, a new message can steer the next agent step; and after
 completion, it begins a contextual follow-up from the browser's current state.
 It reports the active model, remaining call budget, token use, current step, and
-redacted agent exchange. By contrast, the in-page strip provides an immediate
-control cue over the browser: it shows at a glance whether the agent or the
-operator currently controls it, with controls to take over, return control to
-the agent, or stop the task. These interactions change browser ownership or
-lifecycle state, not policy.
-If Sentinel requests approval, hands over a protected step, or withholds an
-observation, the panel presents the corresponding server-owned response card.
-\Cref{fig:governed-run} shows the simpler starting point: ordinary autonomous
-work before any such intervention.
+redacted agent exchange. The in-page strip instead shows whether the agent or
+the operator controls the browser. \emph{Take over} pauses future agent actions
+for direct operator interaction, \emph{Return} gives control back to the agent
+so the task can continue, and \emph{Stop} ends the task. These controls change
+browser ownership or lifecycle state, not policy. Approval, protected-step
+handoff, and observation incidents appear as server-owned cards.
+\Cref{fig:governed-run} shows ordinary autonomous operation before an
+intervention.
 
 \begin{figure}[tbp]
 \centering
-\includegraphics[width=0.94\textwidth]{figures/interface-browser-and-panel-running-live.png}
+\includegraphics[width=0.88\textwidth]{figures/interface-browser-and-panel-running-live.png}
 \caption{Ordinary autonomous operation.}
 \label{fig:governed-run}
 \end{figure}
 
 This page-level interface remains deliberately sparse, keeping essential
-control close to the browser without exposing protected input, hostile text,
-or the full audit record. The dashboard serves a different purpose by
-separating configuration from retrospective review. Its Models tab selects the
-primary and fallback provider settings for the next task, whereas the Policies
-tab both displays the active policy mode and configures domain and action rules,
-protected data flows, approval behaviour, audit options, and budgets.
-Saved~policy~changes take effect at the next action boundary, even during a run,
-but cannot decide an already pending request or bypass server validation. The
-Activity tab provides the retrospective counterpart, reconstructing completed
-runs from the service's audit record.
+control close to the browser without exposing protected input, hostile text, or
+the full audit record. The dashboard serves a different purpose by separating
+configuration from retrospective review. Its Models tab selects primary and
+fallback settings for the next task, whereas Policies displays the active mode
+and configures domain and action rules, protected data flows, approval
+behaviour, audit options, and budgets. Saved policy changes apply at the next
+action boundary, even during a run, but cannot decide an already pending
+request or bypass server validation. Activity provides the retrospective
+counterpart by reconstructing completed runs from the service's audit record.
 
 The intervention cards reflect service-owned states; they do not define those
-states in the client. The following sections explain how they arise, beginning
-with the observation that the planner may see, before returning to their
-operator responses, reconnection behaviour, and audit projection.
+states in the client. The following sections explain how those states arise,
+from the observation presented to the planner through operator response,
+reconnection, and audit projection.
 
 \FloatBarrier
 \section{Observation governance}
@@ -286,7 +284,7 @@ makes this pre-inference stop visible.
 
 \begin{figure}[tbp]
 \centering
-\includegraphics[width=0.94\textwidth]{figures/interface-browser-and-panel-unresolved-live.png}
+\includegraphics[width=0.88\textwidth]{figures/interface-browser-and-panel-unresolved-live.png}
 \caption{An unattributable observation withheld before inference.}
 \label{fig:unresolved-observation}
 \end{figure}
@@ -368,20 +366,21 @@ paths, so a later interactive response cannot weaken them.
 \caption{Central policy precedence at the action boundary.}
 \label{tab:policy-order}
 \small
+\renewcommand{\arraystretch}{1.08}
 \begin{tabularx}{\textwidth}{@{}r L{0.31\textwidth}L{0.16\textwidth}Y@{}}
 \toprule
 Order & Condition & Outcome & Purpose \\
 \midrule
 1 & Blocked action, unsafe navigation scheme, or domain prohibition & Block &
-Enforce explicit policy before softer controls. \\
-2 & Current URL missing under domain policy, or hard risk match & Block &
-Fail closed when policy lacks required URL context or hard risk matches. \\
-3 & Human-only data or unclassifiable upload; then first sensitive-domain touch &
-Human step & Withhold the proposal for direct operator action. \\
+Apply hard policy before softer controls. \\
+2 & Required URL context missing, or hard-risk match & Block &
+Fail closed on missing context or hard risk. \\
+3 & Human-only data, unclassifiable upload, or first sensitive-domain touch &
+Human step & Reserve the step for direct operator action. \\
 4 & Configured approval or approvable consequential risk & Approve &
-Request narrow authority for the current proposal. \\
-5 & No stronger rule matched & Allow &
-Execute under current policy and audit the terminal outcome. \\
+Request narrow current-proposal authority. \\
+5 & No stronger rule & Allow &
+Execute and audit the terminal outcome. \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -409,23 +408,22 @@ summarised in \cref{tab:authority-taxonomy}.
 \caption{Distinct security meanings of operator involvement.}
 \label{tab:authority-taxonomy}
 \small
+\renewcommand{\arraystretch}{1.08}
 \begin{tabularx}{\textwidth}{@{}L{0.18\textwidth}L{0.29\textwidth}Y@{}}
 \toprule
 Runtime state & Trigger and response & Authority effect \\
 \midrule
-Hard refusal & Policy prohibits the effect; no approval control is offered &
-The proposal is refused under the current policy; no operator response can
-release it. \\
-Narrow approval & Server requests allow once, bounded similar scope, or deny &
+Hard refusal & Policy prohibits the effect; no approval is offered &
+No operator response can release the proposal. \\
+Narrow approval & Server requests allow once, bounded similar-action scope, or deny &
 Only the reviewed proposal or an explicitly approved match may proceed after
 live preflight. \\
 Human step & Agent requests help, or policy withholds a protected action &
-The operator performs the step directly; the agent receives no authority to
-handle the protected value. \\
+The operator acts directly; the agent receives no protected-value authority. \\
 \addlinespace[0.25em]
 Observation incident & Sanitisation cannot establish a clean post-condition &
-The observation is quarantined; operator return requests a fresh capture, and
-the old one cannot be approved. \\
+The observation is quarantined; operator \emph{Return} requests a fresh capture,
+and the old one cannot be approved. \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -499,7 +497,7 @@ initiated by the planner's request, not by the separate operator-initiated
 
 \begin{figure}[tbp]
 \centering
-\includegraphics[width=0.94\textwidth]{figures/interface-browser-and-panel-password-handover-live.png}
+\includegraphics[width=0.88\textwidth]{figures/interface-browser-and-panel-password-handover-live.png}
 \caption{Agent-requested control at a protected field.}
 \label{fig:handover-projection}
 \end{figure}
@@ -514,35 +512,34 @@ explains the transition without recreating the sensitive content.
 \FloatBarrier
 \section{Audit and privacy}
 
-The audit design follows a simple tension: a record must explain a security
-decision without reproducing the exposure it describes. Sentinel therefore
-stores structured evidence, not transcripts of untrusted content. As
-introduced at the action boundary, each proposed effect has paired
-\texttt{attempted} and terminal records. Blocks, denials, timeouts,
-cancellations, exceptions, and executor failures remain in the denominator even
-when execution never begins. The pair retains the action class, verdict,
-bounded risk and taint metadata, target origin, latency, and outcome; an
-enforcement decision adds the applicable rule and redacted reason.
+An audit record must explain a security decision without reproducing the
+exposure it describes. Sentinel therefore stores structured evidence, not
+transcripts. Each proposed effect has paired \texttt{attempted} and terminal
+records, so blocks, denials, timeouts, cancellations, exceptions, and executor
+failures remain in the denominator even when execution never begins. The pair
+retains the action class, verdict, bounded risk and taint metadata, target
+origin, latency, and outcome; an enforcement decision adds the rule and
+redacted reason.
 
-Observation events apply the same principle. A detection record keeps its
-score, signals, and run-keyed digest; a sanitisation record keeps the branch,
-number of affected regions, and post-check outcome. The original payload and
-removed span are omitted because retaining them would preserve an attack
-instruction or protected value without strengthening evidence that the
-post-condition was satisfied. The digest still supports equality checks within
-the run without creating a stable identifier or another copy of the
-observation. Before storage or extension delivery, Sentinel redacts exposed
-task, action, URL, and summary fields again. Extension-bound events omit
-screenshots and page titles, while persistent screenshot and free-form
-model-rationale retention are opt-in and disabled by default.
+Observation events apply the same principle. Detection retains its score,
+signals, and run-keyed digest; sanitisation retains the branch, affected-region
+count, and post-check outcome. The original payload and removed span are
+omitted because retaining them would preserve an attack instruction or
+protected value without strengthening evidence that the post-condition was
+satisfied. The digest supports within-run equality without creating a stable
+identifier or another copy. Before storage or extension delivery, Sentinel
+redacts task, action, URL, and summary fields again. Extension events omit
+screenshots and page titles; persistent screenshot and free-form model-rationale
+retention are opt-in and disabled by default.
 
 The dashboard's Activity view turns these records into a retrospective account
 of each run. Its summary exposes the policy mode, outcome, decision and
-intervention counts, and recorded wait and policy-check time; expansion reveals
-the service-sequenced log without shifting authority to the client. A non-allow
-decision can also carry an \texttt{understood} marker recording whether its
-displayed reason was clear. This is an unevaluated interface instrument, not
-evidence of comprehension or usability.
+intervention counts, and wait and policy-check time; expansion reveals the
+service-sequenced log without shifting authority to the client. A non-allow
+decision can carry an \texttt{understood} marker, visible in panel~(b) of
+\Cref{fig:authority-audit-evidence}, recording whether its displayed reason was
+clear. This is an unevaluated instrument, not evidence of comprehension or
+usability.
 
 \Cref{fig:authority-audit-evidence} shows how the control plane applies this
 privacy principle before action and during retrospective review. Panel~(a)
@@ -565,18 +562,10 @@ walkthrough run in the dashboard's Activity view.
 \label{fig:authority-audit-evidence}
 \end{figure}
 
-The authority workflow and control plane are implementation contributions
-supported by automated tests and deterministic walkthroughs. These verify
-fail-closed state transitions, redacted projection, and audit reconstruction,
-but not operator comprehension, decision quality, usability, or intervention
-burden; those outcomes require participant evidence.
-
-\section{From mechanism to evidence}
-
-Architecture alone cannot establish security: attacks may evade detection,
-mediation may arrive too late, or legitimate work may fail.
-Chapter~\ref{chap:methodology} therefore evaluates guard contracts,
-attacker-directed execution and terminal success, and utility. Component replay
-tests direct outcomes, AgentDojo end-to-end effects, and WASP browser-native
-navigation and replanning. Audit explains trajectories; native oracles determine
-final state. Together, they test violation reduction alongside useful autonomy.
+The authority workflow and control plane are implementation contributions.
+Automated tests and deterministic walkthroughs verify fail-closed transitions,
+redacted projection, and audit reconstruction, but not operator comprehension,
+decision quality, usability, or intervention burden; those outcomes require
+participant evidence. Chapter~\ref{chap:methodology} tests the architecture
+through guard contracts, AgentDojo and browser-native WASP outcomes, trajectory
+audit, and native oracles.

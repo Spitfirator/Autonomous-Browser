@@ -3,35 +3,25 @@
 
 \section{Answer to the research question}
 
-The evidence gives a qualified but positive answer to the research question.
-In the evaluated settings, independent runtime enforcement reduced
-prompt-injection-driven violations and still allowed the agent to complete
-useful work. The scope of that answer matters. It applies to the models, tasks,
-and textual observation channels tested here; it does not mean that Sentinel
-solves prompt injection. The case rests on two complementary evaluations, not
-on any single run in which attacker success reached zero.
+In the evaluated models, tasks, and textual channels, independent runtime
+enforcement reduced prompt-injection-driven violations while retaining useful
+work. The scope of that answer matters: it does not mean that Sentinel solves
+prompt injection. The case rests on complementary AgentDojo and WASP
+evaluations, not on any single run in which attacker success reached zero.
 
-AgentDojo first shows this under controlled conditions. Across all three
-matched model configurations, enforcement reduced attacker success and
-increased utility and secure utility. WASP then asks how the same approach fares
-in a browser-native loop, where the agent must read pages, navigate, and act.
-Across three seeds, full enforcement reduced action-audited terminal success
-from 17/252 episodes to zero and attacker-directed execution from 42/252 to
-zero. Legitimate completion fell slightly, from 154/252 to 149/252, while secure
-utility increased from 138/252 to 149/252
-(\cref{tab:agentdojo-e2e,tab:wasp-27b}). The utility effects differ: AgentDojo
-improved task completion, whereas WASP incurred a small aggregate cost. Even
-so, both evaluations show the same broad outcome: violations fell sharply
-without a collapse in useful task completion.
+Across three matched AgentDojo configurations, enforcement reduced attacker
+success while increasing utility and secure utility. In browser-native WASP,
+full enforcement reduced action-audited terminal success from 17/252 to zero
+and attacker-directed execution from 42/252 to zero. Legitimate completion fell
+from 154/252 to 149/252, while secure utility rose from 138/252 to 149/252
+(\cref{tab:agentdojo-e2e,tab:wasp-27b}). Thus, AgentDojo utility improved while
+WASP incurred a small aggregate cost, but neither showed a collapse in useful
+completion.
 
-The two benchmarks should not be compared rate for rate, since their
-interfaces, attack families, and success oracles differ. What matters is that
-both point to the same architectural lesson. The planner remained free to
-choose useful actions, but it was not left to decide which observations shaped
-the next plan or which effects reached the executor. Sentinel separates
-capability from authority. The model plans; an independent runtime governs the
-points at which untrusted information enters and privileged effects leave the
-agent loop.
+Their rates are not directly comparable because their interfaces, attacks, and
+oracles differ. The shared architectural lesson is that the model can plan
+useful actions without deciding which untrusted observations shape that plan or
+which privileged effects reach the executor.
 
 \section{Interpreting security and utility}
 
@@ -228,39 +218,24 @@ minimisation, and secure record handling.
 
 \section{Research priorities and broader implications}
 
-The limitations point to a clear order for future work. First, Sentinel should
-be tested against attack families that played no part in its development. A
-stronger evaluation would freeze the complete system, use more random seeds,
-vary the order of the conditions, and allow an adaptive attacker to respond to
-the agent's behaviour. It should also include a genuine action-only comparator.
-This comparison would show whether removing hostile content before planning
-preserves useful task progress more effectively than waiting to block harmful
-actions at execution time.
+The limitations establish a clear order for future work. First, evaluation
+should freeze the complete system, test attack families excluded from its
+development, use more random seeds, vary condition order, and allow an adaptive
+attacker to respond to the agent's behaviour. A genuine action-only comparator
+would test whether removing hostile content before planning preserves more
+useful progress than blocking harmful actions at execution.
 
-Next, the governed boundary should expand beyond text. A visual input path would
-need a trusted way to record where image-derived information came from, isolate
-uncertain content, and limit the authority granted to actions based on it. An
-operator-visible task contract could complement this boundary by stating the
-expected websites, data classes, permitted effects, human steps, and stopping
-conditions before the agent encounters untrusted content. An isolated semantic
-monitor could then compare proposed actions with that contract. These additions
-would need their own evaluation, since the present results cover textual
-observations only.
+Next, the boundary should expand beyond text. A visual path needs trusted
+provenance, isolation of uncertain content, and bounded authority for actions
+based on it. An operator-visible task contract could state expected sites, data
+classes, effects, human steps, and stopping conditions before untrusted content
+appears; an isolated semantic monitor could compare proposals with that
+contract. These additions require separate evidence because the present results
+cover textual observations only.
 
-Human and deployment questions form a separate priority. A participant study
-could examine whether operators understand the difference between approval,
-direct action, and incident review, as well as whether they can resume work
-without excessive burden or warning fatigue. The existing control plane begins
-to make such a study possible, but does not answer those questions itself.
-Moving beyond a local prototype would also require authenticated access,
-stronger process isolation, protected policy and trace keys, and support for
-transactional browser environments.
-
-Taken together, these priorities reinforce the thesis's architectural
-conclusion. Under the tested conditions, useful planning remained possible
-without giving the model final authority over what it observed or executed.
-Sentinel does not remove the need for better semantic representations, adaptive
-testing, or human evaluation. Model-level safeguards may help the agent resist
-hostile instructions, but they should not be the only security boundary.
-Sentinel adds an independent layer that governs the observations and actions
-crossing the agent loop without relying on model compliance.
+Human and deployment questions are separate priorities. A participant study
+could test whether operators distinguish approval, direct action, and incident
+review, and can resume work without excessive burden or warning fatigue. The
+control plane enables, but does not answer, such a study. Deployment requires
+authenticated access, stronger process isolation,
+protected policy and trace keys, and transactional browser support.
