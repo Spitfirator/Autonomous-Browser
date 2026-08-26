@@ -91,38 +91,37 @@
 \chapter*{Abstract}
 \addcontentsline{toc}{chapter}{Abstract}
 Browser agents turn model outputs into consequential actions, yet the pages
-they must interpret may also contain instructions supplied by an attacker.
-This creates an authority problem: the model must interpret untrusted content
-while deciding whether that content should influence privileged effects. This
-dissertation presents \systemname, an independent enforcement layer between a
-browser agent and its executor. \systemname\ governs observations before they
-reach the model and evaluates proposed actions immediately before execution.
-When policy requires operator authority, it requests narrow approval or pauses
-for a direct human step. Post-verified sanitisation, policy and data-flow rules,
-protected-input handling, and redacted audit keep authority in the runtime. A
-Chrome extension displays redacted decisions and relays scoped responses
-without creating permission.
+they interpret may also contain attacker-supplied instructions. This creates an
+authority problem: the model must interpret untrusted content while deciding
+whether it should influence privileged effects. This dissertation presents
+\systemname, an independent enforcement layer between a browser agent and its
+executor. \systemname\ governs observations before they reach the model and
+evaluates proposed actions immediately before execution. When policy requires
+operator authority, it requests narrow approval or pauses for a direct human
+step. It combines post-verified sanitisation, origin-scoped taint,
+deterministic policy and data-flow rules, protected-input handling, and
+redacted audit. A Chrome extension provides the browser-facing control plane,
+displaying redacted decisions and relaying scoped responses while enforcement
+authority remains in the runtime.
 
-The evaluation links controlled AgentDojo evidence with replicated
-browser-native WASP results. Across three matched AgentDojo comparisons, each
-with 629 attacked tasks per condition, baseline attacker success was 32.8\%
-for Qwen 3.5 4B, 20.8\% for 9B, and 32.3\% for 27B. Under the complete governed
-configuration, it fell to 0\% for 4B, 0.2\% for 9B, and 0\% for 27B, while
-utility increased for all three models. The principal WASP study evaluated
-Qwen 3.5 27B on 84 browser tasks across three seeds under off, policy-only, and
-full conditions, giving 252 episodes per condition. From off to full,
-action-audited terminal attacker success fell from 17/252 to zero and
-attacker-directed execution from 42/252 to zero. Legitimate completion changed
-from 154/252 to 149/252, while secure utility rose from 138/252 to 149/252. In
-the policy-only/full comparison, attacker-directed execution fell from 15/252
-to zero at the same aggregate utility, and all 740 attributable sanitisation
-removals in the full condition were confirmed.
+Across three matched AgentDojo comparisons of 629 attacked tasks per condition,
+baseline attacker success for Qwen 3.5 4B, 9B, and 27B was 32.8\%, 20.8\%, and
+32.3\%; the complete governed configuration reduced it to 0\%, 0.2\%, and 0\%,
+respectively, while increasing utility. Replicated browser-native WASP evidence
+covered Qwen 3.5 27B on 84 tasks across three seeds under off, policy-only, and
+full conditions (252 episodes each). From off to full, action-audited terminal
+attacker success fell from 17/252 to zero and attacker-directed execution from
+42/252 to zero. Legitimate completion changed from 154/252 to 149/252; secure
+utility rose from 138/252 to 149/252. Against policy-only, full governance cut
+attacker-directed execution from 15/252 to zero at unchanged aggregate utility;
+all 740 attributable sanitisation removals were confirmed.
 
-Overall, independent governance reduced evaluated violations while retaining
-useful performance under the tested conditions. The results do not establish
-universal prevention, deployment readiness, or human-operator effectiveness.
-They support a narrower principle: the agent plans while a separate runtime
-governs observations and privileged execution.
+Overall, the results show that independent governance reduced evaluated
+violations while retaining useful performance under the tested conditions.
+They do not demonstrate universal prevention, justify deployment, or show how
+well human operators would use the system. Instead, they support a narrower
+principle: the agent can continue planning while a separate runtime governs
+observations and privileged execution.
 
 \begingroup
 \small
