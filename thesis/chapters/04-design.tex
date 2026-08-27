@@ -3,7 +3,7 @@
 
 \section{Design principles}
 
-The central design problem is a separation of responsibilities. A browser agent
+The main design problem is a separation of responsibilities. Indeed, a browser agent
 needs enough freedom to interpret a page, recover from errors, and choose its
 next step. Yet the model that proposes that step should not also decide whether
 it is safe to execute. \systemname\ therefore leaves planning to BrowserUse and
@@ -53,7 +53,7 @@ as untrusted observations; the observation guard identifies, treats, and
 verifies browser-derived regions before a governed representation reaches the
 planner. Policy informs both guards, authority resolves bounded operator cases,
 and audit records each decision. The extension presents this server-owned state
-and returns bounded responses, but offers no route around either guard.
+and returns bounded responses, but deliberately offers no route around either guard.
 
 The chapter follows this path: it defines the governed step and its visible
 control plane, examines both guards in execution order, and then develops their
