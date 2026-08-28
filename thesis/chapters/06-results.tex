@@ -14,12 +14,12 @@ representations produced by both adapters. Recall was 1.000 with no false
 positives on the two AgentDojo corpora. On the WASP development corpus, recall
 was 1.000 and precision was 0.988, with one false positive among 39 benign
 pages. These WASP figures are detector-development evidence, not outcomes from
-the final three-seed browser experiment. Sentinel allows at most four approval
-requests within a task. When recorded trajectories were replayed, a blanket
-rule that held every tainted side effect would have used this entire allowance
-in 35 of 50 tasks, after which any further gated action would be blocked. The
-selective rule retained protection against cross-origin exfiltration without
-reaching the limit in any replayed task.
+the final three-seed browser experiment. The evaluated policy allowed up to
+four approval requests per task, preventing the agent from repeatedly
+pressuring the operator. A hypothetical rule that requested approval for every
+tainted action would have reached this limit in 35 of 50 affected tasks.
+Sentinel's selective rule continued to gate cross-origin exfiltration but did
+not reach the limit in any replayed task.
 
 Together, the replay and scorecard establish two conditions for interpreting
 the end-to-end results. First, the configured policy produced its intended
