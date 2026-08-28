@@ -20,8 +20,8 @@ executor. Four principles turn this separation into a runtime architecture.
   any resulting effect when hostile influence or planning error survives.
 
   \item \textbf{Represent consent as bounded authority.} Approval is tied to
-  reviewed live context and rechecked before execution. Protected input is
-  withheld from the agent and entered directly by the operator.
+  reviewed live context and rechecked before execution. A proposal containing a
+  recognised protected value is withheld for direct operator action.
 
   \item \textbf{Fail closed and retain accountable outcomes.} Missing context,
   unresolved sanitisation, operator silence, timeout, cancellation, or
@@ -30,9 +30,9 @@ executor. Four principles turn this separation into a runtime architecture.
 \end{enumerate}
 
 Together, these principles preserve planning flexibility while making
-permission a system property. BrowserUse plans and recovers from ordinary
-errors; Sentinel owns the guards, authority, and audit that decide whether a
-proposal may take effect (\cref{fig:architecture}).
+permission a system property. BrowserUse plans and recovers; Sentinel's guards
+and authority decide whether a proposal may take effect, while audit records the
+outcome (\cref{fig:architecture}).
 
 \begin{figure}[!t]
 \centering
@@ -45,8 +45,8 @@ proposal may take effect (\cref{fig:architecture}).
 Read from left to right, the trusted task reaches the planner, whose proposal
 must cross the action guard before the executor can change the browser. In the
 opposite direction, page and tool data cross the observation guard before
-reaching the planner. Policy and bounded human authority inform both decisions;
-the audit path records their outcomes.
+reaching the planner. Policy governs both guards, bounded operator authority
+resolves their interactive states, and audit records their outcomes.
 
 The chapter follows this path through observation, action, authority, and audit,
 then shows how the Chrome extension projects server-owned state into the browser
@@ -70,16 +70,17 @@ The supported model-input channel is deliberately textual. Sentinel removes
 images and remaining frame captures, marks browser-derived text as untrusted,
 and reduces sensitive URL metadata. The evaluated planner receives a
 DOM/accessibility representation that Sentinel can inspect and rewrite. This
-excludes pixel-only instructions and visually grounded tasks; a multimodal
+excludes pixel-only instructions and tasks whose completion requires visual
+evidence unavailable from the DOM/accessibility representation; a multimodal
 planner would require a separate visual-observation guard.
 
 Sentinel exposes three runtime modes, distinguished by whether security
 decisions are evaluated and enforced. Off skips prompt-injection detection and
 makes the action policy return allow, although redacted action attempts and
 terminal outcomes are still audited. Shadow runs the detector and action-policy
-rules against live context, but neither rewrites the checked model input nor
-applies a policy-derived verdict. Instead, it records the detections and the
-block, approval, or handoff that would have occurred. Enforce applies those
+rules against live context, but does not apply detector-driven sanitisation or a
+policy-derived verdict. Instead, it records the detections and the block,
+approval, or handoff that would have occurred. Enforce applies those
 outcomes: it may sanitise or withhold a detected observation; for an action
 proposal, it may allow, block, request approval, or require a human step. In the
 evaluation, \emph{full} denotes enforce mode with both guards enabled; it is an
@@ -102,9 +103,11 @@ audit outcome:
   from DOM-derived state and bounded tool results, normalises the representation,
   and removes sensitive URL metadata.
 
-  \item \textbf{Sanitise and verify.} Enforce mode rewrites attributable
-  findings, reconstructs the provider message, and scans it again. Sentinel
-  withholds any message that is not detector-clear.
+  \item \textbf{Sanitise and verify.} In the evaluated full configuration,
+  Sentinel rewrites attributable findings, reconstructs the provider message,
+  and scans the governed untrusted regions again. A positive current observation
+  proceeds only when the reconstruction is detector-clear; otherwise it is
+  withheld.
 
   \item \textbf{Plan.} The model receives the governed representation and
   returns proposals that describe intended effects but carry no permission.
@@ -265,7 +268,8 @@ Order & Condition & Outcome & Purpose \\
 Apply hard policy before softer controls. \\
 2 & Required URL context missing, or hard-risk match & Block &
 Fail closed on missing context or hard risk. \\
-3 & Human-only data, unclassifiable upload, or first sensitive-domain touch &
+3 & Human-only data, unclassifiable upload, or first governed page action on or
+targeting a sensitive domain &
 Human step & Reserve the step for direct operator action. \\
 4 & Configured approval or approvable consequential risk & Approve &
 Request narrow current-proposal authority. \\
@@ -278,9 +282,10 @@ Execute and audit the terminal outcome. \\
 
 Links, redirects, and scripts may navigate without an explicit proposal, so
 enforce mode mirrors the live domain lists into BrowserUse's watchdog. This
-covers browser-level navigation; \texttt{PolicyEngine.evaluate} remains
-authoritative for explicit proposals. Decisions requiring operator judgement
-enter the authority paths described next.
+adds browser-level coverage for navigation observed inside the integrated
+BrowserUse session; \texttt{PolicyEngine.evaluate} remains authoritative for
+explicit proposals. Decisions requiring operator judgement enter the authority
+paths described next.
 
 \section{Selective human authority}
 \label{sec:human-authority}
@@ -334,9 +339,10 @@ browser state.
 
 A per-run budget caps approval prompts, then invokes the configured human-step
 or block fallback. Pending authority remains server-owned across extension
-disconnects: a new connection receives current state and pending requests
-before sequenced events. A vanished card never counts as consent; only a bounded
-response to a still-pending request changes its state.
+disconnects: on reconnection, the service provides a snapshot containing current
+state and pending requests alongside the continuing sequenced event stream. A
+vanished card never counts as consent; only a bounded response to a still-pending
+request changes its state.
 
 \subsection{Routes to direct human control}
 
@@ -350,9 +356,9 @@ remaining sequence and opens a server-owned wait that the model can neither
 resolve nor use to acquire protected-value authority.
 
 Third, policy forces the same handoff for recognised protected data,
-unclassifiable uploads, first contact with a sensitive domain, or
-approval-budget fallback. Sentinel withholds the proposal and records that it
-did not execute.
+unclassifiable uploads, the first governed page action on or targeting a
+configured sensitive domain, or approval-budget fallback. Sentinel withholds the
+proposal and records that it did not execute.
 
 Resumption depends on the route. Operator takeover continues at BrowserUse's
 next check. A planner request has terminated its sequence, so the next step
@@ -370,7 +376,8 @@ Sentinel's action audit stores structured evidence, not raw transcripts. Each
 proposal receives paired \texttt{attempted} and terminal records, keeping
 blocks, denials, timeouts, cancellations, exceptions, and executor failures in
 one denominator. The pair retains action class, verdict, bounded risk and taint,
-origin, latency, and outcome; enforcement adds the rule and redacted reason.
+origin, latency, and outcome. A separate enforcement-decision record adds the
+applicable rule and redacted reason.
 
 Observation records follow the same principle. Detection records score,
 signals, and run-keyed digest; sanitisation records branch, affected-region
@@ -378,11 +385,12 @@ count, and post-check. Raw payloads and removed spans are omitted, while the
 digest links repeats within one run without preserving content or creating a
 stable identifier.
 
-Before storage or extension delivery, Sentinel redacts task, action, URL, and
-summary fields again. Extension events omit screenshots and page titles;
-persistent screenshot and free-form rationale storage is opt-in and disabled by
-default. The record still distinguishes proposal, execution, intervention, and
-terminal outcome for trajectory analysis.
+Before storage or extension delivery, Sentinel applies defence-in-depth
+redaction to task text, action parameters, URLs, and free-text summaries.
+Extension events omit screenshots and page titles; persistent screenshot and
+free-form rationale storage is opt-in and disabled by default. The record still
+distinguishes proposal, execution, intervention, and terminal outcome for
+trajectory analysis.
 
 These events inform the operator without shifting authority into the client.
 The Chrome extension is the control plane for this projection.
@@ -434,11 +442,11 @@ direct step complete. An observation-incident card contains no attacker text or
 approval path; its re-check control requests a fresh capture from the service.
 
 \Cref{fig:unresolved-observation} shows this fail-closed path. The controlled
-page's accessibility structure becomes detector-positive only when its
-fragments are read together. No bounded removal satisfies the post-condition,
-so Sentinel withholds the observation before calling the provider. The unchanged
-0/60 model-call counter shows this pre-inference stop without disclosing its
-trigger.
+page produces a detector-positive observation that cannot be mapped to a region
+Sentinel can safely remove. Sentinel therefore records the finding as
+\texttt{unattributable} and withholds the observation before calling the
+provider. The unchanged 0/60 model-call counter shows this pre-inference stop
+without disclosing its trigger.
 
 \begin{figure}[!htbp]
 \centering
@@ -477,13 +485,15 @@ protected data flows, approval behaviour, audit options, and budgets. Saved
 policy changes apply at the next action boundary, even during a run, but cannot
 decide an already pending request or bypass server validation.
 
-Activity reconstructs completed runs from the service's audit record. Its
-summary exposes policy mode, outcome, decision and intervention counts, and
-wait and policy-check time; expansion reveals the service-sequenced log. A
-non-allow decision can also carry an \texttt{understood} marker that records
-whether its displayed reason was clear. In the deterministic walkthrough both
-responses remain unset. The control is an unevaluated instrument, not evidence
-of comprehension or usability.
+Activity reconstructs completed runs from the service's history and event
+trace. Its summary exposes policy mode, outcome, decision and intervention
+counts, and wait and policy-check time; expansion reveals the service-sequenced
+log. The timing split is descriptive accounting of recorded waits and
+enforcement-processing time, not a matched off-mode counterfactual, and it omits
+block-induced replanning. A non-allow decision can also carry an
+\texttt{understood} marker that records whether its displayed reason was clear.
+In the deterministic walkthrough both responses remain unset. The control is an
+unevaluated instrument, not evidence of comprehension or usability.
 
 \Cref{fig:authority-audit-evidence} connects the live and retrospective views
 from one walkthrough run. Panel~(a) shows the redacted approval card while the
@@ -491,11 +501,11 @@ proposal is held; panel~(b) shows the resulting outcomes, timing, and decisions
 in Activity after the run.
 
 These surfaces provide technical groundwork for a future HITL study, but do not
-by themselves make the prototype study-ready. Here, automated tests and
-deterministic walkthroughs establish only fail-closed transitions, redacted
-projection, reconnect handling, and audit reconstruction; they provide no
-participant evidence about comprehension, usability, trust, workload, fatigue,
-intervention burden, or decision quality.
+by themselves make the prototype study-ready. Here, tests establish fail-closed
+authority contracts, while deterministic walkthroughs document redacted state
+projection and audit reconstruction. They provide no participant evidence about
+comprehension, usability, trust, workload, fatigue, intervention burden, or
+decision quality.
 
 \begin{figure}[!htbp]
 \centering
@@ -514,17 +524,14 @@ intervention burden, or decision quality.
 \FloatBarrier
 \section{Design synthesis}
 
-Together, these mechanisms give each requirement an enforcement point.
-Observation governance supports R2; per-proposal mediation and policy implement
-R1 and R3 at the executor; selective, expiring authority provides R4; and paired
-redacted records and run-keyed evidence provide R5. They form one governed path:
-a missed or incompletely removed observation does not eliminate action policy,
-and an operator response cannot weaken a hard prohibition.
+Together, these mechanisms give each requirement an enforcement point:
+observation governance supports R2; per-proposal mediation and policy support
+R1 and R3; selective, expiring authority supports R4; and paired redacted
+records with run-keyed evidence support R5. They form one governed path, so an
+incomplete observation treatment does not remove action policy and operator
+input cannot weaken a hard prohibition.
 
-Sentinel is the enforcement architecture; the Chrome extension is its
-operator-facing projection, exposing server-owned states and relaying bounded
-responses without independent authority. This hierarchy also frames the
-evidence that follows. Component checks examine mechanism contracts; AgentDojo
-examines controlled end-to-end effects; WASP examines browser-native transfer;
-and walkthroughs establish technical authority and control-plane behaviour.
-\Cref{chap:methodology} defines these evaluations and their limits.
+Sentinel is the enforcement architecture; the extension projects its states
+without independent authority. \Cref{chap:methodology} traces this hierarchy
+through mechanism checks, controlled AgentDojo effects, browser-native WASP
+transfer, and control-plane walkthroughs.
