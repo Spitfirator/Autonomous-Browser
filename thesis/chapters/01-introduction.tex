@@ -50,9 +50,11 @@ reach the executor.
 
 The thesis is that \emph{independent runtime enforcement can reduce evaluated
 policy violations while preserving useful autonomy under the tested
-conditions}. Independence means that an allow, block, approval, or takeover
-outcome is determined outside the acting model. The claim is tied to defined
-tool and browser benchmarks; it does not extend to prompt injection in general.
+conditions}. Independence refers to where enforcement authority resides. The
+evaluated planner also receives fixed security guidance, which may influence
+its proposals; however, allow, block, approval, takeover, and execution
+decisions remain outside the acting model. The claim is tied to defined tool and
+browser benchmarks; it does not extend to prompt injection in general.
 
 \section{Approach}
 
@@ -87,10 +89,11 @@ navigation, and browser re-planning~\cite{evtimov2025wasp}. The principal
 browser study repeats the 84-case matrix across three seeds and compares
 enforcement off, enforcement without sanitisation, and the full system. This
 design tests browser transfer and isolates the configured sanitisation
-increment. The policy-only condition retains detected content and warns the
-model, providing a comparator for post-verified removal. Full enforcement
-removes attributable content and continues only after the reconstructed
-observation passes re-detection.
+increment. Policy-only and full share the same fixed security guidance.
+Policy-only retains detected content and adds a detection-specific warning,
+providing a comparator for post-verified removal. Full enforcement removes
+attributable content and continues only after the reconstructed observation
+passes re-detection.
 
 \section{Contributions}
 \label{sec:contributions}

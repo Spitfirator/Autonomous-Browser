@@ -11,22 +11,24 @@ governed outside the model.
 Sentinel's executor boundary applies one policy to live context, fails closed
 when context or authority is missing, and records paired outcomes. Its
 observation boundary removes attributable hostile content, verifies
-reconstructed input, and withholds unresolved
-observations, while narrow approval and direct human steps preserve operator
-authority. The Chrome extension is the browser-facing control plane: it shows
-redacted server-owned decisions and relays scoped operator responses, while
-authority remains in the runtime. The evaluation links controlled AgentDojo
-evidence to replicated browser-native WASP results.
+reconstructed input, and withholds unresolved observations, while narrow
+approval and direct human steps preserve operator authority. The Chrome
+extension is the browser-facing control plane: it shows redacted server-owned
+decisions and relays scoped operator responses while authority remains with the
+runtime. The evaluation links controlled AgentDojo evidence to replicated
+browser-native WASP results.
 
 Across three matched AgentDojo comparisons, the complete governed
 configuration reduced attacker
-success from 20.8--32.8\% to 0--0.2\%, and utility rose for every model. WASP's
-27B utility result was more mixed. Across three seeds, full enforcement
+success from 20.8--32.8\% to 0--0.2\%, and utility rose for every model. This
+comparison evaluates the composed defence rather than each layer separately.
+WASP's 27B utility result was more mixed. Across three seeds, full enforcement
 reduced audited terminal attacker success from 17/252 to zero and
 attacker-directed execution from 42/252 to zero. Legitimate completion changed
 from 154/252 to 149/252, while secure utility rose from 138/252 to 149/252. At
-unchanged utility, policy-only/full adds mechanism evidence:
-configured sanitisation reduced attacker-directed execution from 15/252 to zero.
+unchanged utility, the policy-only/full comparison adds mechanism evidence: the
+configured sanitisation treatment reduced attacker-directed execution from
+15/252 to zero.
 
 The findings are limited to tested text channels, models, tasks, and the
 prototype boundary; they do not establish universal detection, deployment
@@ -34,6 +36,6 @@ readiness, or human effectiveness. Priorities are held-out adaptive testing
 with an action-only comparator, visual mediation, a tested task contract, and
 preparing the authority workflow for participant evaluation.
 
-Model safeguards are one layer; execution authority can remain outside the
-model. In these evaluations, Sentinel reduced violations while retaining useful
-autonomy.
+Model-facing safeguards are one layer; execution authority can remain outside
+the model. In these evaluations, Sentinel's complete configuration reduced
+violations while retaining useful autonomy.

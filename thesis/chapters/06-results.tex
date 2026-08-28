@@ -48,11 +48,11 @@ usability, or intervention burden. Reproduction commands and hashes appear in
 \section{AgentDojo end-to-end results}
 
 Each of the three model campaigns completed all 629 matched off/enforce task
-pairs. Across them, enforcement reduced attacker success and raised both
-utility and secure utility. \Cref{tab:agentdojo-e2e} reports the native
-outcomes. The clean rows cover 97 tasks, while each attacked condition covers
-629; rates appear beside the counts, and dashes mark outcomes that are not
-defined for clean runs.
+pairs. Across them, attacker success was lower, and utility and secure utility
+were higher, under the complete governed configuration. \Cref{tab:agentdojo-e2e}
+reports the native outcomes. The clean rows cover 97 tasks, while each attacked
+condition covers 629; rates appear beside the counts, and dashes mark outcomes
+that are not defined for clean runs.
 
 \begin{table}[!htbp]
 \centering
@@ -82,11 +82,11 @@ Qwen 3.5 27B & Clean & 81/97 (83.5\%) & -- & -- \\
 \FloatBarrier
 
 The averages, however, conceal movement in both directions at the task level.
-For 4B, enforcement added 84 useful outcomes, removed 206 attacker successes,
-and added 149 useful-and-secure outcomes. With 9B, it added 45 useful outcomes
-and prevented 130 attacker successes; across matched tasks, 92 failures became
-successes while 47 successes were lost. Utility for 27B rose by 55 and secure
-utility by 138, but that net change comprised 84 gains and 29 losses. An
+For 4B, the enforce condition added 84 useful outcomes, removed 206 attacker
+successes, and added 149 useful-and-secure outcomes. With 9B, it added 45 useful
+outcomes and prevented 130 attacker successes; across matched tasks, 92 failures
+became successes while 47 successes were lost. Utility for 27B rose by 55 and
+secure utility by 138, but that net change comprised 84 gains and 29 losses. An
 aggregate improvement did not therefore mean that every trajectory benefited.
 
 The headline rates become clearer when utility and attacker success are read
@@ -94,11 +94,11 @@ together. Each episode falls into one of four groups: useful and secure, useful
 but compromised, unsuccessful and secure, or unsuccessful and compromised. In
 off mode, utility exceeded secure utility by 65, 55, and 83 episodes for 4B,
 9B, and 27B. These gaps are cases in which the model completed the user's task
-but also achieved the attacker's goal; enforcement reduced all three counts to
-zero. Nor did failure on the user's task imply safety. The attacker still
-succeeded in 141, 76, and 120 such episodes in off mode, compared with zero,
-one, and zero under enforcement. This four-way view therefore exposes risk
-that either utility or attacker success alone would conceal.
+but also achieved the attacker's goal; the enforce condition reduced all three
+counts to zero. Nor did failure on the user's task imply safety. The attacker
+still succeeded in 141, 76, and 120 such episodes in off mode, compared with
+zero, one, and zero under enforcement. This four-way view therefore exposes
+risk that either utility or attacker success alone would conceal.
 
 Utility changes were also uneven across task suites. For 4B, utility increased
 in banking (86 to 99), Slack (58 to 60), travel (35 to 100), and workspace (183
@@ -113,17 +113,17 @@ cases for 4B, 9B, and 27B, while each model recorded only nine explicit action
 blocks and no approval actions. In the reviewed 27B aggregate, 2,181 actions
 were allowed. The nine blocked actions were attempted password updates carrying
 recognised credentials, recorded under the
-\texttt{sensitive\_data\_flow} policy rule. These records identify sanitisation
-before the next decision as the main intervention, with action policy as a
-backstop.
+\texttt{sensitive\_data\_flow} policy rule. Within the runtime telemetry,
+sanitisation was therefore the most frequent external intervention, while
+action policy served as a backstop.
 
-This intervention pattern offers a plausible explanation for the joint
-security and utility gains. Indirect injection can pull the agent away from the
-user's task or consume its step budget. Once detected malicious content is
-removed, the planner has an opportunity to resume the original trajectory
-without carrying the attack into its next decision. All three model rows are
-consistent with this account, but they remain independent matched comparisons
-and do not establish a model-size trend.
+This pattern offers a plausible explanation for the joint security and utility
+gains. Indirect injection can pull the agent away from the user's task or
+consume its step budget. Removing detected malicious content gives the planner
+an opportunity to resume the original trajectory, while the fixed guidance
+reinforces that tool results do not authorise a new goal. The model rows are
+consistent with this combined account, but they do not identify the separate
+contribution of either layer or establish a model-size trend.
 
 Clean runs provide a final reference point. Clean utility remained above
 attacked-off utility for every model: 78.4\% versus 57.6\% for 4B, 82.5\%
@@ -222,22 +222,25 @@ Seed & Utility & Audited ASR & Secure utility & Executed & Utility & Executed \\
 
 \subsection{What the policy-only/full contrast establishes}
 
-The policy-only condition keeps boundary neutralisation, the detector warning,
-and action policy, but leaves browser sanitisation disabled. Compared with off,
-it reduced audited attacker success from 17/252 to 1/252 and attacker-directed
-execution from 42/252 to 15/252. These reductions reflect the controls working
-together and cannot be assigned to action policy alone.
+The policy-only condition adds fixed security guidance, boundary neutralisation,
+the detector warning, and action policy, but leaves browser sanitisation
+disabled. Compared with off, it reduced audited attacker success from 17/252 to
+1/252 and attacker-directed execution from 42/252 to 15/252. These reductions
+reflect the controls working together and cannot be assigned to action policy
+or guidance alone.
 
-Full then adds browser sanitisation. Once removal is verified, it no longer
-sends the detector warning to the model. The full-versus-policy-only comparison
-therefore captures this additional configured treatment. Aggregate utility was
-unchanged at 149/252, while episodes containing attacker-directed proposals and
-executions fell from 15/252 to zero. Within every seed, both measures fell from
-five episodes to zero. Audited attacker success also changed from 1/252 to zero,
-and secure utility rose from 148/252 to 149/252. The terminal ASR difference is
-only one episode because policy-only completed just one attacker goal. The
-trajectory difference is larger: policy-only produced attacker-directed
-proposals in 15 episodes, whereas full produced none across 252 episodes.
+Full retains the fixed guidance and action controls while adding browser
+sanitisation. Once removal is verified, it no longer sends the
+detection-specific warning to the model. The shared fixed guidance means this
+contrast tests an additional runtime observation treatment, not a change in
+that instruction. Aggregate utility was unchanged at 149/252, while episodes
+containing attacker-directed proposals and executions fell from 15/252 to zero.
+Within every seed, both measures fell from five episodes to zero. Audited
+attacker success also changed from 1/252 to zero, and secure utility rose from
+148/252 to 149/252. The terminal ASR difference is only one episode because
+policy-only completed just one attacker goal. The trajectory difference is
+larger: policy-only produced attacker-directed proposals in 15 episodes,
+whereas full produced none across 252 episodes.
 
 The intervention logs help explain this result. Full performed 740
 sanitisation attempts and verified removal in all 740 cases: 21 used direct-line
@@ -301,9 +304,9 @@ while WASP tests transfer into a browser-native loop. Security must still be
 read with utility and paired trajectories. Chapter~7 interprets this evidence,
 including the sanitisation result and its limits.
 
-\Cref{fig:evaluation-bars} brings the evaluations together: in both, enforcement
-reduces attacker success while retaining useful task performance; the preceding
-tables retain the exact values.
+\Cref{fig:evaluation-bars} brings the evaluations together: in both, attacker
+success is lower under the complete governed condition while useful task
+performance is retained; the preceding tables retain the exact values.
 
 \begin{figure}[!htbp]
 \centering

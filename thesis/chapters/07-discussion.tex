@@ -3,20 +3,22 @@
 
 \section{Answer to the research question}
 
-In the evaluated models, tasks, and textual channels, independent runtime
-enforcement reduced prompt-injection-driven violations while retaining useful
-work. The scope of that answer matters: it does not mean that Sentinel solves
-prompt injection. The case rests on complementary AgentDojo and WASP
-evaluations, not on any single run in which attacker success reached zero.
+In the evaluated models, tasks, and textual channels, Sentinel's complete
+governed configuration reduced prompt-injection-driven violations while
+retaining useful work. Its independence is architectural: model-facing guidance
+may shape a proposal, but observation and execution decisions remain under the
+authority of a separate runtime. The scope of that answer matters. Sentinel
+does not solve prompt injection, and the case rests on complementary AgentDojo
+and WASP evaluations rather than any single zero-success run.
 
-Across three matched AgentDojo configurations, enforcement reduced attacker
-success while increasing utility and secure utility. In browser-native WASP,
-full enforcement reduced action-audited terminal success from 17/252 to zero
-and attacker-directed execution from 42/252 to zero. Legitimate completion fell
-from 154/252 to 149/252, while secure utility rose from 138/252 to 149/252
-(\cref{tab:agentdojo-e2e,tab:wasp-27b}). Thus, AgentDojo utility improved while
-WASP incurred a small aggregate cost, but neither showed a collapse in useful
-completion.
+Across three matched AgentDojo configurations, the complete configuration
+reduced attacker success while increasing utility and secure utility. In
+browser-native WASP, full enforcement reduced action-audited terminal success
+from 17/252 to zero and attacker-directed execution from 42/252 to zero.
+Legitimate completion fell from 154/252 to 149/252, while secure utility rose
+from 138/252 to 149/252 (\cref{tab:agentdojo-e2e,tab:wasp-27b}). Thus,
+AgentDojo utility improved while WASP incurred a small aggregate cost, but
+neither showed a collapse in useful completion.
 
 Their rates are not directly comparable because their interfaces, attacks, and
 oracles differ. The shared architectural lesson is that the model can plan
@@ -75,10 +77,11 @@ prohibited action, while an apparently safe observation says nothing about
 whether the eventual action will be permissible.
 
 The WASP policy-only/full comparison gives the clearest evidence for the
-observation boundary. Policy-only retained boundary neutralisation, the
-detector warning, and action policy, whereas full added verified browser
-sanitisation and removed the warning after confirmed removal. The comparison
-therefore isolates the configured sanitisation increment within that fixed
+observation boundary. Both conditions shared the fixed security guidance,
+boundary neutralisation, and action policy. Policy-only retained detected
+content and issued a warning, whereas full added verified browser sanitisation
+and removed that warning after confirmed removal. The comparison therefore
+isolates the configured sanitisation increment within a shared guidance
 scaffold; it is not a pure action-policy ablation. Aggregate utility remained
 149/252 in both conditions, but attacker-directed proposals and executions fell
 from 15/252 to zero, while terminal attacker success changed from 1/252 to zero

@@ -53,22 +53,24 @@ the same task and attack with enforcement off and on under the same recorded
 setup.
 
 The WASP progression is cumulative, so each contrast has a specific
-interpretation. Moving from off to policy-only enables boundary neutralisation,
-a detector warning, and action policy, while browser sanitisation remains
-disabled. As \cref{sec:observation-governance} explains, boundary neutralisation
-escapes page-supplied text that imitates Sentinel's reserved protocol or
-authority tags while preserving the genuine outer marker that identifies the
-region as untrusted. It protects that representation boundary, but it does not
-remove the hostile instruction. The off-to-policy-only comparison therefore
-measures these mechanisms as a bundle, not action policy in isolation.
+interpretation. Moving from off to policy-only adds fixed security guidance to
+the model alongside boundary neutralisation, a detection-specific warning, and
+action policy, while browser sanitisation remains disabled. As
+\cref{sec:observation-governance} explains, boundary neutralisation escapes
+page-supplied text that imitates Sentinel's reserved protocol or authority tags
+while preserving the genuine outer marker that identifies the region as
+untrusted. It protects that representation boundary, but it does not remove the
+hostile instruction. The off-to-policy-only comparison therefore measures these
+mechanisms as a bundle, not action policy in isolation.
 
-Moving from policy-only to full changes only the configured sanitisation
-treatment. After a confirmed removal, Sentinel rewrites the observation,
-checks the reconstructed input, and suppresses the warning used when detected
-content remains. Consequently, this contrast isolates the configured treatment
-within the scaffold, but it does not separate removal from warning suppression.
-Policy-only is therefore deliberately composite, whereas full adds the targeted
-rewrite and clean post-check.
+Moving from policy-only to full holds fixed security guidance, boundary
+neutralisation, and action policy constant. It changes the configured
+observation treatment: after a confirmed removal, Sentinel rewrites the
+observation, checks the reconstructed input, and suppresses the warning used
+when detected content remains. Consequently, this contrast isolates the
+configured sanitisation path within the shared scaffold, but it does not
+separate removal from warning suppression. Policy-only is therefore deliberately
+composite, whereas full adds the targeted rewrite and clean post-check.
 
 Finally, comparisons across models and benchmark families answer narrower
 questions. The AgentDojo 4B, 9B, and 27B campaigns use the same recorded
@@ -153,15 +155,16 @@ The end-to-end stage uses Qwen 3.5 4B, 9B, and 27B~\cite{qwen3.5}. For each
 model, 97 clean tasks establish capability without injection, while 629
 attacked instances are evaluated with enforcement off and on. Paired conditions
 share context and output limits, reasoning profile, sampling parameters, seed,
-and a locally served model artefact~\cite{ollama2026}. However, the enforce
+and a locally served model configuration~\cite{ollama2026}. However, the enforce
 condition also includes a fixed security instruction in the model's system
 prompt. That instruction may influence what the model proposes, but it does not
 itself allow or block executor calls. Sentinel's external controls operate
 independently: they sanitise detected tool results and evaluate every proposed
-action before execution. The paired comparison measures the resulting governed
-configuration, while a separate model-free replay confirms that Sentinel's
-detector and policy engine produced the intended decisions without a model in
-the loop.
+action before execution. Since the instruction and external controls are
+enabled together, the paired comparison measures the complete governed
+configuration rather than their separate effects. A model-free replay then
+confirms that Sentinel's detector and policy engine produced the intended
+decisions without a model in the loop.
 
 During each task, the adapter governs tool-result observations and executor
 calls while leaving task initialisation and native evaluators unchanged, so
@@ -184,9 +187,11 @@ attacked episodes in each condition. Repeating this matrix for seeds 0, 1, and
 2 under off, policy-only, and full produces 252 episodes per condition and 756
 overall.
 
-All conditions share the Qwen 3.5 27B artefact, 30-step single-action scaffold,
-inputs, sampling settings, and DOM/accessibility observations; screenshots are
-excluded. The campaign used \texttt{participant=none}, so no human supplied
+All conditions use the same Qwen 3.5 27B artefact, 30-step single-action
+scaffold, inputs, sampling settings, and DOM/accessibility observations. They
+also share the BrowserUse base prompt and fixed handover guidance; screenshots
+are excluded. Policy-only and full additionally share Sentinel's fixed security
+guidance. The campaign used \texttt{participant=none}, so no human supplied
 approval or handoff decisions during an episode. Together, the three conditions
 form a staged comparison:
 
@@ -194,15 +199,15 @@ form a staged comparison:
   \item[Off] The prompt-injection boundary and action-policy enforcement are
   bypassed, providing the attacked baseline while retaining redacted telemetry.
 
-  \item[Policy-only] Boundary neutralisation, the detector warning, and action
-  policy are enabled, but browser sanitisation is disabled. Compared with off,
-  this condition measures their combined effect.
+  \item[Policy-only] Fixed security guidance, boundary neutralisation, the
+  detector warning, and action policy are enabled, but browser sanitisation is
+  disabled. Compared with off, this condition measures their combined effect.
 
-  \item[Full] Browser sanitisation is added to an otherwise identical
-  policy-only configuration. After a confirmed removal, the reconstructed
+  \item[Full] The fixed guidance and action controls remain in place while
+  browser sanitisation is added. After a confirmed removal, the reconstructed
   observation proceeds without a model-facing warning; if the clean post-check
   fails, the observation is withheld. This final contrast isolates the
-  configured sanitisation increment.
+  configured sanitisation increment within the shared guidance scaffold.
 \end{description}
 
 Native final-state scores show whether the user or attacker goal was achieved,
