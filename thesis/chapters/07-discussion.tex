@@ -158,11 +158,14 @@ an open empirical question.
 Sentinel's main security limitation is adaptation. Several attack families
 shaped detection and representation handling during development. One WASP
 failure exposed an unsafe link target omitted from BrowserUse's accessibility
-text. These attack families became useful regression tests, but neither the
-component scorecards nor the final campaign establishes how Sentinel would
-perform against unseen or adaptive attacks. Likewise, a clean post-sanitisation
-check shows only that the detector no longer fires, not that hostile intent is
-absent. Adaptive-attack research, including
+text. Sentinel's external architecture provides a separate route for responding
+to newly identified attack patterns: the relevant controls can be revised and
+tested without changing the model itself. This does not make adaptation
+automatic; each change requires renewed security and utility evaluation, and
+the update path does not imply protection against attacks that remain
+unrecognised. Likewise, a clean post-sanitisation check shows only that the
+detector no longer fires, not that hostile intent is absent. Adaptive-attack
+research, including
 MUZZLE~\cite{zhan2025adaptive,syros2026muzzle}, suggests a stronger test: freeze
 the system, withhold attack families during development, then use agent
 behaviour to select injection surfaces and execution feedback to refine attacks.
