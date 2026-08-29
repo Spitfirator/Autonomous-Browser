@@ -90,38 +90,39 @@
 
 \chapter*{Abstract}
 \addcontentsline{toc}{chapter}{Abstract}
-Browser agents turn model outputs into consequential actions, yet the pages
-they interpret may also contain attacker-supplied instructions. This creates an
-authority problem: the model must interpret untrusted content while deciding
-whether it should influence privileged effects. This dissertation presents
-\systemname, an independent enforcement layer between a browser agent and its
-executor. \systemname\ governs observations before they reach the model and
-evaluates proposed actions immediately before execution. When policy requires
-operator authority, it requests narrow approval or pauses for a direct human
-step. It combines post-verified sanitisation, origin-scoped taint,
-deterministic policy and data-flow rules, protected-input handling, and
-redacted audit. A Chrome extension provides the browser-facing control plane,
-displaying redacted decisions and relaying scoped responses while enforcement
-authority remains in the runtime.
+Browser agents turn model outputs into actions with real consequences, but the
+pages they interpret may contain attacker-supplied instructions. Untrusted
+content can thus shape proposals for privileged execution. This dissertation
+presents \systemname, an independent runtime-enforcement layer between a browser
+agent and its executor. \systemname\ mediates observations before the model sees
+them and evaluates proposed actions immediately before execution. It combines
+post-verified sanitisation, deterministic policy and data-flow controls,
+protected-input handling, and redacted audit records. When needed, it requests
+scoped approval or pauses for a direct human step. A Chrome extension displays
+redacted decisions and relays responses, while enforcement authority remains
+in the runtime.
 
-Across three matched AgentDojo comparisons of 629 attacked tasks per condition,
+Across matched AgentDojo runs of 629 attacked tasks per condition,
 baseline attacker success for Qwen 3.5 4B, 9B, and 27B was 32.8\%, 20.8\%, and
-32.3\%; the complete governed configuration reduced it to 0\%, 0.2\%, and 0\%,
-respectively, while increasing utility. Replicated browser-native WASP evidence
-covered Qwen 3.5 27B on 84 tasks across three seeds under off, policy-only, and
-full conditions (252 episodes each). From off to full, action-audited terminal
-attacker success fell from 17/252 to zero and attacker-directed execution from
-42/252 to zero. Legitimate completion changed from 154/252 to 149/252; secure
-utility rose from 138/252 to 149/252. Against policy-only, full governance cut
-attacker-directed execution from 15/252 to zero at unchanged aggregate utility;
-all 740 attributable sanitisation removals were confirmed.
+32.3\%; the complete configuration reduced these rates to 0\%, 0.2\%, and 0\%,
+respectively, while utility rose for each model. Replicated WASP evaluation
+tested browser-native transfer with Qwen 3.5 27B on 84 cases over three seeds
+under off, policy-only, and full conditions (252 episodes each).
+From off to full, action-audited terminal attacker success fell from 17/252 to
+zero and attacker-directed execution from 42/252 to zero. Legitimate completion was
+154/252 off and 149/252 full, while secure utility rose from 138/252 to 149/252.
+With model-facing guidance held constant, the policy-only/full contrast tested
+the configured sanitisation increment: attacker-directed execution fell from
+15/252 to zero at unchanged utility, and all 740/740 attributable sanitisation
+attempts produced verified removals.
 
-Overall, the results concern Sentinel's complete configuration, in which
-model-facing guidance accompanies independent runtime controls. Independence
-refers to authority: guidance may shape proposals, but a separate runtime
+The configurations combine model-facing guidance with runtime controls.
+Independence concerns authority: guidance may shape proposals, but the runtime
 governs observations and privileged execution. The findings do not show that
-Sentinel prevents prompt injection in all settings, justify deployment, or
-demonstrate successful human use.
+\systemname\ prevents prompt injection in all settings, justify deployment, or
+demonstrate successful human use. Within those limits, the results support the
+central claim that independent runtime enforcement can substantially reduce
+evaluated policy violations while retaining useful autonomy.
 
 \begingroup
 \small
