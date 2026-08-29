@@ -13,7 +13,8 @@ evidence in the same order.
 
 Component replay exposes detector, sanitiser, and policy decisions directly.
 AgentDojo then places those guards around complete tool-agent tasks with native
-state oracles~\cite{debenedetti2024agentdojo}. WASP adds DOM-derived
+task-specific user and attacker oracles that inspect model output and
+environment state~\cite{debenedetti2024agentdojo}. WASP adds accessibility-tree
 observations, navigation, mutable applications, and repeated planning
 ~\cite{evtimov2025wasp}. Thus replay checks the mechanisms, AgentDojo measures
 controlled end-to-end consequences, and WASP tests browser-native transfer.
@@ -148,11 +149,12 @@ text representations produced by the AgentDojo and WASP adapters. Their
 outcomes and limitations are reported in
 \cref{sec:component-evidence}.
 
-The end-to-end stage uses Qwen 3.5 4B, 9B, and 27B~\cite{qwen3.5}. For each
+The end-to-end stage uses the 4B, 9B, and 27B variants of Qwen
+3.5~\cite{qwen3.5}, served locally through Ollama~\cite{ollama2026}. For each
 model, 97 clean tasks assess capability without injection, while the 629
 attacked instances are evaluated with enforcement off and on. Paired conditions
 share the recorded context and output limits, reasoning profile, sampling
-parameters, seed, and locally served model name~\cite{ollama2026}.
+parameters, seed, and model name.
 
 The enforce condition also adds a fixed security instruction to the model's
 system prompt. That instruction may influence what the model proposes, but it
@@ -177,13 +179,14 @@ inference profile, and sampling settings match the campaign record.
 
 WASP then asks whether Sentinel's enforcement pattern remains effective in a
 browser loop, where every action may change the observation on which the next
-plan depends. The adapter pins the benchmark and BrowserUse revisions while
-retaining WASP's official injector and native oracles
-~\cite{evtimov2025wasp,zunic2026browseruse}. The matrix crosses 21 attacker
-scenarios with two legitimate user goals and two injection formats, producing
-84 attacked episodes per condition. Repeating that matrix for seeds 0, 1, and
-2 under off, policy-only, and full produces 252 episodes per condition and 756
-overall.
+plan depends. The browser stage combines BrowserUse~\cite{zunic2026browseruse}
+with WASP's published injection and evaluation
+pipeline~\cite{evtimov2025wasp}. Sentinel's adapter retains those components
+and records the pinned benchmark and BrowserUse revisions. The matrix crosses
+21 attacker scenarios with two legitimate user goals and two injection
+formats, producing 84 attacked episodes per condition. Repeating that matrix
+for seeds 0, 1, and 2 under off, policy-only, and full produces 252 episodes per
+condition and 756 overall.
 
 All conditions use the same Qwen 3.5 27B artefact, 30-step single-action
 scaffold, inputs, sampling settings, and DOM/accessibility observations. They
