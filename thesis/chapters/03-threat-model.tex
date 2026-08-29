@@ -29,15 +29,15 @@ privileged effects.
 
 \section{Assets and trust boundary}
 
-Sentinel protects more than data. The operator's goal defines what the agent is
-authorised to do; the authenticated browser session, local files, and remote
+Sentinel protects more than data. Indeed, the operator's goal defines what the agent is
+authorised to do, and the authenticated browser session, local files, and remote
 application state determine what it is capable of changing. Private values,
 consent decisions, and the audit record must also remain confidential.
 Availability matters alongside these assets because an agent that never acts
 provides no useful autonomy. Nevertheless, when Sentinel lacks context needed
 for a security decision, refusing the effect is safer than guessing.
 
-This leads to the central trust question: which component is allowed to turn a
+This leads to the main trust question: which component is allowed to turn a
 proposal into a browser effect? A page may shape an observation, the model may
 choose an action, and the extension may present a decision to the operator.
 Influence, however, is not authority. None of those roles should be sufficient
@@ -134,7 +134,7 @@ the chain also weakens the assurances that follow.
   denials, timeouts, handovers, and cancellation.
 
   \item \textbf{Verified observation handling.} A detector alert begins a
-  security decision; it does not complete one. Browser, extraction, and
+  security decision, it does not complete one. Browser, extraction, and
   tool-result content therefore remains untrusted regardless of origin. A
   detected region may continue only after attributable modification and clean
   re-detection of the reconstructed model input. If current-page content remains

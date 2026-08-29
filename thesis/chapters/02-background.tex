@@ -18,9 +18,10 @@ operator's control.
 Prompt injection exploits the fact that instructions and data share the same
 model context. Direct attacks alter the user's prompt; indirect attacks arrive
 through retrieved content that the application expected to treat as data.
-Greshake et al. demonstrated indirect attacks through documents and web
-content, including disclosure and propagation effects
-~\cite{greshake2023indirect}. A browser-agent attacker can place equivalent
+Greshake et al. demonstrated indirect prompt-injection attacks in synthetic
+LLM-integrated applications and through local web content, including data
+exfiltration and worm-like propagation~\cite{greshake2023indirect}. A
+browser-agent attacker can place equivalent
 instructions in a page, user-generated record, link label, or stored result.
 The agent encounters them while acting with the user's delegated authority. For
 example, injected issue content can divert an agent asked to comment on an
