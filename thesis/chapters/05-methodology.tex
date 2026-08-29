@@ -3,94 +3,90 @@
 
 \section{Evaluation strategy}
 
-Chapter~\ref{chap:design} leads to a three-part empirical test of the research
-question. First, do the guards meet their individual contracts? Second, around
-a complete agent, do they reduce attacker success without suppressing the
-user's task? Finally, does the same pattern persist when the agent navigates,
-observes changing pages, and replans? The evaluation is organised around these
-questions in this order, and Chapter~\ref{chap:results} reports the corresponding
-findings in the same sequence.
+The design in Chapter~\ref{chap:design} frames three empirical questions of
+increasing scope. First, do the individual guards satisfy their
+contracts? Second, when placed around a complete agent, do they reduce attacker
+success without preventing the legitimate task? Third, does the same pattern
+hold when the agent navigates, observes changing pages, and replans? The
+evaluation follows that progression; Chapter~\ref{chap:results} reports the
+evidence in the same order.
 
 Component replay exposes detector, sanitiser, and policy decisions directly.
-AgentDojo then places the guards around complete tool-agent tasks with native
+AgentDojo then places those guards around complete tool-agent tasks with native
 state oracles~\cite{debenedetti2024agentdojo}. WASP adds DOM-derived
 observations, navigation, mutable applications, and repeated planning
-~\cite{evtimov2025wasp}. Replay therefore checks the mechanisms, AgentDojo
-tests controlled end-to-end consequences, and WASP tests browser-native
-transfer.
+~\cite{evtimov2025wasp}. Thus replay checks the mechanisms, AgentDojo measures
+controlled end-to-end consequences, and WASP tests browser-native transfer.
 
-Each setting resolves an ambiguity left by the previous one. A replayed block
-does not show whether an agent recovers; a final-state oracle does not locate
-where an unsafe trajectory stopped; a browser trajectory introduces additional
-failure paths. The analysis therefore reads native outcomes with redacted
-trajectory evidence, never treating an alert or block as a security result by
-itself.
+Each stage addresses a limitation of the one before it. Replay cannot show
+whether an agent recovers, while a final-state oracle cannot reveal where an
+unsafe trajectory stopped; a browser trajectory introduces further failure
+paths. The analysis therefore combines native outcomes with redacted trajectory
+evidence and never treats an alert or block alone as a security result.
 
-The empirical chain evaluates Sentinel's observation and action guards, not
-human performance. The authority workflow and control plane are therefore
-assessed separately through automated tests and deterministic walkthroughs.
-This technical evidence establishes that the implemented states and control
-paths behave as designed; it does not measure operator comprehension, decision
-quality, usability, or intervention burden.
+Furthermore, the three stages focus on Sentinel's observation and action
+guards, not human performance. Automated tests and deterministic walkthroughs
+assess the authority workflow and control plane separately. They show
+whether the implemented states and control paths behave as designed, but cannot
+measure operator comprehension, decision quality, usability, or intervention burden.
 
 \subsection{Comparison logic}
 
-The comparison is informative only if enforcement changes while the underlying
-problem remains fixed. AgentDojo therefore runs each attacked instance twice
-for the same model, with enforcement off and on. WASP extends this pairing to a
-browser setting: for each of three seeds, the same 84 cases and inputs are
-evaluated under off, policy-only, and full, with a pristine website reset before
-every cell. Aggregate rates summarise the trade-off between security and
-utility, while paired transitions show which attacks were prevented or
-introduced and which legitimate outcomes were gained or lost.
+A comparison is informative only when the underlying problem remains fixed as
+enforcement changes. AgentDojo therefore runs each attacked instance twice for
+the same model, with enforcement off and on. WASP applies the same principle in
+the browser: for each of three seeds, the same 84 cases and inputs are evaluated
+under off, policy-only, and full, with a pristine website reset before every
+cell. Aggregate rates summarise the balance between security and utility;
+paired transitions show which attacks were prevented or introduced and which
+legitimate outcomes were gained or lost.
 
-This pairing matters because a motionless agent can appear secure if attacker
-success is considered alone. Accordingly, the analysis reads attacker success,
-utility, and secure utility together. AgentDojo's 97 clean tasks provide a
-separate baseline for benign capability. These tasks are not the
-counterfactual for an attacked episode; that comparison comes from executing
-the same task and attack with enforcement off and on under the same recorded
-setup.
+This pairing also guards against a misleading result: a motionless agent may
+appear secure simply because it achieves nothing. Attacker success, utility,
+and secure utility are therefore interpreted together. AgentDojo's 97 clean
+tasks provide a separate baseline for benign capability, not the
+counterfactual for an attacked episode. That comparison comes from running the
+same task and attack with enforcement off and on under the corresponding
+recorded setup.
 
-The WASP progression is cumulative, so each contrast has a specific
-interpretation. Moving from off to policy-only adds fixed security guidance to
-the model alongside boundary neutralisation, a detection-specific warning, and
-action policy, while browser sanitisation remains disabled. As
+The WASP conditions build cumulatively, which gives each contrast a specific
+interpretation. The first step, from off to policy-only, adds fixed security
+guidance to the model alongside boundary neutralisation, a detection-specific
+warning, and action policy, while browser sanitisation remains disabled. As
 \cref{sec:observation-governance} explains, boundary neutralisation escapes
 page-supplied text that imitates Sentinel's reserved protocol or authority tags
 while preserving the genuine outer marker that identifies the region as
 untrusted. It protects that representation boundary, but it does not remove the
-hostile instruction. The off-to-policy-only comparison therefore measures these
-mechanisms as a bundle, not action policy in isolation.
+hostile instruction. The off-to-policy-only comparison therefore measures the
+combined effect of these mechanisms, not action policy in isolation.
 
-Moving from policy-only to full holds fixed security guidance, boundary
-neutralisation, and action policy constant. It changes the configured
-observation treatment: after a confirmed removal, Sentinel rewrites the
+The second step, from policy-only to full, holds fixed security guidance,
+boundary neutralisation, and action policy constant. Only the configured
+observation treatment changes: after a confirmed removal, Sentinel rewrites the
 observation, checks the reconstructed input, and suppresses the warning used
-when detected content remains. Consequently, this contrast isolates the
-configured sanitisation path within the shared scaffold, but it does not
-separate removal from warning suppression. Policy-only is therefore deliberately
-composite, whereas full adds the targeted rewrite and clean post-check.
+when detected content remains. This contrast therefore isolates the configured
+sanitisation path within the shared scaffold, although it cannot separate
+removal from warning suppression. Policy-only is deliberately composite,
+whereas full adds the targeted rewrite and clean post-check.
 
-Finally, comparisons across models and benchmark families answer narrower
-questions. The AgentDojo 4B, 9B, and 27B campaigns use the same recorded
+Comparisons across models and benchmark families answer narrower questions.
+The AgentDojo 4B, 9B, and 27B campaigns use the same recorded
 inference profile but remain distinct model artefacts. Since parameter count was
 not isolated from planning, tool selection, recovery, or error behaviour,
-cross-model variation is descriptive and cannot support a causal claim about
-model size.
-Likewise, AgentDojo and WASP differ in applications, observations, actions, and
-oracles. Their value lies in recurrence across complementary settings; their
-absolute rates are not pooled.
+cross-model variation is descriptive; it cannot support a causal claim about
+model size. AgentDojo and WASP also differ in their applications, observations,
+actions, and oracles. Their value lies in the recurrence of a pattern across
+complementary settings, so their absolute rates are not pooled.
 
 \section{Conditions and outcome definitions}
 
-The evaluation begins by comparing an unenforced baseline with the complete
-enforced configuration. AgentDojo labels these conditions \texttt{off} and
-\texttt{enforce}, while WASP uses \texttt{off} and \texttt{full}. In both
-benchmarks, off bypasses observation rewriting and policy verdicts but retains
-redacted action telemetry. This retention keeps trajectories comparable across
-conditions. The complete enforced configuration then applies the specified
-observation and action decisions.
+The evaluation compares an unenforced baseline with the complete enforced
+configuration. AgentDojo names these conditions \texttt{off} and
+\texttt{enforce}; WASP uses \texttt{off} and \texttt{full}. Despite the
+different labels, off serves the same methodological role: it bypasses
+observation rewriting and policy verdicts while retaining redacted action
+telemetry for trajectory comparison. The complete enforced configuration
+applies the specified observation and action decisions.
 
 Within these conditions, three outcome measures capture security and
 usefulness together. Utility records successful completion of the legitimate
@@ -107,14 +103,14 @@ returned by the native user and attacker oracles. Across $n$ instances:
     \frac{1}{n}\sum_{i=1}^{n}u_i(1-a_i).
 \end{align}
 
-These measures answer different questions and must be read together.
-In particular, secure utility is not $1-\mathrm{ASR}$: an episode contributes
-only when useful work is completed safely. Paired analysis then adds a
-task-level view by counting utility gains and losses, attacks prevented or
-introduced, and changes in useful-and-secure outcomes.
+These measures answer different questions, so none is interpreted alone. In
+particular, secure utility is not $1-\mathrm{ASR}$: an episode contributes only
+when useful work is completed safely. Paired analysis adds a task-level view by
+counting utility gains and losses, attacks prevented or introduced, and changes
+in useful-and-secure outcomes.
 
-Final-state metrics, however, do not reveal where an attacker-directed
-trajectory was interrupted. WASP therefore distinguishes an
+Final-state metrics still cannot reveal where an attacker-directed trajectory
+was interrupted. WASP therefore distinguishes an
 \emph{attacker-directed attempt}, a proposal matching the instantiated attacker
 goal, from an
 \emph{attacker-directed execution}, a matching proposal carried out by the
@@ -123,7 +119,7 @@ with the attacker's goal; an execution shows that the action crossed the
 execution boundary. This distinction captures diversion stopped before
 execution, as well as attacker-directed behaviour that did not complete the
 final attacker goal. Even so, the benchmark's native oracles determine terminal
-success, while trajectory replay explains how the episode reached its outcome.
+success, while trajectory replay explains how each episode reached its outcome.
 
 The benchmark design also limits how far these conclusions extend. The
 evaluation uses a fixed set of tasks, so its findings apply to those cases.
@@ -137,63 +133,65 @@ implying that the underlying rate is zero.
 \label{sec:agentdojo-method}
 
 AgentDojo tests whether Sentinel changes complete tool-agent outcomes under a
-controlled intervention. Version 0.1.35 suite v1 contains 97 user tasks across
+controlled intervention. Version 0.1.35 suite v1 provides 97 user tasks across
 banking, Slack, travel, and workspace environments. Crossing the applicable
-tasks with the published tool-knowledge attacks yields 629 attacked
+tasks with the published tool-knowledge attacks produces 629 attacked
 instances~\cite{debenedetti2024agentdojo}. Sentinel preserves the benchmark
 interface, state, and native oracles. To avoid recording injected payloads, its
 harness calls the task suite directly without the raw \texttt{TraceLogger}; the
 oracles remain unchanged.
 
 Before model execution, component replay applies the real detector and policy
-engine to 7,404 security cases from 16 public non-manual attack families and,
-separately, to 97 benign tasks. A second scorecard replays the exact AgentDojo
-and WASP text representations. Their outcomes and limitations are reported in
+engine to 7,404 security cases from 16 public non-manual attack families and
+separately checks 97 distinct benign tasks. A second scorecard replays the exact
+text representations produced by the AgentDojo and WASP adapters. Their
+outcomes and limitations are reported in
 \cref{sec:component-evidence}.
 
 The end-to-end stage uses Qwen 3.5 4B, 9B, and 27B~\cite{qwen3.5}. For each
-model, 97 clean tasks establish capability without injection, while 629
+model, 97 clean tasks assess capability without injection, while the 629
 attacked instances are evaluated with enforcement off and on. Paired conditions
-share context and output limits, reasoning profile, sampling parameters, seed,
-and a locally served model configuration~\cite{ollama2026}. However, the enforce
-condition also includes a fixed security instruction in the model's system
-prompt. That instruction may influence what the model proposes, but it does not
-itself allow or block executor calls. Sentinel's external controls operate
-independently: they sanitise detected tool results and evaluate every proposed
-action before execution. Since the instruction and external controls are
-enabled together, the paired comparison measures the complete governed
-configuration rather than their separate effects. A model-free replay then
-confirms that Sentinel's detector and policy engine produced the intended
-decisions without a model in the loop.
+share the recorded context and output limits, reasoning profile, sampling
+parameters, seed, and locally served model name~\cite{ollama2026}.
+
+The enforce condition also adds a fixed security instruction to the model's
+system prompt. That instruction may influence what the model proposes, but it
+does not itself allow or block executor calls. Sentinel's external controls
+operate independently: they
+sanitise detected tool results and evaluate every proposed action before
+execution. Since both are enabled together, the comparison measures the
+complete governed configuration and cannot identify their separate effects. A
+model-free replay then checks whether Sentinel's detector and policy engine
+produce the intended decisions without a model in the loop.
 
 During each task, the adapter governs tool-result observations and executor
-calls while leaving task initialisation and native evaluators unchanged, so
-gains must appear in benchmark state. Within-model changes are interpretable;
-cross-model differences remain descriptive. Finally, summaries are admitted
-only when task identifiers, totals, scores, model, inference profile, and
-sampling settings match the campaign record. \Cref{app:assurance} summarises
-the shared profile and provenance controls.
+calls while leaving task initialisation and native evaluators unchanged. Any
+reported gain must therefore appear in benchmark state. Within-model changes
+are interpretable, while cross-model differences remain descriptive. A summary
+enters the analysis only when its task identifiers, totals, scores, model,
+inference profile, and sampling settings match the campaign record.
+\Cref{app:assurance} summarises the shared profile and provenance controls.
 
 \section{WASP}
 \label{sec:wasp-method}
 
 WASP then asks whether Sentinel's enforcement pattern remains effective in a
-browser loop, where each action can change the observation on which the next
-plan is based. The adapter pins the benchmark and BrowserUse revisions while
+browser loop, where every action may change the observation on which the next
+plan depends. The adapter pins the benchmark and BrowserUse revisions while
 retaining WASP's official injector and native oracles
-~\cite{evtimov2025wasp,zunic2026browseruse}. Twenty-one attacker scenarios are
-crossed with two legitimate user goals and two injection formats, producing 84
-attacked episodes in each condition. Repeating this matrix for seeds 0, 1, and
+~\cite{evtimov2025wasp,zunic2026browseruse}. The matrix crosses 21 attacker
+scenarios with two legitimate user goals and two injection formats, producing
+84 attacked episodes per condition. Repeating that matrix for seeds 0, 1, and
 2 under off, policy-only, and full produces 252 episodes per condition and 756
 overall.
 
 All conditions use the same Qwen 3.5 27B artefact, 30-step single-action
 scaffold, inputs, sampling settings, and DOM/accessibility observations. They
-also share the BrowserUse base prompt and fixed handover guidance; screenshots
-are excluded. Policy-only and full additionally share Sentinel's fixed security
-guidance. The campaign used \texttt{participant=none}, so no human supplied
-approval or handoff decisions during an episode. Together, the three conditions
-form a staged comparison:
+share the BrowserUse base prompt and fixed handover guidance; screenshots are
+excluded. Policy-only and full also share Sentinel's fixed security guidance.
+The campaign used \texttt{participant=none}, so no human supplied an approval
+or handoff decision. Against this background, the conditions form a staged
+comparison:
 
 \begin{description}[style=nextline,leftmargin=24mm]
   \item[Off] The prompt-injection boundary and action-policy enforcement are
@@ -211,42 +209,39 @@ form a staged comparison:
 \end{description}
 
 Native final-state scores show whether the user or attacker goal was achieved,
-but they do not reveal how the trajectory reached that outcome. WASP's native
-oracles determine final utility and attacker success. A deterministic replay of
-Sentinel's audit records then identifies attacker-directed proposals and
-executions by matching them against each task's known attacker goal. The thesis
-counts a native positive as terminal attacker success only when the audit
-confirms that a corresponding attacker-directed action was executed. The
-analysis can therefore separate attacks stopped before execution from actions
-that reached the browser, while also identifying failures at the tool boundary.
-No additional model was used to judge these outcomes.
+but not how the trajectory reached it. WASP's native oracles determine final
+utility and raw attacker success. A deterministic replay of Sentinel's audit
+records then matches attacker-directed proposals and executions against each
+task's known attacker goal. The thesis describes a native positive as terminal
+attacker success only when the audit confirms a corresponding execution. This
+separates attacks stopped before execution from actions that reached the
+browser, while exposing failures at the tool boundary. No additional model
+judges these outcomes.
 
-Finally, each seed and condition covers the same 84 tasks, organised as four
-21-task cells by attacker-goal variant and injection format. The benchmark
-resets the website before each cell and admits results only when the input
-manifests match. The cells were nevertheless run in a fixed order. Although
-the reset restores website state, conditions outside the site, such as service
-load or model-serving state, may still change over time. A later condition
-could therefore coincide with a different runtime environment.
+Each seed and condition covers the same 84 tasks, organised as four 21-task
+cells by attacker-goal variant and injection format. The benchmark resets the
+website before each cell and admits results only when the input manifests
+match. However, the cells ran in a fixed order. Although the reset restores
+website state, conditions outside the site, such as service load or
+model-serving state, may still change over time. A later condition could
+therefore coincide with a different runtime environment.
 
 \section{Quality controls and scope}
 
-To protect the reported denominators, a cell entered the analysis only when
-its task coverage, native scores, reports, and frozen provenance were mutually
-consistent. Incomplete or failed cells were retained as operational records
-but excluded from the results. The corresponding admission and provenance
-checks are documented in \cref{sec:appendix-wasp-provenance}.
+To protect the reported denominators, a cell enters the analysis only when its
+task coverage, native scores, reports, and frozen provenance are mutually
+consistent. Incomplete or failed cells remain as operational records but are
+excluded from the results. The admission and provenance checks are documented
+in \cref{sec:appendix-wasp-provenance}.
 
-Provenance controls address a different risk. Failures observed during
-AgentDojo and WASP development informed several detector rules and
-representation-handling corrections. Consequently, component replay measures
-regression coverage of known attack families, not generalisation to unseen
-attacks. The middleware and condition-specific policies were then frozen
-before the final three-seed comparison and applied consistently throughout it.
-The resulting claim is limited to the evaluated models, two benchmark
-families, three WASP seeds over one fixed task matrix, finite step budgets,
-AgentDojo's tool interfaces, DOM/accessibility observations without screenshots
-in WASP, and technical evaluation without human participants.
+Development feedback limits what component replay can show. Failures observed
+during AgentDojo and WASP development informed several detector rules and
+representation-handling corrections, so replay measures regression coverage on
+known attack families, not generalisation to unseen attacks. Accordingly, the
+claim is limited to the evaluated models, two benchmark families,
+three WASP seeds over one fixed task matrix, finite step budgets, AgentDojo's
+tool interfaces, DOM/accessibility observations without screenshots in WASP,
+and technical evaluation without human participants.
 
-These boundaries frame the component, AgentDojo, and WASP results reported
-next.
+Within these boundaries, the next chapter reports the component, AgentDojo,
+and WASP results.
