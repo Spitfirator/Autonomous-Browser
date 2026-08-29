@@ -11,24 +11,25 @@ side effect. This capability is useful precisely because web tasks are rarely
 one-shot questions: benchmarks such as WebArena require agents to carry state
 across several dependent interactions~\cite{zhou2024webarena}.
 
-The same loop creates a security problem. Web observations mix application
+The same loop creates a security problem. Indeed, web observations mix application
 content, user-generated data, embedded resources, and text controlled by an
 attacker. An indirect prompt injection places instructions in that data so the
 agent encounters them while pursuing a legitimate goal~\cite{greshake2023indirect}.
-The attack does not depend on a malformed API call. It exploits an authority
+The attack does not depend on a malformed API call, it exploits an authority
 ambiguity: the model is expected to understand novel page content, yet must
 also decide
 whether that content is entitled to redirect its behaviour. Once the model can
 invoke privileged tools, a successful redirection can change remote state or
 disclose information instead of producing incorrect prose alone.
-Prompt reminders, delimiters, and detectors can reduce exposure, but they
-leave the acting model responsible for distinguishing hostile data from the
-human task owner's goal. Throughout this dissertation, the \emph{operator} is
+Prompt reminders, delimiters, and detection combined with removal can reduce
+exposure~\cite{yi2025bipia,hines2024spotlighting,chen2025detectremove}, but these
+mechanisms do not by themselves provide an independent check at privileged
+execution. Throughout this dissertation, the \emph{operator} is
 the human task owner who supplies the goal and whose browser authority the
 agent exercises. Classical protection principles suggest a different
 allocation of responsibility. Complete mediation places a check at each
 privileged use, while least privilege limits which component may perform the
-effect~\cite{saltzer1975protection}. For an agent, the model can remain a
+effect~\cite{saltzer1975protection}. For an agent, this means the model can remain a
 flexible planner without being the final authority for its proposed actions.
 An independent runtime can enforce deterministic constraints, control data
 flows, request narrowly scoped authority, and record the outcome.
