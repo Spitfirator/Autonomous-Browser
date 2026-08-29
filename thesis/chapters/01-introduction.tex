@@ -26,10 +26,11 @@ exposure~\cite{yi2025bipia,hines2024spotlighting,chen2025detectremove}, but thes
 mechanisms do not by themselves provide an independent check at privileged
 execution. Throughout this dissertation, the \emph{operator} is
 the human task owner who supplies the goal and whose browser authority the
-agent exercises. Classical protection principles suggest a different
-allocation of responsibility. Complete mediation places a check at each
-privileged use, while least privilege limits which component may perform the
-effect~\cite{saltzer1975protection}. For an agent, this means the model can remain a
+agent exercises. Classical protection principles, such as complete mediation
+and least privilege, suggest a different allocation of responsibility: the
+former places a check at each privileged use, while the latter limits which
+component may perform the effect~\cite{saltzer1975protection}. For an agent,
+this means the model can remain a
 flexible planner without being the final authority for its proposed actions.
 An independent runtime can enforce deterministic constraints, control data
 flows, request narrowly scoped authority, and record the outcome.
