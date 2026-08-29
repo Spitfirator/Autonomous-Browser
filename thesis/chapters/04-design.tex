@@ -60,7 +60,7 @@ Sentinel runs as a Python service around an ordinary BrowserUse agent, without
 forking BrowserUse. A model wrapper governs the planner's observations, while a
 tool wrapper mediates each proposal immediately before execution. Their
 implementation classes, \texttt{GovernedLLM} and \texttt{GovernedTools}, retain
-BrowserUse's normal interfaces~\cite{zunic2026browseruse}.
+BrowserUse's normal interfaces~\cite{muller2024browseruse}.
 
 Each task has its own budgets, findings, grants, intervention and cancellation
 state, counters, and HMAC key. Thus, authority cannot carry into a later task,
