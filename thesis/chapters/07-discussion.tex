@@ -9,7 +9,7 @@ retaining useful work. Its independence is architectural: model-facing guidance
 may shape a proposal, but observation and execution decisions remain under the
 authority of a separate runtime. The scope of that answer matters: Sentinel does
 not solve prompt injection, and the case rests on complementary AgentDojo and
-WASP evaluations rather than any single zero-success run.
+WASP evaluations, not on any single zero-success run.
 
 Across three matched AgentDojo configurations, the complete configuration
 reduced attacker success while increasing utility and secure utility. In
@@ -180,27 +180,26 @@ require a separate design for provenance, isolation, and action authority,
 since visual input adds both capability and attack surface
 ~\cite{bailey2024imagehijacks,koh2024visualwebarena}.
 
-Generalisability is also constrained by the experimental design. AgentDojo uses
-three matched model configurations, while the final WASP campaign tests one 27B
-model across three seeds and a fixed 84-case matrix. The comparisons are
-strongest within the configurations that were actually tested. They do not
-show how Sentinel would perform across a wider range of models or deployment
-settings. Although website state was reset before each experimental cell, the
-conditions were always run in the same order. Changes in service load or
-model-serving state may therefore have affected later conditions. AgentDojo,
-meanwhile, compares its baseline with the complete governed configuration, so
-its end-to-end results do not isolate the contribution of each control.
+The experimental design also limits generalisability. AgentDojo uses three
+matched model configurations, whereas the final WASP campaign tests one 27B
+model across three seeds and a fixed 84-case matrix. The evidence is therefore
+strongest within those configurations and does not show how Sentinel would
+perform across a wider range of models or deployment settings. Website state
+was reset before each cell, but fixed condition order means changes in service
+load or model-serving state may have affected later conditions. AgentDojo's
+end-to-end comparison uses only the baseline and complete governed
+configuration, so it cannot isolate each control's contribution.
 
-The prototype cannot observe every kind of risk. Its protected-data checks
-recognise familiar patterns, so they may miss sensitive information whose
-meaning is clear only from context. Sentinel can inspect an action directed to
-the current website before it runs, but it may not see consequences produced
-later by the server. The local API accepts connections only from the same
-machine, yet another process running under the same user account could still
-reach it. Separate tests cover incident handling, secret takeover, live
-revalidation, extraction and history handling, and special-URL controls. The
-benchmark campaigns did not exercise every mechanism, so these tests show that
-the controls work as implemented but do not add new benchmark results.
+The prototype cannot observe every risk. Its protected-data checks recognise
+familiar patterns but may miss sensitive information whose meaning is clear
+only from context. Sentinel can inspect an action directed to the current
+website before execution, but cannot observe consequences produced later by the
+server. The local API accepts only connections from the same machine, yet
+another process under the same user account could still reach it. Tests cover
+incident handling, secret takeover, live revalidation, extraction and history
+handling, and special-URL controls. The campaigns did not exercise every
+mechanism; these tests therefore demonstrate implementation behaviour, not new
+benchmark results.
 
 \subsection{Ethics and responsible research}
 \label{subsec:ethics}
@@ -210,39 +209,37 @@ participated in the reported studies, and no participant data were collected.
 Scripted benchmark modes provided reproducible control behaviour, so approval
 counts, pause duration, and Activity annotations are technical telemetry.
 Interface walkthroughs verify server-owned request semantics and rendered
-states, but they do not measure comprehension, trust, workload, habituation, or
+states, but do not measure comprehension, trust, workload, habituation, or
 recovery quality.
 
 Research and reporting choices also reduce unnecessary exposure. Browser
 evidence came from controlled benchmarks and local synthetic fixtures. The
 submitted figures contain no live credentials, private accounts, private URLs,
-or raw attack payloads, and the dissertation does not reproduce the benchmark's
-operational injection text. These safeguards limit potentially harmful
-disclosure but do not remove the dual-use risk: the analysis could inform
-attacks as well as defences. A future study of operator decisions would require
-ethics approval before recruitment or data collection, with consent, data
-minimisation, and secure record handling.
+or raw attack payloads; nor does the dissertation reproduce the benchmark's
+operational injection text. These safeguards limit harmful disclosure without
+removing the dual-use risk: the analysis could inform attacks as well as
+defences. Any future operator study would require prior ethics approval,
+consent, data minimisation, and secure record handling.
 
 \section{Research priorities and broader implications}
 
-The limitations point to a clear order for future work. First, evaluation
-should freeze the complete system, test attack families excluded from its
-development, use more random seeds, vary condition order, and allow an adaptive
-attacker to respond to the agent's behaviour. A genuine action-only comparator
-would test whether removing hostile content before planning preserves more
-useful progress than blocking harmful actions at execution.
+The limitations suggest a clear order for future work. First, evaluation should
+freeze the complete system, test attack families excluded from development, use
+more seeds, vary condition order, and allow an adaptive attacker to respond to
+agent behaviour. An action-only comparator would test whether removing hostile
+content before planning preserves more useful progress than blocking harmful
+actions at execution.
 
-Next, the boundary should expand beyond text. A visual path needs trusted
-provenance, isolation of uncertain content, and bounded authority for actions
-based on it. An operator-visible task contract could state expected sites, data
-classes, effects, human steps, and stopping conditions before untrusted content
-appears; an isolated semantic monitor could compare proposals with that
-contract. These additions require separate evidence because the present results
-cover textual observations only.
+Next, extending the boundary beyond text requires trusted provenance, isolation
+of uncertain content, and bounded action authority. An operator-visible
+contract could state expected sites, data classes, effects, human steps, and
+stopping conditions before untrusted content appears; an isolated semantic
+monitor could compare proposals against it. Both require separate evidence
+because the present results cover only textual observations.
 
-Human and deployment questions are separate priorities. A participant study
+Human and deployment questions remain separate priorities. A participant study
 could test whether operators distinguish approval, direct action, and incident
-review, and can resume work without excessive burden or warning fatigue. The
-control plane enables, but does not answer, such a study. Deployment would
-require authenticated access, stronger process isolation, protected policy and
-trace keys, and transactional browser support.
+review, then resume without excessive burden or warning fatigue; the control
+plane provides only the technical basis. Deployment requires authenticated
+access, stronger process isolation, protected policy and trace keys, and
+transactional browser support.
