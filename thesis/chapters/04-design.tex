@@ -286,12 +286,13 @@ Admit the proposal for execution and audit its terminal outcome. \\
 \end{table}
 \FloatBarrier
 
-Links, redirects, and scripts may navigate without an explicit proposal, so
-enforce mode mirrors the live domain lists into BrowserUse's watchdog. This
-adds browser-level coverage for navigation observed inside the integrated
-BrowserUse session; \texttt{PolicyEngine.evaluate} remains authoritative for
-explicit proposals. Decisions requiring operator judgement enter the authority
-paths described next.
+Not every navigation is proposed as a navigation action. A clicked link,
+redirect, or page script can move the browser as a side effect. In enforce
+mode, Sentinel therefore keeps BrowserUse's watchdog synchronised with the live
+domain lists. The watchdog can then check navigation events throughout the
+integrated session. Explicit action proposals still pass through
+\texttt{PolicyEngine.evaluate}. Cases that need operator judgement are then
+routed through the authority paths described next.
 
 \section{Selective human authority}
 \label{sec:human-authority}
