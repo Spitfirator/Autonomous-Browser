@@ -29,10 +29,10 @@ executor. Four principles turn this separation into a runtime architecture.
   without reproducing the sensitive content that caused them.
 \end{enumerate}
 
-Together, these principles preserve planning flexibility while making
-permission a system property. BrowserUse plans and recovers; Sentinel's guards
-and authority decide whether a proposal may take effect, while audit records the
-outcome (\cref{fig:architecture}).
+Together, these principles preserve the agent's planning flexibility while
+making permission a property of the runtime. BrowserUse can plan and
+recover, but Sentinel's guards determine whether each proposal may take effect,
+and the audit trail records the outcome (\cref{fig:architecture}).
 
 \begin{figure}[!t]
 \centering
@@ -42,23 +42,26 @@ outcome (\cref{fig:architecture}).
 \end{figure}
 \FloatBarrier
 
-Read from left to right, the trusted task reaches the planner, whose proposal
-must cross the action guard before the executor can change the browser. In the
-opposite direction, page and tool data cross the observation guard before
-reaching the planner. Policy governs both guards, bounded operator authority
-resolves their interactive states, and audit records their outcomes.
+Following the action path from left to right, the trusted task reaches the
+planner, and each proposal must cross the action guard before the executor can
+change the browser. Data returns along the reverse path: page and tool content
+cross the observation guard before reaching the planner. Policy governs both
+guards, bounded operator authority resolves their interactive states, and the
+audit trail records the resulting outcomes.
 
-The chapter follows this path through observation, action, authority, and audit,
-then shows how the Chrome extension projects server-owned state into the browser
-without becoming a second source of permission.
+The remainder of the chapter follows this governed loop through observation,
+action, authority, and audit. It then explains how the Chrome extension projects
+server-owned state into the browser without becoming a second source of
+permission.
 
 \section{Runtime architecture}
 
 \subsection{Composition and supported channel}
 
-Sentinel runs as a Python service around an ordinary BrowserUse agent, without
-forking BrowserUse. A model wrapper governs the planner's observations, while a
-tool wrapper mediates each proposal immediately before execution. Their
+Sentinel runs as a Python service around an ordinary BrowserUse agent without
+maintaining a BrowserUse fork. A model wrapper governs the planner's
+observations, and a tool wrapper mediates each proposal immediately before
+execution. Their
 implementation classes, \texttt{GovernedLLM} and \texttt{GovernedTools}, retain
 BrowserUse's normal interfaces~\cite{muller2024browseruse}.
 
@@ -138,10 +141,10 @@ textual tool results enter agent history, it escapes reserved protocol tags and
 places the results inside an explicit untrusted wrapper.
 
 A page may imitate BrowserUse or Sentinel prompt structure. \emph{Boundary
-neutralisation} therefore escapes reserved tags only inside recognised
-untrusted regions. Genuine outer wrappers and ordinary DOM tags remain
-unchanged, so forged syntax cannot create a trusted region or close the real
-one.
+neutralisation} addresses this risk by escaping reserved tags only inside
+recognised untrusted regions. Genuine outer wrappers and ordinary DOM tags
+remain unchanged, so forged syntax cannot create a trusted region or close the
+real one.
 
 Model-facing browser state also withholds page titles and replaces complete
 HTTP(S) query strings and fragments. For \texttt{data:}, \texttt{javascript:},
