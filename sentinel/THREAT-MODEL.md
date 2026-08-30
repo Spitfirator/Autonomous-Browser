@@ -40,7 +40,7 @@ invariants are:
 | Downloads, extracted text and tool results | untrusted data | Can carry stored/second-order injections |
 | Action parameters | tainted model output | Evaluated/redacted before they reach the real tool |
 | Browser/tool implementation | privileged executor | Only called after an allow/approval verdict |
-| Extension side panel | operator UI, not policy authority | API validates scope; a UI cannot mint consent by itself; screenshots and raw page titles are not sent to it |
+| Extension side panel | trusted operator-intent client within the local prototype boundary | Displays redacted state and submits task, control, configuration, approval and handover requests; the server rejects stale requests and revalidates execution, but does not independently attest whether the operator or compromised client code supplied a response |
 | Local trace/event consumers | honest-but-curious | Receive redacted values and per-run digests, not secrets |
 | Other processes running as the same OS user | outside the trusted local-control boundary | Loopback binding is accepted for the non-deployed thesis setup, but is not same-user process isolation |
 
@@ -156,6 +156,11 @@ not expose it to the model or extension.
   activity or model-provider traffic remains on-device. A compromised process
   running as the same OS user can call the localhost API or alter files;
   Sentinel does not provide same-user process isolation or an OS sandbox.
+- The extension is trusted to relay operator intent faithfully. A compromised
+  authorised client could submit a current approval or handover response or
+  modify policy. The service still rejects stale identifiers, constrains
+  approval scope and revalidates any resulting agent action, but this is not
+  independent human authentication.
 - Once an action is allowed, the browser/tool implementation and remote site may
   behave differently from their visible description (for example, a benign
   click handler can be replaced server-side). Navigation watchdogs and audit

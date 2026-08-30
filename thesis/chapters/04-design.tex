@@ -392,23 +392,26 @@ free-form rationale storage is opt-in and disabled by default. The record still
 distinguishes proposal, execution, intervention, and terminal outcome for
 trajectory analysis.
 
-These events inform the operator without shifting authority into the client.
-The Chrome extension is the control plane for this projection.
+These events inform the operator while keeping enforcement and execution
+server-side. The Chrome extension is the operator-facing control plane for this
+redacted projection.
 
 \section{Chrome extension: operator-facing control plane}
 \label{sec:control-plane}
 
 \subsection{Client--server authority boundary}
 
-Sentinel can pause a run for approval, direct human action, or observation
-review. The Chrome extension lets the operator inspect these server-owned states
-and submit bounded responses, but never becomes another source of authority.
-The service owns the run, policy, requests, timers, audit order, task lifecycle,
-and privileged executor; the extension displays a redacted projection.
+Sentinel may pause a run for approval, direct human action, or observation
+review. The Chrome extension displays these states and submits task, control,
+policy, approval, and handover requests. The service owns the run, pending
+requests, audit, lifecycle, and executor; it rejects stale responses, limits
+approval scope, and revalidates execution.
 
-A Manifest V3 service worker and content script provide in-page controls; the
-side panel and dashboard use HTTP and WebSocket. They relay responses, but only
-the service decides whether the run changes.
+The extension is trusted to relay operator intent. Compromised client code could
+answer an active request or change policy, yet could neither call the executor
+nor bypass revalidation. A Manifest V3 worker and content script
+provide in-page controls; the side panel and dashboard use HTTP and WebSocket.
+Only the service changes runtime state.
 
 \subsection{Autonomous operation and browser ownership}
 \FloatBarrier
@@ -531,7 +534,7 @@ records with run-keyed evidence support R5. They form one governed path, so an
 incomplete observation treatment does not remove action policy and operator
 input cannot weaken a hard prohibition.
 
-Sentinel is the enforcement architecture; the extension projects its states
-without independent authority. \Cref{chap:methodology} traces this hierarchy
-through mechanism checks, controlled AgentDojo effects, browser-native WASP
-transfer, and control-plane walkthroughs.
+The extension therefore projects Sentinel's state and submits requests without
+execution authority. \Cref{chap:methodology}
+traces this hierarchy through mechanism checks, controlled AgentDojo effects,
+browser-native WASP transfer, and control-plane walkthroughs.

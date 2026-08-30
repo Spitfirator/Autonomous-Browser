@@ -106,7 +106,7 @@ restart.
 | `server/governance/handover.py` | Human steps and unresolved-observation incidents |
 | `server/traces.py`, `server/history.py` | Redacted audit and run summaries |
 | `server/api.py`, `server/events.py` | Loopback API and mirrored event contract |
-| `extension/` | Side panel, dashboard, and in-page control projections |
+| `extension/` | Operator-facing task, control, policy, approval, handover, and redacted projection UI |
 | `data/` | Ignored configuration, profiles, history, and traces |
 
 `PolicyEngine.evaluate(...)` is the single policy decision point. The policy

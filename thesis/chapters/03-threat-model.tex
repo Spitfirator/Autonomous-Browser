@@ -8,15 +8,15 @@ browser-agent runtime samples browser state $S_t^O$ and forms an ungoverned
 observation $O_t$. Once the model input crosses the observation boundary, the
 model may propose a finite sequence
 $A_t=(a_{t,1},\ldots,a_{t,n_t})$. BrowserUse then attempts an ordered prefix of
-that sequence; let $m_t\leq n_t$ denote the number attempted. Each action is
-mediated against live state immediately before execution, and $d_{t,i}$ records
-the resulting refusal, handoff outcome, or tool result. Histories $\leq t$ and
-$<t$ run through and before planning step $t$, respectively:
+that sequence; let $m_t\leq n_t$ denote the number attempted. Each attempted
+action is mediated against live state immediately before execution, and
+$d_{t,i}$ records the resulting refusal, handoff outcome, or tool result. The
+subscript $<t$ denotes history before planning step $t$:
 
 \[
 \begin{aligned}
   O_t &= \mathsf{observe}(S_t^O), &
-  M_t &= \mathsf{compose}(G,O_{\leq t},A_{<t},D_{<t}), \\
+  M_t &= \mathsf{compose}(G,O_t,H_{<t}), \\
   \widehat{M}_t &= \mathsf{guard}_{M}(M_t,P_t^O,C_t), &
   A_t &= \mathsf{agent}(\widehat{M}_t), \\
   d_{t,i} &=
@@ -25,11 +25,13 @@ $<t$ run through and before planning step $t$, respectively:
 \end{aligned}
 \]
 
-Here, $D_t=(d_{t,1},\ldots,d_{t,m_t})$. The message $M_t$ combines the trusted
-goal with the observation history, earlier proposals, and their outcomes;
-$\widehat{M}_t$ is the governed form supplied to the model.
-Consequently, untrusted observations and tool-result text cross the same
-model-input boundary.
+Here, $D_t=(d_{t,1},\ldots,d_{t,m_t})$ collects attempted-action outcomes, while
+$H_{<t}$ denotes BrowserUse's retained or compacted step history. That history
+contains prior model summaries and action-outcome text, not complete raw
+observations or exact earlier proposals. The message $M_t$ therefore combines
+the trusted goal, current observation, and retained history; $\widehat{M}_t$ is
+the governed form supplied to the model. Consequently, untrusted observations
+and tool-result text cross the same model-input boundary.
 
 The state symbols show when browser context is read. $S_t^O$ is sampled to
 construct the observation, whereas each $S_{t,i}^A$ is sampled immediately
@@ -103,26 +105,24 @@ extracted text, files, and tool results supply task context. & Cannot acquire
 instruction authority simply by appearing in an observation. \\
 \addlinespace[3pt]
 
-Browser automation and tools: privileged executor & Perform the concrete effect
-selected by an allowed proposal. & Cannot make an independent policy decision;
-their integrity is assumed within the prototype. \\
+Browser automation and tools: privileged executor & Execute admitted proposals;
+the mirrored navigation watchdog may still refuse a destination. & Cannot grant
+permission or override Sentinel; integrity is assumed within the prototype. \\
 \addlinespace[3pt]
 
-Chrome extension and trace consumers: projections & Display redacted state and
-relay a bounded operator response. & Cannot mint authority, release a stale
-request, or invoke the executor directly. \\
+Extension client and trace consumers & Receive redacted state; the extension
+also submits operator requests. & Cannot invoke the executor or reuse stale
+authority; the extension is trusted to relay operator intent faithfully. \\
 \bottomrule
 \end{tabularx}
 \end{table}
 
-The allocation depends on Sentinel and the privileged executor retaining their
-integrity. The boundary does not depend on the page, model, or extension making
-correct security decisions. A hostile page may steer the
-model towards a dangerous proposal, yet the proposal must still cross the
-server-owned action guard. Similarly, a compromised extension may display
-misleading state or withhold a response, but it cannot release a pending wait
-or call the executor. The following requirements turn this allocation of power
-into behaviour that can be tested.
+Under these integrity and relay assumptions, the boundary does not rely on the
+page or model behaving securely. A hostile page may steer the model towards a
+dangerous proposal, but the server-owned action guard mediates it before
+execution. A compromised extension could answer an active request or alter
+policy, but not call the executor, reuse stale authority, or bypass
+revalidation. These limits motivate the following requirements.
 
 \section{Adversary}
 
