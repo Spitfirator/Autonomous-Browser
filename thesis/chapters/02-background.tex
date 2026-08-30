@@ -39,9 +39,10 @@ Formal analyses and benchmark studies point to the same weakness: models do not
 reliably distinguish the instructions they should follow from external content
 they should treat as data~\cite{liu2024formalizing,yi2025bipia}.
 
-The threat also extends beyond the current page: extracted page text and tool
-results can cross secondary model calls, while stored history can reintroduce
-hostile content later. Multimodal agents add pixels: image-hijack work shows that
+The threat also extends beyond the current page: retrieved content can influence
+subsequent model responses and API calls, while persistent memory can reintroduce
+hostile content in later sessions~\cite{greshake2023indirect}. Multimodal agents
+add pixels: image-hijack work shows that
 specially optimised adversarial images can carry the behavioural effect of a
 chosen text prompt and redirect a vision-language model's behaviour
 ~\cite{bailey2024imagehijacks}. A filter over the Document Object Model (DOM),
