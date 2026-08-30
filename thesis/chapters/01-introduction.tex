@@ -66,9 +66,9 @@ loop at two points. Before inference, an observation guard identifies
 untrusted browser, extraction, and tool-result regions; detects configured
 prompt-injection signals; removes attributable regions; and re-detects the
 exact reconstructed model input. Before execution, an action guard rebuilds
-live browser context, classifies capabilities and sensitive data, propagates
-origin-scoped taint, and invokes one policy engine. The executor is reached
-only after that decision.
+live browser context, classifies capabilities and sensitive data, tracks the
+origin of untrusted observations when assessing later actions, and invokes the
+central policy engine. The executor is reached only after that decision.
 
 Automatic enforcement is combined with selective human authority. Hard policy
 and protected data flows remain non-overridable. A permissible but
@@ -83,8 +83,8 @@ fresh observation. A Chrome extension presents these states and the redacted
 decision history; the server remains the source of authority.
 
 Evaluation proceeds in two complementary stages. AgentDojo supplies controlled
-tool-agent tasks with native user and attacker oracles across four application
-domains
+tool-agent tasks with built-in checks for user-task and attacker-goal success
+across four application domains
 ~\cite{debenedetti2024agentdojo}. Sentinel then evaluates a BrowserUse
 agent~\cite{muller2024browseruse} in the mutable GitLab and Reddit environments
 supplied by WASP~\cite{evtimov2025wasp}, adding observation construction,
@@ -94,9 +94,8 @@ enforcement off, enforcement without sanitisation, and the full system. This
 design tests browser transfer and isolates the configured sanitisation
 increment. Policy-only and full share the same fixed security guidance.
 Policy-only retains detected content and adds a detection-specific warning,
-providing a comparator for post-verified removal. Full enforcement removes
-attributable content and continues only after the reconstructed observation
-passes re-detection.
+whereas full enforcement removes attributable content and continues only after
+the reconstructed observation passes re-detection.
 
 \section{Contributions}
 \label{sec:contributions}
@@ -113,10 +112,11 @@ not a new browser agent. Its three contributions build on one another.
   dynamically, but it cannot authorise its own actions.
 
   \item \textbf{An end-to-end workflow for untrusted observations and selective
-  authority.} Detection leads to attributable removal, reconstruction, and a
-  clean re-check before inference. When automatic enforcement cannot safely
-  continue, the operator can review a narrowly scoped request, perform a
-  protected step directly, or resolve an observation incident. The extension
+  authority.} When Sentinel can safely attribute a finding to an untrusted
+  region, it removes that region, reconstructs the observation, and continues
+  only if a second detection pass is clear. If automatic enforcement cannot
+  safely continue, the operator can review a narrowly scoped request, perform
+  a protected step directly, or resolve an observation incident. The extension
   presents those choices, while the server alone validates and records the
   resulting authority.
 
@@ -125,11 +125,12 @@ not a new browser agent. Its three contributions build on one another.
   end-to-end evidence: between the off and governed conditions, attacker success
   fell from 20.8--32.8\% to 0--0.2\%, while utility rose from 57.6--68.0\% to
   70.9--76.8\%. WASP then tests the architecture inside a browser loop. Across
-  three seeds, full enforcement reduced audited terminal success from 17/252 to
-  0/252 and attacker-directed execution from 42/252 to 0/252; utility changed
-  from 154/252 to 149/252 and secure utility rose from 138/252 to 149/252. The
+  three seeds, full enforcement reduced attacker success confirmed by the
+  action audit from 17/252 to 0/252 and attacker-directed execution from 42/252
+  to 0/252. Utility changed from 154/252 to 149/252, while secure utility
+  (outcomes that were both useful and secure) rose from 138/252 to 149/252. The
   full-versus-policy-only comparison further isolates the configured
-  sanitisation treatment.
+  sanitisation increment.
   Taken together, the two studies report what happened to the user's task as
   well as what happened to the attack, so inactivity or baseline model failure
   is not mistaken for security.
@@ -144,8 +145,9 @@ that composition.
 \section{Dissertation structure}
 
 \Cref{chap:background} establishes the prompt-injection and system-security
-context. \Cref{chap:threat-model} defines the authority boundary and security
-requirements. \Cref{chap:design} presents the implementation and operator
-control plane. \Cref{chap:methodology,chap:results} define and report the
-evaluation, and \cref{chap:discussion,chap:conclusion} interpret the evidence,
-scope its validity, and state the resulting contribution.
+context, and \cref{chap:threat-model} then defines the authority boundary and
+security requirements. Building on this foundation, \cref{chap:design}
+presents the implementation and operator control plane.
+\Cref{chap:methodology,chap:results} next define and report the evaluation.
+Finally, \cref{chap:discussion,chap:conclusion} interpret the evidence, explain
+its limitations, and state the resulting contribution.
