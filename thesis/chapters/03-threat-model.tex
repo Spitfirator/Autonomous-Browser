@@ -57,22 +57,21 @@ independently authorise or directly execute privileged actions.
 
 \section{Assets and trust boundary}
 
-Sentinel protects both information and authority. The operator's goal defines
+Sentinel protects information and authority. The operator's goal defines
 what the agent is authorised to do, while the authenticated browser session,
-local files, and remote application state determine what it is capable of
-changing. Private values, consent decisions, and the audit record must also
+local files, and remote application state determine what it can change. Private
+values, consent decisions, and the audit record must also
 remain confidential. At the same time, availability matters because an agent
-that never acts provides no useful autonomy. This need for usefulness does not,
-however, justify guessing: when Sentinel lacks the context required for a
-security decision, it refuses the effect.
+that never acts provides no useful autonomy. Yet usefulness does not justify
+guessing: when Sentinel lacks the context required for a security decision, it
+refuses the effect.
 
-The central trust question is therefore not which components may influence a
-decision, but which component may turn a proposal into a browser effect. A page
-may shape an observation, the model may choose an action, and the extension may
-present a decision to the operator. Yet influence is not authority: none of
-these roles alone is sufficient to invoke the executor.
-\Cref{tab:trust-boundaries} makes this separation explicit by recording what
-each component may contribute and which powers remain outside its role.
+The central trust question is which component may turn a proposal into a
+browser effect. A page may shape an observation, the model may choose an
+action, and the extension may present a decision to the operator. Yet none of
+these influences grants authority to invoke the executor.
+\Cref{tab:trust-boundaries} records both the influence each component may exert
+and the authority it lacks.
 
 \begin{table}[htbp]
 \centering
@@ -124,17 +123,17 @@ a dangerous proposal, but the server-owned action guard still mediates that
 proposal before execution. A compromised extension could answer an active
 request or alter policy, but it could not call the executor, reuse stale
 authority, or bypass revalidation. The security requirements below formalise
-the controls needed to preserve these limits.
+these limits.
 
 \section{Adversary}
 
-The primary adversary controls content that the agent encounters while pursuing
-a legitimate task. This influence may originate in a page, user-generated
+The primary adversary controls content encountered during a legitimate task.
+This content may appear on a page, user-generated
 record, link label, extracted value, or stored tool result. The adversary knows
-the general system design and seeks to replace the operator's goal,
+the general design and seeks to replace the operator's goal,
 impersonate a higher-trust role, suppress warnings, request disclosure, induce
 code or file access, or preserve malicious influence across later turns. The
-resulting action may be conspicuous, such as cross-origin navigation, or it may
+induced action may be conspicuous, such as cross-origin navigation, or may
 use the same-origin form controls required by the legitimate task.
 
 Under this threat model, the adversary controls content but not the components
@@ -146,14 +145,12 @@ Sentinel does not establish it.
 \section{Security requirements}
 \label{sec:security-objectives}
 
-The requirements follow the life cycle of a single agent decision. First,
-observation control limits what can shape the proposal. Action control then
-decides what that proposal may do in the current browser state. If operator
-input becomes necessary, authority control keeps the response narrow and
-non-transferable. Finally, audit control records the outcome without
+The requirements follow a single agent decision. Observation control limits
+what can shape the proposal, and action control decides what it may do in the
+current browser state. If operator input is needed, authority control keeps it
+narrow and non-transferable. Finally, audit control records the outcome without
 reproducing the content that caused concern. Since these stages depend on one
-another, a weakness early in the chain also weakens the assurances that
-follow.
+another, a weakness early in the chain also weakens the assurances that follow.
 
 \begin{enumerate}[label=\textbf{R\arabic*:},leftmargin=16mm]
   \item \textbf{Independent and complete action mediation.} The model's output
@@ -193,41 +190,37 @@ follow.
   screenshots, and unrestricted model reasoning by default.
 \end{enumerate}
 
-Together, R1--R5 define a single governed path. R2 controls the observation
-that reaches the model; R1 and R3 mediate the resulting proposal; R4 constrains
-any exceptional authority; and R5 preserves evidence of the outcome. This
-chain does not make every permitted model decision correct, and a missed
-detection can still produce a compromised proposal. The evaluation therefore
-pairs contract tests of the individual controls with end-to-end security and
-utility outcomes.
+Together, R1--R5 govern one path. R2 controls the observation that reaches the
+model; R1 and R3 mediate the resulting proposal; R4 constrains exceptional
+authority; and R5 preserves evidence of the outcome. This chain does not make
+every permitted model decision correct, and a missed detection can still
+compromise a proposal. The evaluation therefore pairs control-level contract
+tests with end-to-end security and utility outcomes.
 
 \section{Scope of the claim}
 
-The claim concerns an enforceable boundary, not an immune model. Sentinel does
-not make every model judgement correct, nor does it claim to eliminate prompt
-injection. Instead, where observations and actions traverse the governed
-BrowserUse path, \systemname\ independently evaluates the model's proposal.
-Enforcement therefore does not depend on the model correctly interpreting or
-obeying a security warning. The empirical question is correspondingly narrow:
-under the evaluated conditions, does this independent boundary reduce
-policy-violating effects without preventing legitimate work?
+The claim concerns an enforceable boundary, not model immunity. Sentinel
+neither corrects every model judgement nor eliminates prompt injection. On the
+governed BrowserUse path, \systemname\ independently evaluates the model's
+proposal, so enforcement does not depend on the model interpreting or obeying a
+security warning. The empirical question is narrow: under the evaluated
+conditions, does this boundary reduce policy-violating effects without
+preventing legitimate work?
 
 However, complete mediation ends at the governed BrowserUse path. Direct human
 page interaction and browser effects invoked outside the wrapped tool path do
-not cross Sentinel's guards. Moreover, the service is a local research
-prototype: origin checks protect its loopback interface, but they do not
-isolate it from another compromised process running as the same
-operating-system user. The interactive model also receives only a
-DOM/accessibility representation. Pixel-only instructions and tasks that
-require visual grounding therefore fall outside the measured channel. Finally,
-the measured attacks are those instantiated by AgentDojo and WASP; adaptive
-attacks remain a limitation and a priority for the future evaluation discussed
-in \cref{chap:discussion}.
+not cross Sentinel's guards. The service is also a local research prototype:
+origin checks protect its loopback interface but do not isolate it from another
+compromised process running as the same operating-system user. The interactive
+model receives only a DOM/accessibility representation. Pixel-only instructions
+and tasks that require visual grounding therefore fall outside the measured
+channel. Finally, the measured attacks are instantiated by AgentDojo and WASP;
+adaptive attacks remain a limitation and a priority for the future evaluation
+discussed in \cref{chap:discussion}.
 
-The evaluation must therefore establish security and usefulness together.
-Detector recall provides mechanism evidence, but terminal attack failure may
-also reflect an incapable agent, just as blanket refusal may destroy utility.
-For this reason, the thesis relies on paired native security and task outcomes,
-supported by trajectory records. Its conclusions apply to the evaluated
-models, suites, representations, and frozen implementations, not human
-comprehension or security effectiveness at deployment scale.
+The evaluation must therefore establish both security and usefulness. Attack
+failure may reflect an incapable agent, while blanket refusal may destroy
+utility. The thesis therefore pairs native security and task outcomes with
+detector and trajectory evidence. Its conclusions apply
+to the evaluated models, suites, representations, and frozen implementations,
+not human comprehension or security effectiveness at deployment scale.
