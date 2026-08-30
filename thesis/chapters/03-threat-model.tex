@@ -3,30 +3,55 @@
 
 \section{System model}
 
-The operator supplies a trusted goal $G$. At step $t$, the environment has
-state $S_t$, the browser produces an ungoverned observation $O_t$, the model
-proposes an action $a_t$, and the action guard returns outcome $d_t$. Sequence
-subscripts $\leq t$ and $<t$ denote histories through and before that step,
-respectively:
+The operator begins by supplying a trusted goal $G$. At planning step $t$, the
+browser-agent runtime samples browser state $S_t^O$ and forms an ungoverned
+observation $O_t$. Once the model input crosses the observation boundary, the
+model may propose a finite sequence
+$A_t=(a_{t,1},\ldots,a_{t,n_t})$. BrowserUse then attempts an ordered prefix of
+that sequence; let $m_t\leq n_t$ denote the number attempted. Each action is
+mediated against live state immediately before execution, and $d_{t,i}$ records
+the resulting refusal, handoff outcome, or tool result. Histories $\leq t$ and
+$<t$ run through and before planning step $t$, respectively:
 
 \[
 \begin{aligned}
-  O_t &= \mathsf{observe}(S_t), &
-  \widehat{O}_t &= \mathsf{guard}_{O}(O_t,P,C_t), \\
-  a_t &= \mathsf{agent}(G,\widehat{O}_{\leq t},a_{<t},d_{<t}), &
-  d_t &= \mathsf{guard}_{A}(a_t,S_t,P,C_t).
+  O_t &= \mathsf{observe}(S_t^O), &
+  M_t &= \mathsf{compose}(G,O_{\leq t},A_{<t},D_{<t}), \\
+  \widehat{M}_t &= \mathsf{guard}_{M}(M_t,P_t^O,C_t), &
+  A_t &= \mathsf{agent}(\widehat{M}_t), \\
+  d_{t,i} &=
+  \mathsf{govern}_{A}(a_{t,i},S_{t,i}^A,P_{t,i}^A,C_{t,i}),
+  \quad 1\leq i\leq m_t.
 \end{aligned}
 \]
 
-Here, $\widehat{O}_{\leq t}$ is the governed observation history, $P$ is live
-policy, and $C_t$ is run-local governance state. Without Sentinel,
-$\widehat{O}_t=O_t$ and each proposal is submitted to the underlying executor
-without Sentinel's mediation. With Sentinel, execution requires either an
-immediate \emph{allow} or, for an approval-eligible proposal, matching approval
-and successful revalidation of its live scope. Block, handoff, timeout,
-cancellation, unavailable required context, and unresolved authority do not
-execute $a_t$. Thus, the model proposes actions but does not authorise their
-privileged effects.
+Here, $D_t=(d_{t,1},\ldots,d_{t,m_t})$. The message $M_t$ combines the trusted
+goal with the observation history, earlier proposals, and their outcomes;
+$\widehat{M}_t$ is the governed form supplied to the model.
+Consequently, untrusted observations and tool-result text cross the same
+model-input boundary.
+
+The state symbols show when browser context is read. $S_t^O$ is sampled to
+construct the observation, whereas each $S_{t,i}^A$ is sampled immediately
+before its action, allowing the page or browser to evolve between planning and
+execution. Similarly, $P_t^O$ and $P_{t,i}^A$ are live policy snapshots at the
+model and action boundaries, while $C_t$ and $C_{t,i}$ are run-local governance
+states. BrowserUse abandons any unattempted suffix after an error, a
+sequence-terminating action, or a URL or focus change.
+
+At these complementary boundaries, the model-input guard may sanitise or omit
+untrusted regions. It withholds an unresolved current observation until fresh
+recapture or fail-closed termination, while the action governor wraps the
+executor itself, not merely the policy decision. Off mode disables prompt-injection
+enforcement and makes the action policy return \emph{allow}; however, text-only
+model input, privacy redaction, cancellation, and audit remain active. In
+enforce mode, an action reaches the executor only after an immediate
+\emph{allow} or after live-scope revalidation confirms an explicit approval or
+matching run-local grant. Blocks, handoffs, timeouts, cancellations, missing
+required context, and unresolved authority never execute $a_{t,i}$. A policy
+handoff instead withholds the proposed browser action and lets the operator act
+directly. Accordingly, the model retains planning and proposal power but cannot
+independently authorise or directly execute privileged actions.
 
 \section{Assets and trust boundary}
 
