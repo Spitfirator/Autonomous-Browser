@@ -4,23 +4,24 @@
 \section{System model}
 
 The operator supplies a trusted goal $G$. At step $t$, the environment has
-state $S_t$, the browser produces a raw observation $O_t$, the model proposes
-an action $a_t$, and the action guard returns outcome $d_t$. Sequence subscripts
-$\leq t$ and $<t$ denote histories through and before that step, respectively:
+state $S_t$, the browser produces an ungoverned observation $O_t$, the model
+proposes an action $a_t$, and the action guard returns outcome $d_t$. Sequence
+subscripts $\leq t$ and $<t$ denote histories through and before that step,
+respectively:
 
 \[
 \begin{aligned}
   O_t &= \mathsf{observe}(S_t), &
   \widehat{O}_t &= \mathsf{guard}_{O}(O_t,P,C_t), \\
-  a_t &= \mathsf{agent}(G,\widehat{O}_{\leq t},a_{<t}), &
+  a_t &= \mathsf{agent}(G,\widehat{O}_{\leq t},a_{<t},d_{<t}), &
   d_t &= \mathsf{guard}_{A}(a_t,S_t,P,C_t).
 \end{aligned}
 \]
 
 Here, $\widehat{O}_{\leq t}$ is the governed observation history, $P$ is live
 policy, and $C_t$ is run-local governance state. Without Sentinel,
-$\widehat{O}_t=O_t$ and each proposal passes directly to
-$\mathsf{execute}(S_t,a_t)$. With Sentinel, execution requires either an
+$\widehat{O}_t=O_t$ and each proposal is submitted to the underlying executor
+without Sentinel's mediation. With Sentinel, execution requires either an
 immediate \emph{allow} or, for an approval-eligible proposal, matching approval
 and successful revalidation of its live scope. Block, handoff, timeout,
 cancellation, unavailable required context, and unresolved authority do not
