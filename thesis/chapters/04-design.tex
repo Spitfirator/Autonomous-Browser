@@ -199,7 +199,7 @@ nested call or reopen the same historical incident. Sentinel therefore omits
 the entire affected value.
 
 These controls reduce known hostile influence but cannot guarantee a safe or
-correct plan. Every resulting proposal still needs an independent action
+correct plan, every resulting proposal still needs an independent action
 decision.
 
 \section{Action governance}
@@ -250,13 +250,15 @@ local file. Risk therefore depends on live target, URL, destination, and bounded
 content. Effects outside the BrowserUse integration remain outside Sentinel's
 claim.
 
-These inputs converge on \texttt{PolicyEngine.evaluate}. As
-\cref{tab:policy-order} shows, hard prohibitions precede human-step and approval
-paths, so an interactive response cannot weaken them.
+These inputs converge on \texttt{PolicyEngine.evaluate}. In enforce mode,
+\cref{tab:policy-order} shows that hard prohibitions precede human-step and
+approval paths, so an interactive response cannot weaken them. Shadow mode
+records the same ordered decision without applying it, while off mode bypasses
+the rules.
 
 \begin{table}[htbp]
 \centering
-\caption{Central policy precedence at the action boundary.}
+\caption{Enforce-mode policy precedence at the action boundary.}
 \label{tab:policy-order}
 \small
 \renewcommand{\arraystretch}{1.08}
@@ -266,15 +268,19 @@ Order & Condition & Outcome & Purpose \\
 \midrule
 1 & Blocked action, unsafe navigation scheme, or domain prohibition & Block &
 Apply hard policy before softer controls. \\
-2 & Required URL context missing, or hard-risk match & Block &
-Fail closed on missing context or hard risk. \\
+\addlinespace[3pt]
+2 & Required URL context missing, or dynamic risk classified as a hard block &
+Block & Fail closed on missing context or dynamic hard risk. \\
+\addlinespace[3pt]
 3 & Human-only data, unclassifiable upload, or first governed page action on or
 targeting a sensitive domain &
 Human step & Reserve the step for direct operator action. \\
+\addlinespace[3pt]
 4 & Configured approval or approvable consequential risk & Approve &
 Request narrow current-proposal authority. \\
+\addlinespace[3pt]
 5 & No stronger rule & Allow &
-Execute and audit the terminal outcome. \\
+Admit the proposal for execution and audit its terminal outcome. \\
 \bottomrule
 \end{tabularx}
 \end{table}
