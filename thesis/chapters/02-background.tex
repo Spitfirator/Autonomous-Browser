@@ -135,16 +135,14 @@ the downstream LLM. Detect-and-Remove separates document-level attack
 identification from sentence-level removal or generative extraction followed
 by longest-common-substring removal~\cite{chen2025detectremove}. Its
 effectiveness depends on detecting an attack and identifying the region that
-can be removed without destroying the task. Distribution shift remains
-fundamental: finite corpora cannot cover all wordings, encodings, page contexts,
-and adaptive strategies. White-box optimisation against specific defences has
+can be removed without destroying the task. A further challenge is distribution
+shift: no fixed collection of examples can cover every wording, encoding, page
+context, or adaptive strategy. White-box optimisation against specific defences has
 outperformed non-adaptive attacks in the evaluated settings
 ~\cite{zhan2025adaptive}. Sentinel therefore uses detection to govern
-observations while retaining policy and pre-execution checks as separate layers.
-
-Sentinel therefore combines advisory model-facing guidance with external
-observation governance and action policy. This defence-in-depth design
-preserves runtime authority.
+observations while applying policy independently before execution. In this way,
+model guidance is backed by external checks on what the agent observes and can
+do, keeping execution authority outside the model.
 
 \subsection{System-level authority}
 
