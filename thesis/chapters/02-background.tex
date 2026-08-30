@@ -133,11 +133,12 @@ contextual and do not provide a controlled ranking against Sentinel.
 Detection supplies an inspectable decision before processed content reaches
 the downstream LLM. Detect-and-Remove separates document-level attack
 identification from sentence-level removal or generative extraction followed
-by longest-common-substring removal~\cite{chen2025detectremove}. Its
-effectiveness depends on detecting an attack and identifying the region that
-can be removed without destroying the task. A further challenge is distribution
-shift: no fixed collection of examples can cover every wording, encoding, page
-context, or adaptive strategy. White-box optimisation against specific defences has
+by longest-common-substring removal~\cite{chen2025detectremove}. For this
+approach to work, it must detect the attack and identify the part that can be
+removed without losing information needed to complete the task. A further
+challenge is distribution shift: no fixed collection of examples can cover
+every wording, encoding, page context, or adaptive strategy. White-box
+optimisation against specific defences has
 outperformed non-adaptive attacks in the evaluated settings
 ~\cite{zhan2025adaptive}. Sentinel therefore uses detection to govern
 observations while applying policy independently before execution. In this way,
