@@ -35,9 +35,9 @@ deliberately expected to understand previously unseen prose, so a fixed grammar
 cannot by itself establish which source has authority. Delimiters can mark the
 distinction between trusted instructions and untrusted input, but page text can
 imitate them and the model must still decide which instruction has authority.
-Formalisations and benchmarks identify this instruction--data confusion as a
-central mechanism~\cite{liu2024formalizing,yi2025bipia}; the next subsection
-separates detector, trajectory, and final-state evidence.
+Formal analyses and benchmark studies point to the same weakness: models do not
+reliably distinguish the instructions they should follow from external content
+they should treat as data~\cite{liu2024formalizing,yi2025bipia}.
 
 The threat also extends beyond the current page: extracted page text and tool
 results can cross secondary model calls, while stored history can reintroduce
