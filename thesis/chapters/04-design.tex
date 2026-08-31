@@ -411,29 +411,27 @@ unsafe action remains withheld.
 
 \section{Audit and privacy}
 
-The audit retains enough structure to explain an outcome without storing a raw
-transcript. Every action proposal receives paired \texttt{attempted} and
-terminal records, keeping blocks, denials, timeouts, cancellations, exceptions,
-and executor failures in one denominator. The pair retains action class,
-verdict, bounded risk and taint, origin, latency, and outcome; a separate
-enforcement record adds the applicable rule and redacted reason.
+Sentinel's audit explains outcomes without retaining raw transcripts. Each
+action proposal produces an \texttt{attempted} record and a terminal record, so
+blocks, denials, timeouts, cancellations, exceptions, and executor failures
+share one denominator. Together, the records capture action class, verdict,
+bounded risk and taint, origin, latency, and outcome; a separate enforcement
+record gives the applicable rule and redacted reason.
 
-Observation records follow the same principle. Detection records score,
-signals, and run-keyed digest; sanitisation records branch, affected-region
-count, and post-check. Raw payloads and removed spans are omitted, while the
-digest links repeats within one run without preserving content or creating a
-stable identifier.
+Observation records use this pattern. Detection records store the score,
+signals, and a run-keyed digest; sanitisation records show the path taken, how
+many regions were affected, and the post-check result. Raw payloads and removed
+spans are omitted. The digest links repeated detections within one run without
+preserving content or creating a stable identifier.
 
-Before storage or extension delivery, Sentinel redacts task text, action
-parameters, URLs, and free-text summaries again. Extension events omit
-screenshots and page titles; persistent screenshot and free-form rationale
-storage is opt-in and disabled by default. The record still distinguishes
-proposal, execution, intervention, and terminal outcome for trajectory
-analysis.
+Before storage or extension delivery, Sentinel again redacts task text, action
+parameters, URLs, and free-text summaries. Extension events omit screenshots
+and page titles; storing screenshots and free-form rationales is opt-in and
+disabled by default. Even so, records distinguish proposal, execution,
+intervention, and terminal outcome for trajectory analysis.
 
-These events inform the operator while keeping enforcement and execution
-server-side. The Chrome extension is the operator-facing control plane for this
-redacted projection.
+The Chrome extension described below presents these redacted events to the
+operator, while enforcement and execution remain server-side.
 
 \section{Chrome extension: operator-facing control plane}
 \label{sec:control-plane}
