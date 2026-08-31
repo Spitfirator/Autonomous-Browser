@@ -3,36 +3,38 @@
 
 \section{Design principles and architecture}
 
-The main design problem is to separate planning from permission. Indeed, a browser
-agent needs latitude to interpret pages, recover from errors, and choose its
-next step. However, the model proposing that step should not also decide whether
-its effect is permitted. \systemname\ therefore leaves planning to BrowserUse
-while independently governing what reaches the planner and the privileged
-executor. Four principles turn this separation into a runtime architecture.
+The central design challenge is to preserve a browser agent's freedom to
+interpret pages, recover from errors, and choose its next step without allowing
+the model to decide whether that step is permitted. \systemname\ leaves planning
+to BrowserUse while governing the information that reaches the planner and the
+proposals that reach the privileged executor. Four principles translate this
+separation into the runtime architecture.
 
 \begin{enumerate}
-  \item \textbf{Keep authority outside the acting model.} The model receives
-  observations and tool outcomes, but only the middleware can pass its proposals
-  to the privileged executor.
+  \item \textbf{Keep authority outside the acting model.} The model can
+  interpret observations and propose tool calls, but only the middleware can
+  pass an allowed proposal to the privileged executor.
 
   \item \textbf{Mediate both sides of the agent loop.} The observation guard
-  reduces known hostile influence before inference; the action guard constrains
-  any resulting effect when hostile influence or planning error survives.
+  reduces known hostile influence before inference; if that influence or an
+  ordinary planning error survives, the action guard constrains the resulting
+  effect.
 
   \item \textbf{Represent consent as bounded authority.} Approval is tied to
-  reviewed live context and rechecked before execution. A proposal containing a
-  recognised protected value is withheld for direct operator action.
+  reviewed live context and checked again before execution. Unless a
+  higher-priority rule blocks it, a proposal carrying a recognised human-only
+  value is withheld for direct operator action.
 
-  \item \textbf{Fail closed and retain accountable outcomes.} Missing context,
-  unresolved sanitisation, operator silence, timeout, cancellation, or
-  malformed authority cannot become permission. Decisions remain inspectable
-  without reproducing the sensitive content that caused them.
+  \item \textbf{Fail closed and retain accountable outcomes.} Missing
+  security-relevant context, unresolved sanitisation, operator silence,
+  timeout, cancellation, or malformed authority cannot become permission.
+  Decisions remain inspectable without reproducing the sensitive content that
+  caused them.
 \end{enumerate}
 
-Together, these principles preserve the agent's planning flexibility while
-making permission a property of the runtime. BrowserUse can plan and
-recover, but Sentinel's guards determine whether each proposal may take effect,
-and the audit trail records the outcome (\cref{fig:architecture}).
+Together, these principles allow BrowserUse to plan and recover flexibly, while
+Sentinel decides at runtime whether each proposed action may proceed and records
+the outcome. \Cref{fig:architecture} summarises this division.
 
 \begin{figure}[!t]
 \centering
@@ -58,49 +60,53 @@ permission.
 
 \subsection{Composition and supported channel}
 
-Sentinel runs as a Python service around an ordinary BrowserUse agent without
-maintaining a BrowserUse fork. A model wrapper governs the planner's
-observations, and a tool wrapper mediates each proposal immediately before
-execution. Their
-implementation classes, \texttt{GovernedLLM} and \texttt{GovernedTools}, retain
-BrowserUse's normal interfaces~\cite{muller2024browseruse}.
+Sentinel runs as a Python service around a standard BrowserUse agent, so the
+integration does not require a separate BrowserUse fork. A model wrapper governs
+the observations passed to the planner, while a tool wrapper mediates each
+proposal immediately before execution. Their implementation classes,
+\texttt{GovernedLLM} and \texttt{GovernedTools}, preserve BrowserUse's normal
+interfaces~\cite{muller2024browseruse}.
 
-Each task has its own budgets, findings, grants, intervention and cancellation
-state, counters, and HMAC key. Thus, authority cannot carry into a later task,
-and digests cannot link identical audited values across runs.
+Each task keeps its state separate, with its own budgets, findings, grants,
+intervention and cancellation state, counters, and HMAC key. This separation
+means that authority cannot carry into the next task, while the per-task key
+prevents identical audited values from producing linkable digests across runs.
 
-The supported model-input channel is deliberately textual. Sentinel removes
-images and remaining frame captures, marks browser-derived text as untrusted,
-and reduces sensitive URL metadata. The evaluated planner receives a
-DOM/accessibility representation that Sentinel can inspect and rewrite. This
-excludes pixel-only instructions and tasks whose completion requires visual
-evidence unavailable from the DOM/accessibility representation; a multimodal
-planner would require a separate visual-observation guard.
+The current model-input channel is text-only: before an observation reaches the
+planner, Sentinel removes images and remaining frame captures, marks
+browser-derived text as untrusted, and reduces sensitive URL metadata. The
+planner receives a DOM/accessibility representation that Sentinel can inspect
+and rewrite. Consequently, the current design does not cover pixel-only
+instructions or tasks that require visual evidence absent from that
+representation. A multimodal planner would need a separate guard for visual
+observations.
 
-Sentinel exposes three runtime modes, distinguished by whether security
-decisions are evaluated and enforced. Off skips prompt-injection detection and
-makes the action policy return allow, although redacted action attempts and
-terminal outcomes are still audited. Shadow runs the detector and action-policy
-rules against live context, but does not apply detector-driven sanitisation or a
-policy-derived verdict. Instead, it records the detections and the block,
-approval, or handoff that would have occurred. Enforce applies those
-outcomes: it may sanitise or withhold a detected observation; for an action
-proposal, it may allow, block, request approval, or require a human step. The
-WASP evaluation uses \emph{full} to label the enforce-mode configuration that
-combines observation sanitisation with action-policy enforcement; it is not a
-separate runtime mode. Across every mode, the
-supported model channel remains text-only, tool results remain marked as
+Sentinel has three runtime modes, which determine whether security decisions are
+evaluated and applied. Off skips prompt-injection detection and makes the action
+policy return allow, while still auditing redacted action attempts and terminal
+outcomes. Shadow evaluates live context with the detector and action-policy
+rules, but does not apply detector-driven sanitisation or the resulting policy
+verdict. Instead, it records the detections and the block, approval, or handoff
+that would have occurred. Enforce, by contrast, applies those results to the
+live agent run: it may sanitise or withhold a detected observation, and it may
+allow or block an action proposal, request approval, or require a human step.
+Later chapters compare two
+configurations within enforce mode: \emph{policy-only} and \emph{full}. Both use
+the same model-facing guidance, boundary neutralisation, and action-policy
+checks, but \emph{full} also sanitises observations. The model channel does not
+change between modes: input remains text-only, tool results remain marked as
 untrusted, and navigation metadata remains redacted.
 
-Sentinel checks cancellation around every authority wait and immediately before
-execution. Its deadlines expire before BrowserUse's outer step timeout, so
-denial, silence, cancellation, or shutdown closes the pending action.
+Finally, Sentinel checks for cancellation around every authority wait and again
+immediately before execution. Its deadlines expire before BrowserUse's outer
+step timeout, so denial, silence, cancellation, or shutdown closes the pending
+action.
 
 \subsection{One governed agent step}
 
-A BrowserUse step may contain a short, ordered action sequence. Sentinel treats
-each action as a separate proposal with its own authority decision and terminal
-audit outcome:
+A BrowserUse step may contain a short, ordered action sequence, yet Sentinel
+treats each action as a separate proposal with its own authority decision and
+terminal audit outcome:
 
 \begin{enumerate}[leftmargin=8mm]
   \item \textbf{Capture.} The observation wrapper separates the trusted task
@@ -119,17 +125,18 @@ audit outcome:
   \item \textbf{Rebuild authority.} The action wrapper records each attempt and
   reconstructs its live origin, destination, target, policy, protected-data
   classes, and taint. Policy may allow, block, request approval, or require a
-  human step. Approval triggers complete preflight again; a human step withholds
-  the proposal for direct operator action.
+  human step. Approval triggers complete preflight again, whereas a human step
+  withholds the proposal for direct operator action.
 
   \item \textbf{Execute and close.} Only an allowed, still-valid proposal
   reaches the tool. Its audit pair closes before the next proposal; an error,
   sequence-terminating action, or URL or focus change abandons the remainder.
 \end{enumerate}
 
-Observation governance comes first, since a later block cannot undo a plan
-already shaped by hostile content. Nevertheless, every proposal is governed
-again because its page, target, policy, or data may change after planning.
+This ordering matters because observation governance runs before planning: a
+later block cannot undo a plan already shaped by hostile content. Action
+governance then repeats for every proposal, as its page, target, policy, or data
+may have changed after planning.
 
 \section{Observation governance}
 \label{sec:observation-governance}
@@ -141,18 +148,18 @@ tool results, scanning only these untrusted regions for prompt injection. Before
 textual tool results enter agent history, it escapes reserved protocol tags and
 places the results inside an explicit untrusted wrapper.
 
-A page may imitate BrowserUse or Sentinel prompt structure. \emph{Boundary
-neutralisation} addresses this risk by escaping reserved tags only inside
-recognised untrusted regions. Genuine outer wrappers and ordinary DOM tags
-remain unchanged, so forged syntax cannot create a trusted region or close the
-real one.
+Untrusted content can imitate BrowserUse or Sentinel prompt structure. When
+prompt-injection governance is active in enforce mode, \emph{boundary
+neutralisation} escapes reserved tags within recognised untrusted regions while
+leaving genuine outer wrappers and ordinary DOM tags intact. Consequently,
+forged syntax cannot create a trusted region or close the real one.
 
-Model-facing browser state also withholds page titles and replaces complete
+At the model boundary, Sentinel also withholds page titles and replaces entire
 HTTP(S) query strings and fragments. For \texttt{data:}, \texttt{javascript:},
-\texttt{blob:}, \texttt{file:}, and other non-web URLs, only the scheme crosses
-model, event, and trace boundaries; the opaque suffix may contain a document,
-script, path, or identifier. Other telemetry retains useful HTTP(S) context
-while redacting recognised sensitive values.
+\texttt{blob:}, \texttt{file:}, and other non-web URLs, only the scheme is
+retained across model, event, and trace boundaries because the opaque suffix may
+contain a document, script, path, or identifier. Other telemetry retains useful
+HTTP(S) context while redacting recognised sensitive values.
 
 \subsection{Detection and attributable sanitisation}
 
@@ -182,84 +189,94 @@ states:
   could be removed safely.
 \end{tabularx}
 
-The pattern rules make findings repeatable and removal attributable. However,
-it is important to note that an unfamiliar formulation may match no signal, and a clean post-check shows
-only that the configured detector no longer fires, not that every possible
-attack is absent.
+This deterministic process makes findings repeatable and removal attributable.
+It does not, however, prove that the remaining input is free from every attack:
+an unfamiliar formulation may evade the configured signals, and a clean
+post-check means only that those signals no longer fire.
 
 \subsection{Fail-closed unresolved content}
 
-Under the evaluated full configuration, \texttt{removed} is the only positive
-detection outcome that continues to the planner. The rewritten observation
-carries no warning, but all subsequent actions remain policy-gated.
+Under the evaluated full configuration, \texttt{removed} is the only outcome
+from a positive detection that may continue to the planner. The planner receives
+the rewritten observation without a warning, although every action it later
+proposes remains subject to policy.
 
-A \texttt{residual} or \texttt{unattributable} current observation is replaced
-by a fixed marker and held before the model call. Sentinel opens an observation
-incident, so the provider is not called. If the operator requests a re-check,
-Sentinel discards the held prompt and captures the page afresh; quarantined input
-is never treated as approved.
+If the current observation is \texttt{residual} or \texttt{unattributable},
+Sentinel stops the process before the model call: it replaces the observation
+with a fixed marker, withholds the prompt, and opens an observation incident, so
+the provider never receives the unresolved content. When the operator requests
+a re-check, Sentinel discards the held prompt and captures the page again;
+quarantined input is never reinterpreted as approved.
+Later, \Cref{fig:unresolved-observation} shows how this fail-closed state
+appears to the operator when an unattributable observation is withheld.
 
-For bounded extractions and persistent tool results, a pause could expire a
-nested call or reopen the same historical incident. Sentinel therefore omits
-the entire affected value.
+Bounded extractions and persistent tool results need a different fallback
+because pausing can cause a nested call to expire or reopen the same historical
+incident. In those cases, Sentinel omits the entire affected value instead of
+preserving it for another attempt.
 
-These controls reduce known hostile influence but cannot guarantee a safe or
-correct plan, every resulting proposal still needs an independent action
-decision.
+Together, these controls reduce known hostile influence, but they cannot
+guarantee that the resulting plan is safe or correct. The action guard therefore
+evaluates every resulting proposal independently before execution.
 
 \section{Action governance}
 \label{sec:action-governance}
 
 \subsection{Pre-execution reconstruction}
 
-Context can change between planning and execution: a redirect may replace the
-origin, a re-render may change the target, and a local file or policy may be
-updated. Sentinel therefore decides at the last responsible moment, after the
-effect is concrete but before the privileged tool is called.
+An action's context can change after planning: a redirect may move the browser
+to another origin, a re-render may replace the target, and a local file or
+policy may be updated. Sentinel therefore reconstructs the live context and
+waits until the effect is concrete to decide whether the proposal may proceed,
+immediately before the privileged tool is called.
 
-Each proposal opens an auditable transaction. An action identifier and
-\texttt{attempted} record precede fallible preflight; a guarded completion
-routine adds exactly one terminal outcome. Executions, blocks, denials,
-timeouts, cancellations, and errors therefore share one denominator.
+Each proposal begins an auditable transaction in which Sentinel assigns an
+identifier and records \texttt{attempted} before preflight. A guarded completion
+routine then adds exactly one terminal outcome, so executions, blocks, denials,
+timeouts, cancellations, and errors are all counted against the same set of
+attempted actions.
 
-Preflight reconstructs origin, destination, active findings, policy, and any
-available bounded target semantics. It classifies capabilities and
-protected-data categories, then derives redacted parameter and approval-scope
-evidence. Missing URL context required by domain policy blocks the proposal;
-other preflight exceptions also close it without execution.
+Preflight reconstructs the origin, destination, active findings, policy, and any
+bounded target information. Sentinel uses this context to classify capabilities
+and protected-data categories, then derives redacted parameter and
+approval-scope evidence. Missing URL context required by domain policy blocks
+the proposal, while any other preflight error closes the transaction without
+execution.
 
-File upload illustrates why live reconstruction matters. Sentinel inspects only
-authorised, session-downloaded, or managed paths containing bounded regular
-UTF-8 text. A remote, missing, binary, oversized, unreadable, or unclassifiable
-file triggers a human step; the intercepted upload does not execute. For a
-classifiable file, a keyed digest binds the unlogged content to approval scope.
-Complete preflight repeats after approval, revealing changes to the file,
-target, origin, or policy.
+File uploads show why this live reconstruction matters, as Sentinel can inspect
+only authorised, session-downloaded, or managed paths containing bounded,
+regular UTF-8 text. Anything outside these conditions is unclassifiable and,
+unless a higher-priority rule blocks it, is routed to a human step without
+executing the upload. For a classifiable file, a keyed digest binds the
+unrecorded content to approval scope. Sentinel repeats preflight after approval,
+so changes to the file, target, origin, or policy are caught before execution.
 
 \subsection{Risk, taint, and policy precedence}
 
-The action guard classifies effects such as navigation, page change,
-disclosure, file access, and code execution, then combines them with live
-origin, target, protected-data classes, policy, and taint. For example, policy
-can prohibit \texttt{evaluate} while holding a consequential click for narrow
-review.
+The risk of a proposed action cannot be inferred from its name alone: a click
+may submit a form or navigate, a URL may disclose a query across origins, and an
+upload transfers a local file. Sentinel therefore evaluates the live target,
+URL, destination, and any bounded content it can inspect. Effects outside the
+BrowserUse integration remain outside Sentinel's claim.
 
-Origin-scoped taint carries a finding across steps without following the agent
-to unrelated origins or automatically blocking every same-site control. Thus,
-Sentinel can assess each effect even when legitimate and attacker-directed
-trajectories use the same form.
+Using that reconstructed context, the action guard identifies capabilities such
+as navigation, page change, disclosure, file access, and code execution, then
+considers them alongside the live origin, target, protected-data classes,
+policy, and taint. This fuller view allows policy to prohibit
+\texttt{evaluate} outright, for example, while sending a consequential click
+for narrow review.
 
-An action name does not describe its complete effect: a click may submit or
-navigate, a URL may disclose a query across origins, and an upload transfers a
-local file. Risk therefore depends on live target, URL, destination, and bounded
-content. Effects outside the BrowserUse integration remain outside Sentinel's
-claim.
+Taint remains tied to the origin that produced the finding, so it can persist
+across steps without following the agent to unrelated origins or automatically
+blocking every control on the same site. Sentinel can therefore judge each
+proposed effect in context, even when legitimate and attacker-directed paths use
+the same form.
 
-These inputs converge on \texttt{PolicyEngine.evaluate}. In enforce mode,
-\cref{tab:policy-order} shows that hard prohibitions precede human-step and
-approval paths, so an interactive response cannot weaken them. Shadow mode
-records the same ordered decision without applying it, while off mode bypasses
-the rules.
+\texttt{PolicyEngine.evaluate} applies these inputs in the fixed order shown in
+\cref{tab:policy-order}. In enforce mode, hard prohibitions come before
+human-step and approval paths, so an interactive response cannot weaken them.
+Shadow records the same ordered decision without applying it, whereas off
+bypasses the rules.
 
 \begin{table}[htbp]
 \centering
@@ -291,25 +308,26 @@ Admit the proposal for execution and audit its terminal outcome. \\
 \end{table}
 \FloatBarrier
 
-Not every navigation is proposed as a navigation action. A clicked link,
-redirect, or page script can move the browser as a side effect. In enforce
-mode, Sentinel therefore keeps BrowserUse's watchdog synchronised with the live
-domain lists. The watchdog can then check navigation events throughout the
-integrated session. Explicit action proposals still pass through
-\texttt{PolicyEngine.evaluate}. Cases that need operator judgement are then
-routed through the authority paths described next.
+Explicit navigation proposals pass through \texttt{PolicyEngine.evaluate}, but
+not every navigation appears in that form: a clicked link, redirect, or page
+script can also move the browser as a side effect. In enforce mode, Sentinel
+therefore keeps BrowserUse's watchdog synchronised with the live domain lists so
+that navigation events are checked throughout the integrated session. Proposals
+requiring operator judgement then follow the authority paths described next.
 
 \section{Selective human authority}
 \label{sec:human-authority}
 
-\subsection{Distinct authority outcomes}
+\subsection{Authority outcomes and their effects}
 
-Operator involvement does not necessarily release a proposal. As a result, Sentinel separates the four server-owned outcomes in
-\cref{tab:authority-taxonomy}.
+Sentinel treats governed proposals and observations as four server-owned
+outcomes, each with a different effect on authority.
+\Cref{tab:authority-taxonomy} shows what leads to each state and what the state
+permits.
 
 \begin{table}[!htbp]
 \centering
-\caption{Distinct security meanings of operator involvement.}
+\caption{Triggers and authority effects of the four server-owned outcomes.}
 \label{tab:authority-taxonomy}
 \footnotesize
 \renewcommand{\arraystretch}{1.03}
@@ -334,32 +352,39 @@ cannot approve the old one. \\
 \end{table}
 \FloatBarrier
 
-Only narrow approval can confer permission on a proposal. A human step reserves
-direct action for the operator, an observation incident grants no override, and
-a hard refusal remains final.
+This distinction matters because only narrow approval can permit an agent
+proposal to proceed; a human step leaves the action to the operator, an
+observation incident offers no override, and a hard refusal remains final.
 
 \subsection{Narrow approval and live revalidation}
 
-Approval binds the reviewed action, origin, capabilities, taint, protected-data
-classes, target, and parameter or content evidence. It applies once unless the
-server offers a run-local, expiring, use-capped similar-action scope. After a
-response or grant match, Sentinel repeats full preflight against current policy
-and browser state. A new block, human-step requirement, or context mismatch
-withholds execution: approval authorises a present opportunity, not frozen
-browser state.
+An approval applies only to the proposal the operator reviewed, including its
+origin, capabilities, taint, protected-data classes, target, and parameter or
+content evidence. It normally applies once, although the server may offer an
+\emph{Allow similar} grant that is confined to the current run, expires, and can
+be used only a fixed number of times. Even after operator approval or a match to
+an existing grant, Sentinel repeats the complete preflight using the latest
+policy and browser state. If this fresh check finds a new block, requires a
+human step, or discovers that the context has changed, Sentinel withholds the
+action. Approval therefore applies to the opportunity at execution, not to an
+earlier version of the page.
 
-A per-run budget caps approval prompts, then invokes the configured human-step
-or block fallback. Pending authority remains server-owned across extension
-disconnects: on reconnection, the service provides a snapshot containing current
-state and pending requests alongside the continuing sequenced event stream. A
-vanished card never counts as consent; only a bounded response to a still-pending
-request changes its state.
+To prevent repeated interruptions, a per-run budget limits how often Sentinel
+can ask for approval; once it is exhausted, the configured fallback either
+requires a human step or blocks the proposal. Pending requests remain on the
+server if the extension disconnects, and on reconnection the service returns
+the current state and outstanding requests before continuing the event sequence.
+A request card disappearing from the interface therefore never implies consent,
+because only a response that reaches the server within the request's limits and
+while it remains pending can change its state.
 
-\subsection{Routes to direct human control}
+\subsection{Direct human control and resumption}
 
-Direct human control begins through three distinct routes. First, operator
-\emph{Take over} pauses future agent actions without approving a proposal or
-changing policy; an executing action cannot be recalled.
+The earlier taxonomy explains what each authority state permits; this subsection
+instead follows the three routes by which control passes to the operator and
+shows how the agent resumes after each one. First, choosing \emph{Take over}
+pauses future agent actions without approving a proposal or changing policy; an
+executing action cannot be recalled.
 
 Second, the planner may invoke \texttt{request\_human\_control} for a login,
 one-time code, CAPTCHA, payment, or private detail. Sentinel terminates the
@@ -371,24 +396,27 @@ unclassifiable uploads, the first governed page action on or targeting a
 configured sensitive domain, or approval-budget fallback. Sentinel withholds the
 proposal and records that it did not execute.
 
-Resumption depends on the route. Operator takeover continues at BrowserUse's
-next check. A planner request has terminated its sequence, so the next step
-captures fresh page state. A policy handoff reports that the protected proposal
-did not execute; later proposals cross the guards again. In every case, the next
-observation still crosses \texttt{GovernedLLM} and may trigger an incident.
+Each route resumes differently: during operator takeover, BrowserUse pauses at
+its next control check and continues once control returns. A planner-requested
+handoff ends the current action sequence, so the agent resumes with a fresh page
+capture. A policy-enforced handoff records that the protected proposal did not
+execute, and later proposals must pass through the guards again. In all three
+cases, the next observation still passes through \texttt{GovernedLLM} and may
+trigger an incident.
 
-After a completed sensitive-domain handoff, Sentinel suppresses repeats for that
-pattern during the run without clearing taint or creating a general exemption.
-Silence, cancellation, or shutdown keeps the unsafe continuation closed.
+After a sensitive-domain handoff, Sentinel avoids repeating the same request
+during that run, but this does not remove taint or create a broader exemption.
+If the operator remains silent, cancels the request, or shuts down the run, the
+unsafe action remains withheld.
 
 \section{Audit and privacy}
 
-Sentinel's action audit stores structured evidence, not raw transcripts. Each
-proposal receives paired \texttt{attempted} and terminal records, keeping
-blocks, denials, timeouts, cancellations, exceptions, and executor failures in
-one denominator. The pair retains action class, verdict, bounded risk and taint,
-origin, latency, and outcome. A separate enforcement-decision record adds the
-applicable rule and redacted reason.
+The audit retains enough structure to explain an outcome without storing a raw
+transcript. Every action proposal receives paired \texttt{attempted} and
+terminal records, keeping blocks, denials, timeouts, cancellations, exceptions,
+and executor failures in one denominator. The pair retains action class,
+verdict, bounded risk and taint, origin, latency, and outcome; a separate
+enforcement record adds the applicable rule and redacted reason.
 
 Observation records follow the same principle. Detection records score,
 signals, and run-keyed digest; sanitisation records branch, affected-region
@@ -396,12 +424,12 @@ count, and post-check. Raw payloads and removed spans are omitted, while the
 digest links repeats within one run without preserving content or creating a
 stable identifier.
 
-Before storage or extension delivery, Sentinel applies defence-in-depth
-redaction to task text, action parameters, URLs, and free-text summaries.
-Extension events omit screenshots and page titles; persistent screenshot and
-free-form rationale storage is opt-in and disabled by default. The record still
-distinguishes proposal, execution, intervention, and terminal outcome for
-trajectory analysis.
+Before storage or extension delivery, Sentinel redacts task text, action
+parameters, URLs, and free-text summaries again. Extension events omit
+screenshots and page titles; persistent screenshot and free-form rationale
+storage is opt-in and disabled by default. The record still distinguishes
+proposal, execution, intervention, and terminal outcome for trajectory
+analysis.
 
 These events inform the operator while keeping enforcement and execution
 server-side. The Chrome extension is the operator-facing control plane for this
@@ -418,11 +446,13 @@ policy, approval, and handover requests. The service owns the run, pending
 requests, audit, lifecycle, and executor; it rejects stale responses, limits
 approval scope, and revalidates execution.
 
-The extension is trusted to relay operator intent. Compromised client code could
-answer an active request or change policy, yet could neither call the executor
-nor bypass revalidation. A Manifest V3 worker and content script
-provide in-page controls; the side panel and dashboard use HTTP and WebSocket.
-Only the service changes runtime state.
+Within the local prototype, the extension is trusted to relay operator intent.
+A compromised client could answer an active request or change policy, although
+it could not call the executor directly, reuse stale authority, or bypass
+service-side revalidation. This limits direct privilege but does not make the
+client harmless. A Manifest V3 worker and content script provide in-page
+controls; the side panel and dashboard use HTTP and WebSocket. Only the service
+changes runtime state.
 
 \subsection{Autonomous operation and browser ownership}
 \FloatBarrier
@@ -435,60 +465,64 @@ operation before an intervention.
 
 \begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.80\textwidth]{figures/interface-browser-and-panel-running-live.png}
+\includegraphics[width=0.97\textwidth]{figures/interface-browser-and-panel-running-live.png}
 \caption{Ordinary autonomous operation.}
 \label{fig:governed-run}
 \end{figure}
+\FloatBarrier
 
-The in-page strip shows who controls the browser. \emph{Take over} pauses future
-agent actions for direct interaction, while \emph{Stop} ends the task. These
-controls change ownership or lifecycle state, not policy. The sparse strip keeps
-essential control beside the page without exposing protected input, hostile
-text, or the full audit record.
+The in-page strip shows who currently controls the browser. \emph{Take over}
+pauses future agent actions for direct interaction, while \emph{Stop} ends the
+task. These controls change ownership or lifecycle state, not policy. Keeping
+the strip sparse places essential control beside the page without exposing
+protected input, hostile text, or the full audit record.
 
 \FloatBarrier
 \subsection{Intervention features}
 
-Intervention cards expose Sentinel's earlier authority distinctions. An
-approval card offers only server-defined responses to a bounded proposal. A
-human-step card explains why the agent yielded and lets the operator mark the
-direct step complete. An observation-incident card contains no attacker text or
+Intervention cards make the authority distinctions visible. An approval card
+offers only server-defined responses to a bounded proposal. A human-step card
+explains why the agent yielded and lets the operator mark the direct step
+complete. An observation-incident card contains neither attacker text nor an
 approval path; its re-check control requests a fresh capture from the service.
 
-\Cref{fig:unresolved-observation} shows this fail-closed path. The controlled
-page produces a detector-positive observation that cannot be mapped to a region
-Sentinel can safely remove. Sentinel therefore records the finding as
-\texttt{unattributable} and withholds the observation before calling the
-provider. The unchanged 0/60 model-call counter shows this pre-inference stop
-without disclosing its trigger.
+\Cref{fig:unresolved-observation} presents the corresponding
+observation-incident card.
 
 \begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.80\textwidth]{figures/interface-browser-and-panel-unresolved-live.png}
+\includegraphics[width=0.97\textwidth]{figures/interface-browser-and-panel-unresolved-live.png}
 \caption{An unattributable observation withheld before inference.}
 \label{fig:unresolved-observation}
 \end{figure}
 \FloatBarrier
 
-\Cref{fig:handover-projection} shows a planner-requested human step at a
-protected password field. The local portal contains an account identifier, but
-the password is unavailable to the model, so the planner invokes
-\texttt{request\_human\_control}. The page retains the field for the operator to
-complete; the side panel shows the reason, deadline, current URL, and a control
-for resuming the agent. This planner-requested state is distinct from operator
+The controlled page produces a detector-positive observation that cannot be
+mapped to a region Sentinel can safely remove. Sentinel therefore records the
+finding as \texttt{unattributable} and withholds the observation before calling
+the provider. The unchanged 0/60 model-call counter shows this pre-inference stop
+without disclosing its trigger.
+
+\Cref{fig:handover-projection} shows a different intervention: a
+planner-requested human step at a protected password field.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=0.97\textwidth]{figures/interface-browser-and-panel-password-handover-live.png}
+\caption{Agent-requested control at a protected field.}
+\label{fig:handover-projection}
+\end{figure}
+
+The local portal contains an account identifier, but the password field is empty
+and the model does not know the value. The planner therefore invokes
+\texttt{request\_human\_control}. The page retains the field for the operator,
+while the side panel shows the reason, deadline, current URL, and a control for
+resuming the agent. This planner-requested state remains distinct from operator
 takeover.
 
 Each card reflects service-owned state; it does not define state in the client.
 Disconnecting the extension therefore cannot approve a request, release
 quarantined content, or grant protected-value authority to the agent.
-
-\begin{figure}[!htbp]
-\centering
-\includegraphics[width=0.80\textwidth]{figures/interface-browser-and-panel-password-handover-live.png}
-\caption{Agent-requested control at a protected field.}
-\label{fig:handover-projection}
-\end{figure}
-\FloatBarrier
 
 \subsection{Policy, Activity, and future HITL scope}
 
@@ -538,14 +572,14 @@ decision quality.
 \FloatBarrier
 \section{Design synthesis}
 
-Together, these mechanisms give each requirement an enforcement point:
-observation governance supports R2; per-proposal mediation and policy support
-R1 and R3; selective, expiring authority supports R4; and paired redacted
-records with run-keyed evidence support R5. They form one governed path, so an
-incomplete observation treatment does not remove action policy and operator
-input cannot weaken a hard prohibition.
+The chapter's mechanisms implement R1--R5 as one chain: observation governance
+supports R2; per-proposal mediation and policy implement R1 and R3; selective,
+expiring authority supports R4; and paired redacted records support R5. If
+observation handling misses or incompletely removes a hostile instruction, the
+action guard still evaluates every proposal. Conversely, operator input cannot
+override a hard prohibition.
 
-The extension therefore projects Sentinel's state and submits requests without
-execution authority. \Cref{chap:methodology}
-traces this hierarchy through mechanism checks, controlled AgentDojo effects,
-browser-native WASP transfer, and control-plane walkthroughs.
+Sentinel owns this governed path; the extension exposes its state and returns
+bounded requests without acquiring execution authority. \Cref{chap:methodology}
+next evaluates the hierarchy through mechanism checks, controlled AgentDojo
+effects, browser-native WASP transfer, and control-plane walkthroughs.
