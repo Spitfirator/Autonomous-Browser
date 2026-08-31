@@ -152,24 +152,35 @@ Silence, timeout, cancellation, and shutdown do not authorize pending work.
 
 ## Configuration and API
 
-Dashboard policy edits apply to the next action, including mid-run. The API is
-loopback-only and origin-checked:
+Dashboard policy edits apply to the next action, including mid-run. The main
+operator-facing routes are below; health and extension-setup probes are omitted:
 
 ```text
 GET /api/status
 POST /api/task
+POST /api/message
 POST /api/agent/{pause|resume|stop}
+POST /api/agent/reset
+GET|POST /api/conversations
+GET /api/conversations/{id}
+POST /api/conversations/{id}/activate
 GET|PUT /api/config
 GET|PUT /api/keys
-POST /api/approvals/{id}
+POST /api/approvals/{approval_id}
+POST /api/handover/{handover_id}/complete
 GET /api/history
+GET /api/traces/{run_id}/{decisions|events}
+POST /api/traces/{run_id}/decisions/{seq}
 GET /api/actions
 GET /ws
 ```
 
-Loopback is the accepted local thesis boundary, not same-user process
-isolation. A compromised process under the same OS account may still call the
-API or alter local files.
+The service binds to loopback. Most browser-origin requests are origin-checked;
+originless local clients remain accepted, and handover completion accepts any
+page origin when it presents the current opaque handover identifier so the
+in-page control can return the browser. These are accepted local-prototype
+boundary choices, not same-user process isolation. A compromised process under
+the same OS account may still call the API or alter local files.
 
 ## Reproducing the validation
 

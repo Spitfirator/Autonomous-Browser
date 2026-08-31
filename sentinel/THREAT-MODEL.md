@@ -40,7 +40,7 @@ invariants are:
 | Downloads, extracted text and tool results | untrusted data | Can carry stored/second-order injections |
 | Action parameters | tainted model output | Evaluated/redacted before they reach the real tool |
 | Browser/tool implementation | privileged executor | Only called after an allow/approval verdict |
-| Extension side panel | trusted operator-intent client within the local prototype boundary | Displays redacted state and submits task, control, configuration, approval and handover requests; the server rejects stale requests and revalidates execution, but does not independently attest whether the operator or compromised client code supplied a response |
+| Extension side panel and in-page control | trusted operator-intent client within the local prototype boundary | Display redacted state and submit task, control, configuration, approval and handover requests; the server rejects stale requests and revalidates execution, but does not independently attest whether the operator or compromised client code supplied a response |
 | Local trace/event consumers | honest-but-curious | Receive redacted values and per-run digests, not secrets |
 | Other processes running as the same OS user | outside the trusted local-control boundary | Loopback binding is accepted for the non-deployed thesis setup, but is not same-user process isolation |
 
@@ -66,6 +66,7 @@ invariants are:
 | Secret leakage through monitoring | recursive redaction, HTTP(S) query/fragment redaction, complete non-web URL suffix redaction, no injection payload events, keyed per-run digests, error type rather than raw exception, screenshots/reasoning omitted from disk by default |
 | Action disappears from audit during preflight/cancellation | attempted audit precedes fallible URL/DOM/risk/policy work; every path receives exactly one terminal record, including explicit cancellation |
 | Model retries a denied action | fail-closed result explicitly says not to retry; bounded prompt budget prevents an infinite approval loop |
+| Cross-origin call to the local control API | loopback binding and origin checks protect general browser-origin requests; in-page handover completion is the deliberate exception and requires the current opaque identifier for a pending request |
 
 ## Decision and data-flow model
 
@@ -156,6 +157,12 @@ not expose it to the model or extension.
   activity or model-provider traffic remains on-device. A compromised process
   running as the same OS user can call the localhost API or alter files;
   Sentinel does not provide same-user process isolation or an OS sandbox.
+- The handover-completion endpoint accepts requests from any page origin so the
+  in-page control can return the browser while it is visiting an arbitrary
+  site. The current pending handover identifier is the capability, and the
+  endpoint can only resolve that matching handover. A page that obtained it could
+  nevertheless return control early; the prototype does not independently
+  authenticate the human at this boundary.
 - The extension is trusted to relay operator intent faithfully. A compromised
   authorised client could submit a current approval or handover response or
   modify policy. The service still rejects stale identifiers, constrains

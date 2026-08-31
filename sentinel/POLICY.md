@@ -1,13 +1,14 @@
 # Sentinel policy behavior
 
 Every proposed action passes through one policy object before privileged
-execution. The object lives under `policies` in `data/config.json` and can be
-edited from the dashboard or applied programmatically:
+execution. The object lives under `policies` in `sentinel/data/config.json` and
+can be edited from the dashboard or applied programmatically. From the
+repository root:
 
 ```bash
 curl -X PUT http://127.0.0.1:8765/api/config \
      -H 'Content-Type: application/json' \
-     -d @policies/reference-policy.json
+     -d @sentinel/policies/reference-policy.json
 ```
 
 Edits apply to the next governed action, including mid-run. The complete field
@@ -16,17 +17,17 @@ shape, validation constraints, and example policy are in
 decision precedence and runtime semantics.
 
 Every domain-list entry (blocklist, allowlist, approval, sensitive) is matched
-against a URL's **host** with these four shapes, most rigid to most precise:
+against a URL's **host** with these four shapes, from broadest to most specific:
 
 | Entry | Means | Blocks / matches |
 |---|---|---|
 | `facebook` | **keyword** - host *contains* the word | `facebook.com`, `www.facebook.com`, `m.facebook.com`, `business.facebook.net`, even `notfacebook.com` |
 | `facebook.com` | **domain** - that domain + its subdomains | `facebook.com`, `www.facebook.com`; **not** `notfacebook.com` |
 | `*.facebook.com` | **glob** on the host | subdomains + apex |
-| `https://facebook.com` | **full URL** - scheme-aware | that origin only |
+| `https://facebook.com` | **scheme + host** | that scheme and host; ports are ignored |
 
-A bare word (no dot) is the rigid one - use it when you want to block a service
-however the agent spells the URL. It matches the **host only**, so
+A bare word (no dot) is the broadest form - use it when you want to block a
+service however the agent spells the URL. It matches the **host only**, so
 `duckduckgo.com/?q=facebook` (the word in a search query) is still allowed - the
 agent can search, it just can't *reach* the site.
 
@@ -44,8 +45,8 @@ navigation events:
 - **link clicks, JS navigation, switching search engines** - all caught the same
   way, because the net is on the navigation, not on the agent's chosen action.
 
-So the agent cannot reach a blocked site by clicking a search result, following
-a redirect, or trying a different search engine. The LLM-level check (rules
+The watchdog therefore applies the configured host boundary to search-result
+clicks, redirects, and other navigation paths. The action-level check (rules
 below) and this navigation net use the **same** matching, so the panel's
 "Blocked" reason always matches what the browser enforces. (One precedence note:
 if a domain is on both lists, the allowlist wins at the browser layer, while the
@@ -206,7 +207,7 @@ shutdown are distinct non-executing outcomes.
   branch, changed/unattributable region counts, residual score and whether an
   alert was emitted, never the removed payload.
 - **Server log**: one `[decision]` line per verdict at the decision point.
-- **Trace files**: every run writes `data/traces/<run_id>/events.jsonl` +
+- **Trace files**: every run writes `sentinel/data/traces/<run_id>/events.jsonl` +
   `meta.json` (policy snapshot at run start, outcome, enforcement metrics).
   `steps/*.png` and free-form model thinking/memory are retained only when the
   respective `audit` flags are explicitly enabled; both are off by default.

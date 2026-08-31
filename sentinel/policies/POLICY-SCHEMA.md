@@ -3,8 +3,9 @@
 This file is the compact reference for the `policies` object stored in
 `sentinel/data/config.json`. See [`../POLICY.md`](../POLICY.md) for rule
 precedence, runtime behavior, security boundaries, and audit semantics. The
-Pydantic models in [`../server/config.py`](../server/config.py) are the
-executable source of truth for validation and defaults.
+Pydantic models and interactive migration in
+[`../server/config.py`](../server/config.py) are the executable source of truth
+for validation and defaults.
 
 Unknown fields are rejected. Policy updates apply to the next governed action,
 including during a run.
@@ -108,7 +109,7 @@ All domain lists use the same host matcher.
 | `facebook` | Host contains the keyword, including `notfacebook.com` |
 | `facebook.com` | The domain and its subdomains, excluding lookalikes |
 | `*.facebook.com` | Host glob; the apex is included for `*.x` |
-| `https://facebook.com` | Scheme-aware exact origin |
+| `https://facebook.com` | Scheme-aware host match; ports are ignored |
 
 Matching is against the host, not query text. Browser navigation enforcement
 also covers redirects, link clicks, new tabs, and script-initiated navigation.
@@ -127,9 +128,12 @@ HTTP(S) and the recovery target `about:blank` remain available.
 - `fatigue_strategy`: `handoff` or `block`.
 
 Use [`reference-policy.json`](reference-policy.json) as a starting document.
-Any field omitted from a policy is filled by the current configuration model;
-frozen evaluation policies must therefore be interpreted with the code and run
-provenance recorded for that campaign.
+For the interactive application, `ConfigStore` migrates a new omitted
+`browser_sanitize` field to `true` and `alert_after_sanitize` to `false`; API
+patches preserve fields already present in the active configuration. Standalone
+or frozen evaluation documents retain the Pydantic legacy omitted-field
+semantics (`false` and `true`, respectively). Frozen policies must therefore be
+interpreted with the code and run provenance recorded for that campaign.
 
 ## Evidence boundary
 
