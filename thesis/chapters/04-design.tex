@@ -3,7 +3,7 @@
 
 \section{Design principles and architecture}
 
-The central design problem is to separate planning from permission. A browser
+The main design problem is to separate planning from permission. Indeed, a browser
 agent needs latitude to interpret pages, recover from errors, and choose its
 next step. However, the model proposing that step should not also decide whether
 its effect is permitted. \systemname\ therefore leaves planning to BrowserUse
@@ -85,9 +85,10 @@ rules against live context, but does not apply detector-driven sanitisation or a
 policy-derived verdict. Instead, it records the detections and the block,
 approval, or handoff that would have occurred. Enforce applies those
 outcomes: it may sanitise or withhold a detected observation; for an action
-proposal, it may allow, block, request approval, or require a human step. In the
-evaluation, \emph{full} denotes enforce mode with both guards enabled; it is an
-experimental condition, not a fourth runtime mode. Across every mode, the
+proposal, it may allow, block, request approval, or require a human step. The
+WASP evaluation uses \emph{full} to label the enforce-mode configuration that
+combines observation sanitisation with action-policy enforcement; it is not a
+separate runtime mode. Across every mode, the
 supported model channel remains text-only, tool results remain marked as
 untrusted, and navigation metadata remains redacted.
 
@@ -157,12 +158,13 @@ while redacting recognised sensitive values.
 
 The detector combines signals for instruction override, authority
 impersonation, role reassignment, evasion, exfiltration, forged markup, and
-encoded instructions. One strong signal can cross the threshold; weaker cues
-must combine.
+encoded instructions. One strong signal triggers detection; otherwise, several
+weaker signals are needed.
 A detected origin remains tainted for the run because an earlier observation
-may already have influenced the plan. Public events report the score, severity,
-signals, and origin, replacing the stable content hash with a run-keyed digest
-that links repeats only within that run.
+may already have influenced the plan. Detection alerts sent to the operator
+interface include the score, severity, detected signals, and origin. Instead of
+a stable content hash, a run-specific digest links repeated content only within
+the same run.
 
 For a positive finding, Sentinel first removes only attributable material. A
 line rule handles a self-contained instruction, a bounded window covers an
@@ -181,7 +183,7 @@ states:
 \end{tabularx}
 
 The pattern rules make findings repeatable and removal attributable. However,
-an unfamiliar formulation may match no signal, and a clean post-check shows
+it is important to note that an unfamiliar formulation may match no signal, and a clean post-check shows
 only that the configured detector no longer fires, not that every possible
 attack is absent.
 
