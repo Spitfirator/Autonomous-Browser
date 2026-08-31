@@ -20,26 +20,10 @@
     "presence_penalty": 0.0,
     "seed": 0
   },
-  "provenance_validation": {
+  "record_validation": {
     "reports": 1258,
     "pairs": 629,
     "unique_model_and_benchmark_configurations": 1,
-    "code_commits": {
-      "off": "unrecorded_in_historical_reports",
-      "enforce": "6c71df2b8e274d843571b20897489b6ad478bd10"
-    },
-    "working_tree_dirty_values_observed": {
-      "off": "unrecorded_in_historical_reports",
-      "enforce": [
-        false
-      ]
-    },
-    "model_artifact": {
-      "off_ollama_digest": "unrecorded_in_historical_reports",
-      "enforce_ollama_digest": "eeeca604a4aa3c8d0554c24fe4b8909a8dc69dc76e1044b2d8c88c37750cdffe",
-      "enforce_quantization": "Q4_K_M",
-      "enforce_full_gpu_residency_verified": true
-    },
     "reused_off_report_content_multiset_sha256": "16e07e07b8c9a220e1a3e7e225027f47ea7c8560f2b13fb2fd38f42c96f07d21",
     "policy_file_sha256": "55b09fea5d17b619d58d16efc6ddb89e102cab82063f2149070153ce5789ac64",
     "normalized_report_policy_sha256": {

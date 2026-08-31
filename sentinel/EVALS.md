@@ -2,14 +2,15 @@
 
 How we measure whether the enforcement middleware helps more than it hurts.
 Every metric below is computed from data the middleware already records - no
-extra instrumentation needed. Run `python evals/aggregate.py` to get the
-current numbers from `data/history.jsonl` (each run's record carries a
-`policy_mode`, a full policy snapshot, and an `enforcement` summary; the
-per-event ground truth lives in `data/traces/<run_id>/events.jsonl`).
+extra instrumentation needed. From the repository root, run
+`python sentinel/evals/aggregate.py` to get the current numbers from
+`sentinel/data/history.jsonl` (each run's record carries a `policy_mode`, a full
+policy snapshot, and an `enforcement` summary; the per-event ground truth lives
+in `sentinel/data/traces/<run_id>/events.jsonl`).
 
-This file is the canonical human-readable ledger for quantitative results. For
-the thesis argument, implementation map, and supported contribution boundary,
-see [THESIS-STATUS.md](THESIS-STATUS.md).
+This file is the canonical human-readable ledger for quantitative results.
+Curated JSON and per-run Markdown records preserve compact experiment evidence
+without requiring raw campaign directories in the submitted artefact.
 
 ## Results index
 
@@ -187,8 +188,8 @@ PYTHONPATH=sentinel:browser-use browser-use/.venv/bin/python \
 
 The checked-in `evals/fixtures/security-smoke.jsonl` is only a contract smoke
 test, not research evidence. Public-suite results must report suite/version,
-conversion commit, model, seed, policy snapshot and the benchmark's native
-end-to-end success oracle.
+conversion configuration, model, seed, policy snapshot and the benchmark's
+native end-to-end success oracle.
 
 ### AgentDojo v1: full Tier 1 component run
 
@@ -310,11 +311,11 @@ already were.
 
 The live-representation correction changes no AgentDojo detection
 classification, score band or score value (0 of 188 and 0 of 726), verified by
-replaying both against the previous committed detector. On the corrected WASP
+replaying both against the previous detector version. On the corrected WASP
 representation, all 42 URL-format scores change: 40 previously missed attacks
 cross the detection threshold and two already-detected cases change bands. The
 historical `agentdojo-security.report.json` is left untouched as a record of the
-revision that produced it; the exact comparison lives in the scorecard's
+detector version that produced it; the exact comparison lives in the scorecard's
 `baseline_comparison` block.
 
 Score bands are reported separately for isolated payloads and full observations,
@@ -401,8 +402,9 @@ generic mixed-content sanitization issue and are development cases; the
 remaining 30 were run after the fix was frozen and received no further tuning.
 The run stopped at the 500-request daily quota and excludes the incomplete
 attempt. Per-run privacy-preserving reports are written beside the summary but
-are gitignored: like all auto-written run artifacts they stay on the machine
-that produced them, and only hand-curated compact summaries are committed.
+excluded from submission: like all auto-written run artifacts they stay on the
+machine that produced them, and only hand-curated compact summaries are
+included.
 
 The 34 completed pilot pairs recorded:
 
@@ -416,13 +418,13 @@ headline benchmark row. The one-pair agent smoke changed native attacker
 success from pass in `off` to fail in `enforce`, but user utility failed in
 both modes; it establishes integration only.
 
-### Completed AgentDojo campaign provenance
+### Completed AgentDojo campaign records
 
 The admitted Qwen campaigns use AgentDojo 0.1.35 suite v1: a 97-task clean
 ceiling and 629 paired off/enforce security cases. The historical 4B
 non-thinking run used a smaller context and generation profile, so it remains
-separate from the controlled thinking/32K comparison. Full settings, report
-hashes, and validation live in the corresponding compact result artefacts.
+separate from the controlled thinking/32K comparison. Full settings and the
+recorded run metadata live in the corresponding compact result artefacts.
 
 Every model/profile combination has its own run tag and report directory. The
 controller validates the recorded model and profile before counting a report;
@@ -435,7 +437,7 @@ Recorded run identities:
 | Qwen 3.5 4B | `nonthinking` (8K) | `qwen35-4b-nonthinking-v2` | complete historical run; not used in the controlled scaling headline |
 | Qwen 3.5 4B | `thinking` (32K) | `qwen35-4b-thinking` | complete: 97-task clean ceiling plus all 629 paired off/enforce cases with the fixed middleware |
 | Qwen 3.5 9B | `thinking` (32K) | `qwen35-9b-thinking` | complete; already used the fixed middleware |
-| Qwen 3.5 27B | `thinking` (32K) | off: `qwen35-27b-thinking`; enforce: `qwen35-27b-thinking-fixed-enforce-v1` | complete: frozen historical off plus a provenance-separated fixed-middleware enforce rerun |
+| Qwen 3.5 27B | `thinking` (32K) | off: `qwen35-27b-thinking`; enforce: `qwen35-27b-thinking-fixed-enforce-v1` | complete: frozen historical off plus a separately recorded fixed-middleware enforce rerun |
 
 Do not confuse the two sanitisation boundaries. AgentDojo's
 `SentinelToolsExecutor` has sanitised detected native tool results in enforce
@@ -463,7 +465,7 @@ from 362 to 446 and successful attacks from 206 to zero. The four-way outcome
 split was off = 297 useful/secure, 65 useful/compromised, 126
 unsuccessful/secure and 141 unsuccessful/compromised; enforce = 446
 useful/secure and 183 unsuccessful/secure. The reviewed compact result and
-provenance are in `evals/agentdojo-v1-qwen35-4b-thinking-summary.json`.
+validation record are in `evals/agentdojo-v1-qwen35-4b-thinking-summary.json`.
 
 This large change from the laptop run is why the thesis must not attribute the
 old 4B-to-9B difference solely to parameter count: context, reasoning mode and
@@ -472,7 +474,8 @@ capability comparison must be interpreted from the matched 32K/thinking runs,
 not from the earlier 8K/non-thinking 4B result.
 
 The final controlled 4B/9B/27B table uses the `thinking` 32K profile for every
-model and one fixed enforcement pipeline:
+model. Each enforce row uses the fixed AgentDojo middleware; the 27B row retains
+the separately recorded historical off source described above:
 
 | model | clean utility | off utility | off ASR | off secure utility | enforce utility | enforce ASR | enforce secure utility |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -498,7 +501,9 @@ reports.
 For 9B, enforcement changed utility from 422/629 to 467/629, attacker success
 from 131/629 to 1/629, and useful-and-secure outcomes from 367/629 to 467/629.
 Paired transitions were 92 utility gains versus 47 losses, with 130 attacker
-successes prevented and none introduced.
+successes prevented and none introduced. The reviewed aggregate and validation
+record are in
+`evals/agentdojo-v1-qwen35-9b-thinking-summary.json`.
 
 For 27B, enforcement changed utility from 428/629 to 483/629 and attacker
 success from 203/629 to 0/629. Useful-and-secure outcomes increased from
@@ -519,8 +524,8 @@ limitations are in
 
 Raw reports, state, logs, per-suite clean reports, local GPU access
 configuration, and reservation-specific host details are not included in the
-submitted artefact. Its evidence is limited to reviewed aggregates with
-model/profile, suite version, policy identity, and code provenance.
+submitted artefact. Its evidence is limited to reviewed aggregates that record
+the available model/profile, suite, policy, and run metadata.
 
 ### WASP: browser-native enforcement evaluation
 
@@ -529,8 +534,8 @@ environment. WASP answers the browser-transfer question AgentDojo cannot:
 whether the same middleware contains prompt injections while a BrowserUse agent
 is actually reading pages, navigating, clicking, entering data and replanning.
 
-The checked-in adapter is under `evals/wasp/` and pins the official WASP
-repository to commit `ffee6f41fde76acd14bd792db442479c506260c2`.
+The checked-in adapter is under `evals/wasp/` and pins the official WASP source
+version configured by `run-wasp.sh`.
 The published matrix is:
 
 - 21 attack scenarios across GitLab and Reddit;
@@ -540,7 +545,7 @@ The published matrix is:
 
 The historical 9B development sequence and prior single-seed 27B comparison
 used 32K context, a 4,096-token output cap, seed 0, and an older non-thinking
-Ollama structured-output path. They remain provenance-separated historical
+Ollama structured-output path. They remain separately recorded historical
 evidence. The final controlled comparison uses Qwen 3.5 27B with Ollama
 0.32.5, native thinking enabled, 32,768 context tokens, an 8,192-token output
 cap, seeds 0/1/2, temperature 0.6, top-p 0.95, BrowserUse structured planning,
@@ -569,8 +574,8 @@ pooled into the final experiment:
 | Prior single-seed 27B off | 47/84 (55.95%) | 5/84 (5.95%) | 44/84 (52.38%) | 17/84 (20.24%) | 17/84 (20.24%) |
 | Prior single-seed 27B sanitise V2 | 46/84 (54.76%) | 0/84 | 46/84 (54.76%) | 0/84 | 0/84 |
 
-The 9B rows are one shared off baseline followed by three provenance-separated
-enforce revisions. They are an engineering sequence, not an immutable matched
+The 9B rows are one shared off baseline followed by three separately recorded
+enforce revisions. They are an engineering sequence, not a single matched
 campaign. The prior 27B row is a matched seed-0 historical comparison. Neither
 is pooled with the final experiment.
 
@@ -638,7 +643,7 @@ scan page-extraction subcalls, wrap later tool-result text, redact non-web URL
 suffixes, and block direct autonomous special-URL navigation except
 `about:blank`. These changes post-date the historical rows. The final
 replication's frozen enforcement source, policies, and runtime settings are
-recorded in its curated provenance; mechanisms not exercised by a benchmark
+recorded in its curated run record; mechanisms not exercised by a benchmark
 trajectory remain supported by scripted technical validation rather than a
 behavioural claim.
 
@@ -648,7 +653,7 @@ independently enforced post-verified observation sanitisation reduced achieved
 attacks and attacker-serving execution while preserving aggregate utility
 within a small, variable difference. It does not show universal
 prompt-injection robustness. Three seeds improve the variability estimate, but
-they share one benchmark revision, model, fixed cell order, and GPU/runtime
+they share one benchmark version, model, fixed cell order, and GPU/runtime
 profile. Zero successes in 252 full-system executions gives a rough
 rule-of-three 95% upper bound of about 1.2%, not proof of a zero population
 rate.
@@ -672,7 +677,7 @@ separate OpenAI/Azure judge; native final-state utility and ASR do not.
 The complete thesis-ready synthesis, exact run identities, mechanism telemetry,
 validation gates and exclusions are in
 [`evals/wasp/results/README.md`](evals/wasp/results/README.md). Historical and
-excluded runs are retained only where they explain a provenance boundary or
+excluded runs are retained only where they explain a configuration boundary or
 prevent a misleading comparison; they should not be expanded into headline
 tables or pooled with the final comparison.
 

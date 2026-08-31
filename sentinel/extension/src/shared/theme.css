@@ -1,6 +1,6 @@
-/* Sentinel design system - FUZER's "Control Room" language (see /DESIGN.md).
-   Light-first, flat tonal surfaces, hairline borders, Sora with weight-based
-   hierarchy, amber rationed as the signal (≤10% of any screen).
+/* Sentinel design system: light-first, flat tonal surfaces, hairline borders,
+   Sora with weight-based hierarchy, and amber rationed as the signal (≤10% of
+   any screen).
    Fonts are bundled locally via @fontsource - MV3 pages load no remote assets. */
 
 :root {

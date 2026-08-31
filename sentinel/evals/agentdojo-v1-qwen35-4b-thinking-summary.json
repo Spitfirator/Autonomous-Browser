@@ -16,17 +16,10 @@
     "presence_penalty": 0.0,
     "seed": 0
   },
-  "provenance_validation": {
+  "record_validation": {
     "reports": 1258,
     "pairs": 629,
     "unique_model_and_benchmark_configurations": 1,
-    "code_commits": [
-      "340d4215c61159269f7d0397ca70f560da12bc3a"
-    ],
-    "working_tree_dirty_values_observed": [
-      false,
-      true
-    ],
     "normalized_report_policy_sha256": {
       "off": "2f80969402796291c013cee7a18d738d2eb817036285553f8011669c7c4b60b6",
       "enforce": "106a59f4394e685ad0a31e72c5937ff78f2402a6d2420be7bd9296dde8704ac9"

@@ -2,9 +2,9 @@
 """Compute Sentinel's evaluation metrics (see ../EVALS.md) from run records.
 
 Usage:
-    python evals/aggregate.py                     # data/history.jsonl
-    python evals/aggregate.py --history PATH
-    python evals/aggregate.py --labels evals/labels.jsonl
+    python sentinel/evals/aggregate.py                     # sentinel/data/history.jsonl
+    python sentinel/evals/aggregate.py --history PATH
+    python sentinel/evals/aggregate.py --labels sentinel/evals/labels.jsonl
 
 Stdlib only, so it runs anywhere the history file can be copied to.
 """

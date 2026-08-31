@@ -27,9 +27,9 @@
     root.innerHTML = `
       <style>
         :host { all: initial; }
-        /* FUZER "Control Room" language (see /DESIGN.md). The pill is a true
-           floating overlay, so it carries a soft shadow; the amber frame IS
-           the "agent is driving" signal. System font - no loading in pages. */
+        /* The pill is a true floating overlay, so it carries a soft shadow;
+           the amber frame is the "agent is driving" signal. System font - no
+           loading in pages. */
         * { box-sizing: border-box; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; }
         .glow {
           position: fixed; inset: 0; pointer-events: none;

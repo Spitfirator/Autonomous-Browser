@@ -218,9 +218,9 @@ requires the recorded benchmark revisions, model/runtime configuration,
 website state, and compute described in [`EVALS.md`](EVALS.md) and
 [`evals/wasp/README.md`](evals/wasp/README.md). Raw WASP checkpoints and page
 captures are ignored because they may contain private environment state; the
-checked-in records preserve compact metrics and provenance. A newly executed
+checked-in records preserve compact metrics and run metadata. A newly executed
 campaign must use a new run tag and must not be pooled with a frozen result
-whose provenance differs.
+whose configuration differs.
 
 ## Development
 
@@ -242,10 +242,8 @@ local preview work.
 - [`evals/wasp/README.md`](evals/wasp/README.md) defines the browser-native
   evaluation and reproducibility contract.
 - [`evals/wasp/results/README.md`](evals/wasp/results/README.md) indexes admitted
-  WASP records and their immutable provenance.
-- [`THESIS-STATUS.md`](THESIS-STATUS.md) contains the thesis argument, evidence
-  route, and supported claim boundary without duplicating result tables.
+  WASP records and their fixed run metadata.
 
 Completed rows remain tied to their recorded code, policy, model, benchmark,
 and scaffold. Do not use current implementation documentation to widen an
-older result or pool changed provenance.
+older result or pool changed configurations.
