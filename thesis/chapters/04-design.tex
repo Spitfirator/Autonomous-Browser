@@ -380,11 +380,11 @@ while it remains pending can change its state.
 
 \subsection{Direct human control and resumption}
 
-The earlier taxonomy explains what each authority state permits; this subsection
-instead follows the three routes by which control passes to the operator and
-shows how the agent resumes after each one. First, choosing \emph{Take over}
-pauses future agent actions without approving a proposal or changing policy; an
-executing action cannot be recalled.
+\Cref{tab:authority-taxonomy} defines the authority states; here, we follow how
+control reaches the operator and how the agent resumes. First, \emph{Take over}
+pauses further agent actions so the operator can interact with the page directly.
+It does not approve a proposal or change policy, and an action already executing
+cannot be recalled.
 
 Second, the planner may invoke \texttt{request\_human\_control} for a login,
 one-time code, CAPTCHA, payment, or private detail. Sentinel terminates the
