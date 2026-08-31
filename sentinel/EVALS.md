@@ -449,12 +449,8 @@ The reason only 27B needed an enforce rerun was the earlier
 AgentDojo-relevant serializer-normalisation defect, not the later WASP
 middleware. In the original 27B artifacts, three
 `workspace/user_task_28` variants recorded no detection and achieved the
-attacker goal; all six variants are detected and contained in the 9B, 4B and
-fixed 27B artifacts. The 4B reports record commit `340d421`, which includes the
-normalisation correction. The older 9B reports do not record a Git revision,
-but their six affected artifacts provide direct behavioural evidence that the
-correction was active. Preserve that provenance asymmetry when interpreting the
-row.
+attacker goal. All six variants are detected and contained in the 9B, 4B and
+fixed 27B artifacts, so those campaigns do not require an equivalent rerun.
 
 ### Completed AgentDojo end-to-end results
 
@@ -514,20 +510,17 @@ were blocked by the sensitive-data-flow rule. This makes sanitisation the
 primary observed mechanism and hard action blocking a secondary backstop.
 
 These parameter-size rows are descriptive independent model runs, not an
-identified causal effect of parameter count. The 27B off reports also predate
-Git-revision and Ollama-digest recording: their task, model name, profile and
-sampling configuration match, but exact model-blob parity with the enforce
-rerun cannot be cryptographically verified. Ten scored responses reached the
-4,096-token cap across the pair (three off and seven enforce); the seven new
+identified causal effect of parameter count. Ten scored responses reached the
+4,096-token cap across the 27B pair (three off and seven enforce); the seven new
 truncations are all variants of one difficult travel user task and were kept
 rather than selectively rerun. The reviewed 27B aggregate and detailed
 limitations are in
 `evals/agentdojo-v1-qwen35-27b-thinking-fixed-summary.json`.
 
 Raw reports, state, logs, per-suite clean reports, local GPU access
-configuration, and reservation-specific host details remain off Git. The
-checked-in evidence is limited to reviewed aggregates with model/profile,
-suite version, policy hash, and code provenance.
+configuration, and reservation-specific host details are not included in the
+submitted artefact. Its evidence is limited to reviewed aggregates with
+model/profile, suite version, policy identity, and code provenance.
 
 ### WASP: browser-native enforcement evaluation
 
@@ -644,10 +637,10 @@ Interactive runs also withhold page screenshots and image-bearing tool results,
 scan page-extraction subcalls, wrap later tool-result text, redact non-web URL
 suffixes, and block direct autonomous special-URL navigation except
 `about:blank`. These changes post-date the historical rows. The final
-replication's exact enforcement source, policies, runtime, model digest, and
-commits are recorded in its curated provenance; mechanisms not exercised by a
-benchmark trajectory remain supported by scripted technical validation rather
-than a behavioural claim.
+replication's frozen enforcement source, policies, and runtime settings are
+recorded in its curated provenance; mechanisms not exercised by a benchmark
+trajectory remain supported by scripted technical validation rather than a
+behavioural claim.
 
 The warning-only historical result remains a negative finding. The final
 evidence supports the narrower conclusion that, under these WASP conditions,

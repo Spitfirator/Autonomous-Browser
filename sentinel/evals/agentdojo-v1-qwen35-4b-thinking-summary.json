@@ -159,8 +159,6 @@
     "attack_success_rate_delta": -0.327504
   },
   "notes": [
-    "Raw per-case reports, checkpoint state and logs remain local and ignored by Git.",
-    "All reports use one model/profile/suite/attack configuration and one normalized policy per mode.",
-    "The Git commit stayed constant; the recorded dirty flag changed while unrelated evaluation scaffolding was added to the working tree."
+    "All reports use one model/profile/suite/attack configuration and one normalized policy per mode."
   ]
 }

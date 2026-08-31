@@ -131,7 +131,7 @@ def band_delta(name: str, cases: list[dict[str, Any]], policy: PromptInjectionPo
 def main() -> None:
 	parser = argparse.ArgumentParser(description=__doc__)
 	parser.add_argument('--out', type=Path, default=SENTINEL_DIR / 'evals' / 'detector-v2-metrics.json')
-	parser.add_argument('--baseline', default='HEAD', help='git revision holding the previous middleware')
+	parser.add_argument('--baseline', default='HEAD', help='baseline source state holding the previous middleware')
 	parser.add_argument('--pretty', action='store_true')
 	args = parser.parse_args()
 

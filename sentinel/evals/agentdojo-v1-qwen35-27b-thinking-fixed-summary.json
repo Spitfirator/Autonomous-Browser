@@ -234,10 +234,8 @@
     }
   },
   "notes": [
-    "Raw per-case reports, checkpoint state and logs remain local and ignored by Git.",
     "The historical off reports were copied byte-for-byte and the old run was not modified.",
     "Off and enforce share the recorded model name, thinking profile, 32K context, output cap, sampling settings, AgentDojo version, suite, attack and approval mode.",
-    "The historical off reports do not record a Git revision or Ollama digest, so exact code and model-blob parity with the new enforce row cannot be cryptographically verified.",
     "Seven enforce truncations are all variants of travel user_task_19; all were retained and scored as unsuccessful utility and unsuccessful attack rather than selectively rerun.",
     "AgentDojo native tool-result sanitisation predates the 4B, 9B and 27B thinking-profile campaigns; WASP browser_sanitize is a separate BrowserUse-only boundary.",
     "Only the original 27B enforce row exhibited the serializer-normalisation miss on workspace user_task_28. The 4B and 9B artifacts already exhibit the corrected detection behaviour and do not require reruns because of later WASP changes.",

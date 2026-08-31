@@ -150,21 +150,19 @@ independent validator are indexed from `sentinel/EVALS.md` and
 - The approval and Activity views come from the deterministic local
   walkthrough. Their concise source mapping, reproduction commands, and image
   hashes are in `FIGURE-PROVENANCE.md`.
-- Tectonic produced a 67-page A4 PDF with the expected title, author, subject,
+- Tectonic produced a 65-page A4 PDF with the expected title, author, subject,
   and keywords. Under the confirmed dissertation-body convention, Chapters
   1--8 occupy exactly Arabic pages 1--50. Appendix A begins on Arabic page 51
-  and the bibliography on page 54, so both remain outside the body count.
+  and the bibliography on page 52, so both remain outside the body count.
   Concise captions keep the Lists of Figures and Tables compact and leave
   detailed interpretation in the surrounding prose.
 - Both `sentinel-submission.tex` and the official `project_report - pg.tex`
-  root compile to 67 A4 pages with identical page labels and geometry. Their
-  extracted text is identical from the abstract onward; the title pages retain
-  only their existing submission-date difference (`September 2026` and
-  `1st September 2026`). All pages were rendered for visual inspection, with
-  the abstract, Tables 2.1 and 3.1, Figures 4.2--4.5 and 6.1, chapter endings,
-  the Discussion/Conclusion transition, and the assurance appendix checked
-  again at higher resolution. No missing references, material box warnings,
-  or other LaTeX warnings remain in either final log.
+  root compile to 65 A4 pages with identical page labels, geometry, and
+  extracted text throughout. The title pages share the submission date
+  `1 September 2026`. The appendix page and its transition to the bibliography
+  were rendered after the final revision and checked again at high resolution.
+  No missing references,
+  material box warnings, or other LaTeX warnings remain in either final build.
 - The root-level PDFs have been regenerated from those canonical sources, so
   they now include Progent, SecAlign, Task Shield, MELON, IPIGuard, VIGIL,
   AttriGuard, MUZZLE, and the final warning semantics rather than the earlier
@@ -174,7 +172,7 @@ independent validator are indexed from `sentinel/EVALS.md` and
 - The release copy is
   `output/pdf/Sentinel-Independent-Runtime-Enforcement-for-Browser-Agents-submission-ready.pdf`
   with SHA-256
-  `580d81b0c55848f013f4470452b2a3659326d7c05aa307d3a7e5e6769cc82544`.
+  `e4ef455f94e9803aba2434c49cf4c38c4463ba5f9c622111cadeb5ddfb2e1a71`.
 - The title page records the supervisor as Arthur below the submission date.
 
 ## Final gate
