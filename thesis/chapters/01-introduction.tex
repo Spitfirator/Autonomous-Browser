@@ -104,46 +104,48 @@ includes the accompanying suppression of that warning.
 \section{Contributions}
 \label{sec:contributions}
 
-The dissertation contributes an implemented answer to the authority problem,
-not a new browser agent. Its three contributions build on one another.
+The dissertation's contribution is not a new browser agent, but an implemented
+response to the authority problem described above. Three connected
+contributions make up that response.
 
 \begin{enumerate}
   \item \textbf{A practical enforcement boundary for an existing browser-agent
-  loop.} Sentinel governs the exact input seen by the model and every privileged
-  action proposed to the executor. It reads live browser context, applies one
-  central policy, fails closed when required context is missing, and records
-  paired attempted and terminal outcomes. Thus, the model can continue to plan
-  dynamically, but it cannot authorise its own actions.
+  loop.} Sentinel mediates the model's exact input and every privileged action
+  proposed to the executor. At the action boundary, it reconstructs live
+  context, applies one central policy, fails closed on missing required context,
+  and pairs each attempt with a terminal outcome. Thus, the model can plan
+  dynamically without authorising execution.
 
   \item \textbf{An end-to-end workflow for untrusted observations and selective
-  authority.} When Sentinel can safely attribute a finding to an untrusted
-  region, it removes that region, reconstructs the observation, and continues
-  only if a second detection pass is clear. If automatic enforcement cannot
-  safely continue, the operator can review a narrowly scoped request, perform
-  a protected step directly, or resolve an observation incident. The extension
-  presents those choices, while the server alone validates and records the
-  resulting authority.
+  authority.} Sentinel connects detection to attributable removal,
+  reconstruction, and a clean post-check before inference. When automatic
+  enforcement cannot continue safely, it distinguishes three paths: narrow
+  approval for a reviewable proposal, direct operator action for protected
+  values, and an observation incident that can resume only from a fresh capture.
+  The Chrome extension presents these states, while the server validates the
+  resulting authority and records the outcome.
 
   \item \textbf{A provenance-aware evaluation of security and usefulness.}
   The three matched within-model AgentDojo comparisons provide controlled
-  end-to-end evidence: between the off and governed conditions, attacker success
-  fell from 20.8--32.8\% to 0--0.2\%, while utility rose from 57.6--68.0\% to
-  70.9--76.8\%. WASP then tests the architecture inside a browser loop. Across
-  three seeds, full enforcement reduced attacker success confirmed by the
-  action audit from 17/252 to 0/252 and attacker-directed execution from 42/252
-  to 0/252. Utility changed from 154/252 to 149/252, while secure utility
-  (outcomes that were both useful and secure) rose from 138/252 to 149/252. The
-  full-versus-policy-only comparison further isolates the configured
-  sanitisation increment.
-  The two studies report what happened to the user's task as well as what
-  happened to the attack, so inactivity or baseline model failure is not
-  mistaken for security.
+  end-to-end evidence for the complete governed configuration: compared with
+  off, attacker success fell from 20.8--32.8\% to 0--0.2\%, while utility rose
+  from 57.6--68.0\% to 70.9--76.8\%. WASP then tests transfer to a browser loop.
+  Across three seeds, full enforcement reduced attacker success confirmed by
+  the action audit from 17/252 to 0/252 and attacker-directed execution from
+  42/252 to 0/252. Utility changed from 154/252 to 149/252, while secure utility
+  (outcomes that were both useful and secure) rose from 138/252 to 149/252.
+  Finally, the policy-only/full comparison provides narrower mechanism evidence:
+  attacker-directed execution fell from 15/252 to 0/252 while utility remained
+  149/252 in both conditions. This contrast estimates the configured
+  sanitisation path within the shared scaffold and includes the accompanying
+  suppression of the policy-only warning. By reporting what happened to the
+  user's task alongside what happened to the attack, both studies avoid
+  mistaking inactivity or baseline model failure for security.
 \end{enumerate}
 
-Sentinel's contribution is to bring observation governance, executor-side
-policy, selective human authority, and paired audit together around a dynamic
-browser agent, implement the resulting architecture, and evaluate its security
-and utility.
+Sentinel integrates observation governance, executor-side policy, selective
+human authority, and paired audit around a dynamic browser agent; the
+dissertation implements and evaluates that architecture.
 
 \section{Dissertation structure}
 
