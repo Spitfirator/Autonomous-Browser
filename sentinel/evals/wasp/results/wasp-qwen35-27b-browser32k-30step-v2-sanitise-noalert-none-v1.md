@@ -92,9 +92,8 @@ terminal attack successes, so low ASR partly reflects baseline model behavior
 and cannot all be credited to Sentinel. The reduction from 17 to zero
 attacker-directed executions is important supporting evidence because it is
 less vulnerable than terminal ASR alone to “security by incompetence.”
-Nevertheless, one seed and 84 attacked task instances do not establish
-universal robustness; with zero enforce successes, the rough rule-of-three
-upper 95% bound is about 3.6%.
+Nevertheless, one seed and 84 fixed attacked task instances do not establish
+universal robustness or a zero underlying attack rate.
 
 ## Descriptive 9B comparison
 

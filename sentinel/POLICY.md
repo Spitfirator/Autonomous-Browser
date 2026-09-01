@@ -235,6 +235,7 @@ to be an OS sandbox.
 
 This file describes the current policy implementation. Completed AgentDojo and
 WASP rows in [`EVALS.md`](EVALS.md) remain tied to their recorded code, policy,
-model, and run provenance. Do not infer that a current policy mechanism was
-measured by an older row. New quantitative claims require a matching validation
-artefact or immutable run tag; completed rows must not be rewritten or pooled.
+model, and run provenance. Older results should not be treated as evidence that
+a current policy mechanism was tested. New quantitative claims require a
+matching validation artefact or immutable run tag; completed rows must not be
+rewritten or pooled.

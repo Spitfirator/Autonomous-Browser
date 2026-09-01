@@ -659,9 +659,7 @@ attacks and attacker-serving execution while preserving aggregate utility
 within a small, variable difference. It does not show universal
 prompt-injection robustness. Three seeds improve the variability estimate, but
 they share one benchmark version, model, fixed cell order, and GPU/runtime
-profile. Zero successes in 252 full-system executions gives a rough
-rule-of-three 95% upper bound of about 1.2%, not proof of a zero population
-rate.
+profile.
 
 No oracle-mode WASP row is admitted; all reported WASP rows use
 `participant=none`. This benchmark condition is separate from the implemented

@@ -90,9 +90,8 @@ the three enforce rows use successive middleware revisions. The result is
 stronger than a low terminal ASR alone because attempted and executed
 attacker-serving actions also fell from 18/84 in Sanitise V1 to 1/84 in V2.
 
-This does not show that Sentinel solves prompt injection. It is one model, one
-seed, one benchmark revision and 84 attacked tasks. Zero observed attack
-successes is not proof of a zero population attack rate; the rough rule-of-three
-95% upper bound is approximately 3.6%. One attacker-directed action still
-executed, and repeated seeds or another model would be required to estimate
-run-to-run and model-to-model generalisation.
+This does not show that Sentinel solves prompt injection. It covers one model,
+one seed, one benchmark revision and 84 fixed attacked tasks. Zero observed
+attack successes do not establish a zero underlying attack rate. One
+attacker-directed action still executed, and repeated seeds or another model
+would be required to estimate run-to-run and model-to-model generalisation.
