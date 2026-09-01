@@ -115,9 +115,11 @@ different level of success.
 \section{Implications for agent architecture}
 
 Sentinel's place among the systems in \cref{tab:system-comparison} reflects a
-deliberate architectural choice. CaMeL and Fides offer stronger formal
-guarantees within their supported abstractions by restructuring planning
-around trusted programs, capabilities, or information-flow labels. Sentinel
+deliberate architectural choice. CaMeL offers by-construction policy guarantees
+for supported programs under its interpreter, capability, policy, and
+side-channel assumptions, while Fides proves information-flow properties within
+its formal model. Both restructure planning around trusted programs,
+capabilities, or information-flow labels. Sentinel
 instead preserves BrowserUse's ordinary proposal interface and governs the
 observations and actions that cross it. This choice makes enforcement
 compatible with a free-form browser loop, although its assurance remains
