@@ -36,13 +36,16 @@ extension dependencies:
 ```bash
 git clone https://github.com/browser-use/browser-use.git browser-use
 git -C browser-use checkout c8e6e8f0fe617564687895702c2338967293b309
+cp sentinel/dependencies/browser-use-0.13.2.uv.lock browser-use/uv.lock
 (cd browser-use && uv sync --locked --extra core)
 (cd sentinel/extension && npm ci && npm run build)
 ```
 
-The lockfiles fix the Python and Node dependency versions. The BrowserUse
-checkout has separate Git history and is intentionally not committed inside
-this repository.
+The pinned BrowserUse commit ignores its generated `uv.lock`, so Sentinel
+includes the validated lock snapshot used by this submission under
+`sentinel/dependencies/`. Together with the extension's `package-lock.json`, it
+fixes the Python and Node dependency versions. The BrowserUse checkout has
+separate Git history and is intentionally not committed inside this repository.
 
 ### Model provider and API keys
 
