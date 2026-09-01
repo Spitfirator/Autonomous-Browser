@@ -61,41 +61,45 @@ browser benchmarks; it does not extend to prompt injection in general.
 \section{Approach}
 
 This dissertation presents \systemname, a local research prototype positioned
-between a BrowserUse agent and its privileged executor. It governs the agent
-loop at two points. Before inference, an observation guard identifies
-untrusted browser, extraction, and tool-result regions; detects configured
-prompt-injection signals; removes attributable regions; and re-detects the
-exact reconstructed model input. Before execution, an action guard rebuilds
-live browser context, classifies capabilities and sensitive data, tracks the
-origin of untrusted observations when assessing later actions, and invokes the
-central policy engine. The executor is reached only after that decision.
+between a BrowserUse agent and its privileged executor. Sentinel intervenes at
+two points in the agent loop. First, before inference, an observation guard
+identifies untrusted browser, extraction, and tool-result regions and checks
+them for configured prompt-injection signals. When sanitisation is enabled, the
+guard removes attributable regions and then scans the exact reconstructed model
+input again. Second, immediately before execution, an action guard rebuilds the
+live browser context, classifies capabilities and sensitive data, and considers
+the origin of earlier untrusted observations. Only a proposal allowed by the
+central policy engine can then reach the executor.
 
-Automatic enforcement is combined with selective human authority. Hard policy
-and protected data flows remain non-overridable. A permissible but
-consequential action can receive narrow, expiring approval and is evaluated
-again against live state before execution. Recognised credentials, one-time
-codes, payment data, and other protected values trigger a direct human step, so
-the operator acts in the page instead of authorising the agent to type the
-value.
-If a suspicious current-page observation cannot be sanitised and verified, it
-is withheld and the operator may inspect the page before Sentinel captures a
-fresh observation. A Chrome extension presents these states and the redacted
-decision history; the server remains the source of authority.
+Alongside these automatic controls, Sentinel gives the operator selective
+rather than unrestricted authority. Hard policy and protected data flows remain
+non-overridable. Where policy permits review, a consequential proposal may
+receive narrow, expiring approval; even then, Sentinel evaluates it again
+against the live state before execution. By contrast, recognised credentials,
+one-time codes, payment data, and other protected values trigger a direct human
+step, so the operator acts in the page instead of authorising the agent to type
+the value. Similarly, if a suspicious current-page observation cannot be
+sanitised and verified, Sentinel withholds it. The operator may inspect the
+page, but the agent continues only from a fresh observation. A Chrome extension
+presents these states and the redacted decision history, while the server
+remains the source of authority.
 
-Evaluation proceeds in two complementary stages. AgentDojo supplies controlled
-tool-agent tasks with built-in checks for user-task and attacker-goal success
-across four application domains
-~\cite{debenedetti2024agentdojo}. Sentinel then evaluates a BrowserUse
-agent~\cite{muller2024browseruse} in the mutable GitLab and Reddit environments
-supplied by WASP~\cite{evtimov2025wasp}, adding observation construction,
-navigation, and browser re-planning. The principal
-browser study repeats the 84-case matrix across three seeds and compares
-enforcement off, enforcement without sanitisation, and the full system. This
-design tests browser transfer and isolates the configured sanitisation
-increment. Policy-only and full share the same fixed security guidance.
-Policy-only retains detected content and adds a detection-specific warning,
-whereas full enforcement removes attributable content and continues only after
-the reconstructed observation passes re-detection.
+The evaluation follows the same progression from controlled tool use to browser
+trajectories. First, AgentDojo supplies tool-agent tasks with built-in checks for
+user-task and attacker-goal success across four application domains
+~\cite{debenedetti2024agentdojo}. The second stage evaluates Sentinel with a
+BrowserUse agent~\cite{muller2024browseruse} in the mutable GitLab and Reddit
+environments supplied by WASP~\cite{evtimov2025wasp}, thereby adding observation
+construction, navigation, and browser re-planning. The principal browser study
+repeats the 84-case matrix across three seeds under the off, policy-only, and
+full conditions. This staged design first tests whether the approach transfers
+to a browser loop and then estimates the additional effect of configured
+sanitisation within a shared scaffold. In particular, policy-only and full use
+the same fixed security guidance and action controls:
+policy-only retains detected content and adds a detection-specific warning,
+whereas full removes attributable content and continues only when the
+reconstructed observation passes re-detection. The final contrast therefore
+includes the accompanying suppression of that warning.
 
 \section{Contributions}
 \label{sec:contributions}
