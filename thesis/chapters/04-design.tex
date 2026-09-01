@@ -438,7 +438,7 @@ operator, while enforcement and execution remain server-side.
 
 \subsection{Client--server authority boundary}
 
-Sentinel may pause a run for approval, direct human action, or review of an
+As we explored, Sentinel may pause a run for approval, direct human action, or review of an
 observation. The Chrome extension makes these states visible and relays task,
 control, policy, approval, and handover requests, but authority remains with the
 service. The service owns the run, pending requests, audit, lifecycle, and
@@ -448,8 +448,8 @@ revalidates actions before execution.
 In the local prototype, Sentinel trusts the Chrome extension to relay the
 operator's intent. A compromised client could answer an active request or change
 policy, but could not call the executor directly, reuse stale authority, or
-bypass service-side revalidation. Although these safeguards limit the client's
-direct privileges, a compromised client could still influence the run. A
+bypass service-side revalidation. Even so, the requests the client sends can
+still affect how the run unfolds. A
 Manifest V3 worker and content script provide in-page controls, while the side
 panel and dashboard communicate over HTTP and WebSocket; only the service can
 change runtime state.
@@ -473,9 +473,10 @@ operation before an intervention.
 
 The in-page strip shows who currently controls the browser. \emph{Take over}
 pauses future agent actions for direct interaction, while \emph{Stop} ends the
-task. These controls change ownership or lifecycle state, not policy. Keeping
-the strip sparse places essential control beside the page without exposing
-protected input, hostile text, or the full audit record.
+task. These controls change who operates the browser or whether the run
+continues; they do not change Sentinel's policy. Keeping
+the strip simple puts essential controls beside the page without displaying
+sensitive input, malicious page text, or detailed audit information.
 
 \FloatBarrier
 \subsection{Intervention features}
@@ -548,12 +549,12 @@ from one walkthrough run. Panel~(a) shows the redacted approval card while the
 proposal is held; panel~(b) shows the resulting outcomes, timing, and decisions
 in Activity after the run.
 
-These surfaces might support a future HITL study, although the prototype is not
-yet ready for one. Here, tests establish fail-closed
-authority contracts, while deterministic walkthroughs document redacted state
-projection and audit reconstruction. They provide no participant evidence about
-comprehension, usability, trust, workload, fatigue, intervention burden, or
-decision quality.
+The prototype could support a future HITL study, but it is not yet ready for
+participant evaluation. Tests currently verify fail-closed behaviour, while
+repeatable walkthroughs show the redacted information presented to users and
+how events can be reconstructed from the audit trail. They do not show how
+people understand, use, or trust the system, or its effects on workload,
+fatigue, intervention burden, and decision quality.
 
 \begin{figure}[!htbp]
 \centering
