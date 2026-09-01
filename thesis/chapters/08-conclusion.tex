@@ -1,41 +1,34 @@
 \chapter{Conclusion}
 \label{chap:conclusion}
 
-Browser agents must interpret web content to act, yet the same content can
-redirect them. This dissertation asked whether independent runtime enforcement
-can reduce prompt-injection-driven violations while retaining useful task
-performance. \systemname\ separates planning from authority: the browser agent
-chooses actions, while observation handling and privileged execution remain
-governed outside the model.
+Browser agents must interpret web content to act, yet that content can redirect
+them. This dissertation asked whether independent runtime enforcement can
+reduce prompt-injection-driven violations while preserving useful task
+performance. \systemname\ separates planning from authority: the agent proposes
+actions, while observation handling and privileged execution remain governed
+outside the model.
 
-Sentinel's executor boundary applies one policy to live context, fails closed
-when context or authority is missing, and records paired outcomes. Its
-observation boundary removes attributable hostile content, verifies
-reconstructed input, and withholds unresolved observations, while narrow
-approval and direct human steps preserve operator authority. The Chrome
-extension is the browser-facing control plane: it shows redacted server-owned
-decisions and relays scoped operator responses while authority remains with the
-runtime. The evaluation links controlled AgentDojo evidence to replicated
-browser-native WASP results.
+Before inference, Sentinel sanitises attributable hostile content or withholds
+unresolved observations; before execution, it applies policy to live context.
+If context or authority is missing, Sentinel fails closed, while narrow
+approval and direct human steps preserve operator control. The Chrome extension
+shows operators these decisions, while the runtime retains execution authority.
 
-Across three matched AgentDojo comparisons, the complete governed
-configuration reduced attacker
-success from 20.8--32.8\% to 0--0.2\%, and utility rose for every model. This
-comparison evaluates the composed defence rather than each layer separately.
-WASP's 27B utility result was more mixed. Across three seeds, full enforcement
-reduced audited terminal attacker success from 17/252 to zero and
-attacker-directed execution from 42/252 to zero. Legitimate completion changed
-from 154/252 to 149/252, while secure utility rose from 138/252 to 149/252. At
-unchanged utility, the policy-only/full comparison adds mechanism evidence: the
-configured sanitisation treatment reduced attacker-directed execution from
+Across three matched AgentDojo comparisons, the complete configuration reduced
+attacker success from 20.8--32.8\% to 0--0.2\%, with higher utility for every
+model. This tests the composed defence, not individual layers. WASP's 27B
+utility result was more mixed: across three seeds, full enforcement reduced
+audited terminal attacker success from
+17/252 to zero and attacker-directed execution from 42/252 to zero. Legitimate
+completion changed from 154/252 to 149/252, while secure utility rose from
+138/252 to 149/252. With utility unchanged, policy-only/full adds mechanism
+evidence: configured sanitisation reduced attacker-directed execution from
 15/252 to zero.
 
-The findings are limited to tested text channels, models, tasks, and the
-prototype boundary. They neither imply universal prevention nor justify
-deployment; successful human use remains unevaluated. Priorities are held-out
-adaptive testing with an action-only comparator, visual mediation, a tested task
-contract, and preparing the authority workflow for participant evaluation.
+These results cover only the tested text channels, models, tasks, and prototype.
+They do not show that prompt injection has been solved or that Sentinel is ready
+for deployment; human use remains untested. The next priorities are held-out
+adaptive testing, an action-only comparator, visual mediation, task contracts,
+and participant evaluation.
 
-Model-facing safeguards are one layer; execution authority can remain outside
-the model. In these evaluations, Sentinel's complete configuration reduced
-violations while retaining useful autonomy.
+Overall, the separation reduced violations while retaining useful autonomy.
