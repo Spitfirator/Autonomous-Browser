@@ -369,10 +369,11 @@ human step, or discovers that the context has changed, Sentinel withholds the
 action. Approval therefore applies to the opportunity at execution, not to an
 earlier version of the page.
 
-To prevent repeated interruptions, a per-run budget limits how often Sentinel
-can ask for approval; once it is exhausted, the configured fallback either
-requires a human step or blocks the proposal. Pending requests remain on the
-server if the extension disconnects, and on reconnection the service returns
+To prevent repeated interruptions and pressure on the operator, a per-run
+budget limits how often Sentinel can ask for approval; once it is exhausted,
+the configured fallback either requires a human step or blocks the proposal.
+Pending requests remain on the server if the extension disconnects, and on
+reconnection the service returns
 the current state and outstanding requests before continuing the event sequence.
 A request card disappearing from the interface therefore never implies consent,
 because only a response that reaches the server within the request's limits and
